@@ -57,10 +57,10 @@ export function HomePage() {
         <div className="page-shell network-ribbon__inner">
           <p>Un annuaire construit autour des parcours, pas des titres.</p>
           <div aria-hidden="true" className="network-ribbon__route">
-            <span>Bobo-Dioulasso</span><i />
-            <span>Ouagadougou</span><i />
-            <span>Dakar</span><i />
-            <span>le monde</span>
+            <span className="network-ribbon__stop">Bobo-Dioulasso<i /></span>
+            <span className="network-ribbon__stop">Ouagadougou<i /></span>
+            <span className="network-ribbon__stop">Dakar<i /></span>
+            <span className="network-ribbon__stop">Le monde</span>
           </div>
         </div>
       </section>

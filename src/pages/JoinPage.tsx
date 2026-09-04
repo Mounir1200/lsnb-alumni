@@ -1,7 +1,10 @@
 import { Camera, Check, LoaderCircle, LockKeyhole, Orbit, UserRound } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
+import { getAuthCallbackUrl } from "../lib/auth";
+import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository";
+import { savePendingAvatar } from "../lib/pendingAvatarStore";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type SubmissionStatus = {
@@ -11,6 +14,7 @@ type SubmissionStatus = {
 
 export function JoinPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [role, setRole] = useState<"alumni" | "student">("alumni");
   const [offersMentoring, setOffersMentoring] = useState(searchParams.get("mentorat") === "true");
   const [photo, setPhoto] = useState<File | null>(null);
@@ -29,8 +33,9 @@ export function JoinPage() {
 
   const handlePhoto = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.size > 4 * 1024 * 1024) {
-      setStatus({ kind: "error", message: "La photo doit peser moins de 4 Mo." });
+    const validationError = file ? getAvatarValidationError(file) : null;
+    if (validationError) {
+      setStatus({ kind: "error", message: validationError });
       event.target.value = "";
       return;
     }
@@ -69,36 +74,43 @@ export function JoinPage() {
         return;
       }
 
-      const email = String(data.get("email") ?? "");
+      const email = String(data.get("email") ?? "").trim();
       const password = String(data.get("password") ?? "");
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: profile },
+        options: {
+          data: profile,
+          emailRedirectTo: getAuthCallbackUrl(),
+        },
       });
       if (authError) throw authError;
 
-      if (photo && authData.session && authData.user) {
-        const extension = photo.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${authData.user.id}/avatar.${extension}`;
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(path, photo, { upsert: true, contentType: photo.type });
-
-        if (!uploadError) {
-          const { data: publicImage } = supabase.storage.from("avatars").getPublicUrl(path);
-          await supabase.from("profiles").update({ photo_url: publicImage.publicUrl }).eq("id", authData.user.id);
+      let photoQueued = false;
+      if (photo && authData.user) {
+        if (authData.session) {
+          await uploadAvatar(authData.user.id, photo);
+        } else {
+          photoQueued = await savePendingAvatar(email, photo);
         }
+      }
+
+      let confirmationPhotoMessage = "";
+      if (photo) {
+        confirmationPhotoMessage = photoQueued
+          ? " La photo sera ajoutée automatiquement si vous ouvrez le lien dans ce navigateur."
+          : " Vous pourrez ajouter votre photo depuis votre espace membre après confirmation.";
       }
 
       setStatus({
         kind: "success",
         message: authData.session
           ? "Votre compte est créé. Bienvenue dans le réseau."
-          : "Compte créé. Consultez votre boîte mail pour confirmer votre adresse et finaliser votre profil.",
+          : `Compte créé. Consultez votre boîte mail pour confirmer votre adresse.${confirmationPhotoMessage}`,
       });
       form.reset();
       setPhoto(null);
+      if (authData.session) navigate("/espace?created=true", { replace: true });
     } catch (error) {
       setStatus({
         kind: "error",

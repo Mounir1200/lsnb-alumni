@@ -58,6 +58,17 @@ Pour l’API, copier `api/.env.example` vers `api/.env`. La clé `SUPABASE_SECRE
 
 Les coordonnées sont séparées des profils. Les règles RLS autorisent leur lecture uniquement à leur propriétaire ou lorsqu’il a choisi de les rendre visibles aux membres authentifiés.
 
+### Redirections d’authentification
+
+Dans **Authentication → URL Configuration** de Supabase :
+
+- définir la Site URL sur `https://lsnb-alumni-web.onrender.com` ;
+- ajouter `https://lsnb-alumni-web.onrender.com/auth/callback` aux Redirect URLs ;
+- ajouter aussi `http://localhost:5173/auth/callback` et `http://127.0.0.1:5173/auth/callback` pour les tests locaux.
+
+Après confirmation de son e-mail, le membre revient sur `/auth/callback`, la session est enregistrée dans le navigateur puis il est dirigé vers `/espace`.
+La photo choisie à l’inscription est conservée localement pendant sept jours et envoyée après confirmation lorsque le lien est ouvert dans le même navigateur.
+
 ## Vérifications
 
 ```bash

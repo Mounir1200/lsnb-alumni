@@ -1,6 +1,7 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../../auth/AuthProvider";
 import { cn } from "../../lib/cn";
 import { BrandMark } from "../ui/BrandMark";
 import { ButtonLink } from "../ui/Button";
@@ -14,6 +15,7 @@ const navigation = [
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -47,12 +49,20 @@ export function SiteHeader() {
         </nav>
 
         <div className="site-header__actions">
-          <NavLink to="/connexion" className="site-header__login">
-            Se connecter
-          </NavLink>
-          <ButtonLink to="/rejoindre" size="sm" variant="light">
-            Rejoindre le réseau
-          </ButtonLink>
+          {!isLoading && user ? (
+            <ButtonLink to="/espace" size="sm" variant="light">
+              Mon espace
+            </ButtonLink>
+          ) : !isLoading ? (
+            <>
+              <NavLink to="/connexion" className="site-header__login">
+                Se connecter
+              </NavLink>
+              <ButtonLink to="/rejoindre" size="sm" variant="light">
+                Rejoindre le réseau
+              </ButtonLink>
+            </>
+          ) : null}
         </div>
 
         <button
@@ -75,10 +85,18 @@ export function SiteHeader() {
                 {item.label}
               </NavLink>
             ))}
-            <NavLink to="/connexion">Se connecter</NavLink>
-            <ButtonLink to="/rejoindre" variant="light" className="mt-2">
-              Rejoindre le réseau
-            </ButtonLink>
+            {user ? (
+              <ButtonLink to="/espace" variant="light" className="mt-2">
+                Mon espace
+              </ButtonLink>
+            ) : (
+              <>
+                <NavLink to="/connexion">Se connecter</NavLink>
+                <ButtonLink to="/rejoindre" variant="light" className="mt-2">
+                  Rejoindre le réseau
+                </ButtonLink>
+              </>
+            )}
           </nav>
         </div>
       )}

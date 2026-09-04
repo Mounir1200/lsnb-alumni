@@ -63,7 +63,7 @@ export function Hero() {
               Explorer l’annuaire <ArrowRight size={18} aria-hidden="true" />
             </ButtonLink>
             <ButtonLink to="/rejoindre?mentorat=true" variant="ghost" size="lg">
-              Proposer un mentorat
+              Proposer un mentorat <ArrowRight size={18} aria-hidden="true" />
             </ButtonLink>
           </div>
         </div>

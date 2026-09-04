@@ -1,14 +1,18 @@
 import { Check, LoaderCircle, LockKeyhole } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { BrandMark } from "../components/ui/BrandMark";
+import { getAuthCallbackUrl, getSafeNextPath } from "../lib/auth";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type LoginStatus = { kind: "idle" | "loading" | "success" | "error"; message?: string };
 
 export function LoginPage() {
   const [status, setStatus] = useState<LoginStatus>({ kind: "idle" });
+  const [email, setEmail] = useState("");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -24,14 +28,36 @@ export function LoginPage() {
     }
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: String(data.get("email") ?? ""),
+      email,
       password: String(data.get("password") ?? ""),
+    });
+
+    if (error) {
+      setStatus({ kind: "error", message: error.message });
+      return;
+    }
+
+    setStatus({ kind: "success", message: "Connexion réussie. Ouverture de votre espace…" });
+    navigate(getSafeNextPath(searchParams.get("next")), { replace: true });
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!supabase || !email) {
+      setStatus({ kind: "error", message: "Saisissez d’abord votre adresse e-mail." });
+      return;
+    }
+
+    setStatus({ kind: "loading", message: "Envoi d’un nouveau lien…" });
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: getAuthCallbackUrl() },
     });
 
     setStatus(
       error
         ? { kind: "error", message: error.message }
-        : { kind: "success", message: "Connexion réussie. Votre espace membre est prêt." },
+        : { kind: "success", message: "Un nouveau lien de confirmation vient de vous être envoyé." },
     );
   };
 
@@ -46,7 +72,17 @@ export function LoginPage() {
         </div>
 
         <form className="account-form" onSubmit={handleLogin}>
-          <label className="field-group"><span>Adresse e-mail</span><input name="email" type="email" autoComplete="email" required /></label>
+          <label className="field-group">
+            <span>Adresse e-mail</span>
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </label>
           <label className="field-group"><span>Mot de passe</span><input name="password" type="password" autoComplete="current-password" required /></label>
 
           {status.kind !== "idle" && status.message && (
@@ -60,6 +96,14 @@ export function LoginPage() {
             {status.kind === "loading" && <LoaderCircle className="spin" aria-hidden="true" />}
             Se connecter
           </Button>
+          <button
+            type="button"
+            className="login-page__forgot"
+            onClick={handleResendConfirmation}
+            disabled={status.kind === "loading"}
+          >
+            Renvoyer l’e-mail de confirmation
+          </button>
           <p className="account-form__login">Pas encore membre&nbsp;? <Link to="/rejoindre">Créer un compte</Link></p>
         </form>
       </div>

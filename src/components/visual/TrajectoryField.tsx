@@ -367,9 +367,13 @@ export function TrajectoryField() {
       <span className="trajectory-field__label trajectory-field__label--origin">
         Bobo-Dioulasso <b>Origine</b>
       </span>
+      <span className="trajectory-field__label trajectory-field__label--west">Dakar</span>
       <span className="trajectory-field__label trajectory-field__label--north">Montréal</span>
       <span className="trajectory-field__label trajectory-field__label--east">Kigali</span>
       <span className="trajectory-field__label trajectory-field__label--south">Abidjan</span>
+      <span className="trajectory-field__label trajectory-field__label--south-east">
+        Ouagadougou
+      </span>
     </div>
   );
 }
