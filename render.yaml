@@ -2,7 +2,7 @@ services:
   - type: web
     name: lsnb-alumni-web
     runtime: static
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     staticPublishPath: ./dist
     autoDeployTrigger: commit
     envVars:
@@ -24,15 +24,13 @@ services:
     runtime: node
     rootDir: api
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
       - key: NODE_VERSION
         value: 24.14.1
-      - key: NODE_ENV
-        value: production
       - key: FRONTEND_ORIGINS
         sync: false
       - key: SUPABASE_URL
