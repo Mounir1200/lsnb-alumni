@@ -7,6 +7,7 @@ import { SiteHeader } from "./components/layout/SiteHeader";
 import { RouteTransition } from "./components/motion/RouteTransition";
 import { uploadPendingAvatar } from "./lib/avatarRepository";
 import { DirectoryPage } from "./pages/DirectoryPage";
+import { EditProfilePage } from "./pages/EditProfilePage";
 import { HomePage } from "./pages/HomePage";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { JoinPage } from "./pages/JoinPage";
@@ -65,6 +66,14 @@ export function App() {
               element={
                 <RequireAuth>
                   <MemberPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/espace/modifier"
+              element={
+                <RequireAuth>
+                  <EditProfilePage />
                 </RequireAuth>
               }
             />

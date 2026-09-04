@@ -6,9 +6,11 @@ import {
   MapPin,
   MessageCircle,
   Orbit,
+  PencilLine,
 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
 import { Avatar } from "../components/ui/Avatar";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { alumniProfiles, getAlumniProfile, type AlumniProfile } from "../data/alumni";
@@ -23,6 +25,7 @@ type RequestStatus = {
 
 export function ProfilePage() {
   const { profileId = "" } = useParams();
+  const { user } = useAuth();
   const demoProfile = getAlumniProfile(profileId);
   const [profile, setProfile] = useState<AlumniProfile | undefined>(demoProfile);
   const [loading, setLoading] = useState(Boolean(!demoProfile && isSupabaseConfigured));
@@ -81,6 +84,7 @@ export function ProfilePage() {
     : alumniProfiles
         .filter((item) => item.id !== profile.id && item.domain === profile.domain)
         .slice(0, 2);
+  const isOwnProfile = profile.isDemo === false && user?.id === profile.id;
 
   const handleRequestClick = () => {
     if (profile.isDemo !== false) {
@@ -159,18 +163,24 @@ export function ProfilePage() {
             {profile.offersMentoring && (
               <p><Orbit size={17} aria-hidden="true" /> Mentorat ouvert</p>
             )}
-            <Button
-              size="lg"
-              onClick={handleRequestClick}
-              disabled={requestSent}
-            >
-              {requestSent ? (
-                <><Check size={18} aria-hidden="true" /> Demande enregistrée</>
-              ) : (
-                <><MessageCircle size={18} aria-hidden="true" /> Demander un échange</>
-              )}
-            </Button>
-            {requestSent && (
+            {isOwnProfile ? (
+              <ButtonLink to="/espace/modifier" size="lg">
+                <PencilLine size={18} aria-hidden="true" /> Modifier mon profil
+              </ButtonLink>
+            ) : (
+              <Button
+                size="lg"
+                onClick={handleRequestClick}
+                disabled={requestSent}
+              >
+                {requestSent ? (
+                  <><Check size={18} aria-hidden="true" /> Demande enregistrée</>
+                ) : (
+                  <><MessageCircle size={18} aria-hidden="true" /> Demander un échange</>
+                )}
+              </Button>
+            )}
+            {!isOwnProfile && requestSent && (
               <span role="status">
                 {profile.isDemo === false
                   ? requestStatus.message ?? "Demande enregistrée."

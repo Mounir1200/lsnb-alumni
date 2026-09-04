@@ -1,4 +1,4 @@
-import { ArrowUpRight, Camera, CheckCircle2, LoaderCircle, LogOut, Network, UserRound } from "lucide-react";
+import { ArrowUpRight, Camera, CheckCircle2, LoaderCircle, LogOut, Network, PencilLine, UserRound } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
@@ -15,12 +15,19 @@ type PhotoStatus = {
   message?: string;
 };
 
+type MemberIdentity = {
+  firstName: string;
+  lastName: string;
+  memberRole: "alumni" | "student";
+};
+
 export function MemberPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string>();
+  const [identity, setIdentity] = useState<MemberIdentity>();
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>({ kind: "idle" });
   const userId = user?.id;
 
@@ -32,10 +39,23 @@ export function MemberPage() {
     const loadPhoto = async () => {
       const { data } = await client
         .from("profiles")
-        .select("photo_url")
+        .select("first_name, last_name, member_role, photo_url")
         .eq("id", userId)
         .maybeSingle();
-      if (active && typeof data?.photo_url === "string") setPhotoUrl(data.photo_url);
+      if (active && data) {
+        if (typeof data.photo_url === "string") setPhotoUrl(data.photo_url);
+        if (
+          typeof data.first_name === "string"
+          && typeof data.last_name === "string"
+          && (data.member_role === "alumni" || data.member_role === "student")
+        ) {
+          setIdentity({
+            firstName: data.first_name,
+            lastName: data.last_name,
+            memberRole: data.member_role,
+          });
+        }
+      }
 
       try {
         const pendingPhotoUrl = await uploadPendingAvatar({ id: userId, email: user.email });
@@ -66,9 +86,11 @@ export function MemberPage() {
   if (!user) return null;
 
   const metadata = user.user_metadata;
-  const firstName = typeof metadata.first_name === "string" ? metadata.first_name : "Membre";
-  const lastName = typeof metadata.last_name === "string" ? metadata.last_name : "LSNB";
-  const role = metadata.member_role === "student" ? "Élève" : "Alumni";
+  const firstName = identity?.firstName
+    ?? (typeof metadata.first_name === "string" ? metadata.first_name : "Membre");
+  const lastName = identity?.lastName
+    ?? (typeof metadata.last_name === "string" ? metadata.last_name : "LSNB");
+  const role = (identity?.memberRole ?? metadata.member_role) === "student" ? "Élève" : "Alumni";
   const confirmed = searchParams.get("confirmed") === "true";
   const confirmedPhoto = searchParams.get("photo") === "uploaded";
   const initials = `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
@@ -119,6 +141,9 @@ export function MemberPage() {
             </ButtonLink>
             <ButtonLink to={`/alumni/${user.id}`} size="lg" variant="outline">
               Voir mon profil
+            </ButtonLink>
+            <ButtonLink to="/espace/modifier" size="lg" variant="outline">
+              <PencilLine aria-hidden="true" /> Modifier mon profil
             </ButtonLink>
           </div>
         </section>

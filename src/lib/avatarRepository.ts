@@ -45,6 +45,23 @@ export async function uploadAvatar(userId: string, file: File) {
   return updatedProfile.photo_url;
 }
 
+export async function deleteAvatar(userId: string) {
+  if (!supabase) throw new Error("Supabase n’est pas configuré.");
+
+  const path = `${userId}/avatar`;
+  const { error: deleteError } = await supabase.storage.from("avatars").remove([path]);
+  if (deleteError) throw deleteError;
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ photo_url: null })
+    .eq("id", userId)
+    .select("id")
+    .single();
+
+  if (profileError) throw profileError;
+}
+
 export async function uploadPendingAvatar(user: { id: string; email?: string | null }) {
   if (!user.email) return undefined;
 
