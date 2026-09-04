@@ -13,6 +13,7 @@ import { AlumniCard } from "../components/alumni/AlumniCard";
 import { Hero } from "../components/home/Hero";
 import { Reveal } from "../components/motion/Reveal";
 import { ButtonLink } from "../components/ui/Button";
+import { SectionPathBackdrop } from "../components/visual/SectionPathBackdrop";
 import { alumniProfiles } from "../data/alumni";
 
 const discoveryPaths = [
@@ -65,11 +66,19 @@ export function HomePage() {
       </section>
 
       <section id="reseau" className="section featured-section">
+        <SectionPathBackdrop variant="profiles" />
         <div className="page-shell">
           <Reveal className="section-heading section-heading--split">
             <div>
               <p className="eyebrow eyebrow--dark">Parcours en lumière</p>
-              <h2>Des chemins différents.<br />Des repères partageables.</h2>
+              <h2>
+                <span className="section-heading__line">
+                  Des chemins<br className="section-heading__mobile-break" /> différents.
+                </span>
+                <span className="section-heading__line">
+                  Des repères<br className="section-heading__mobile-break" /> partageables.
+                </span>
+              </h2>
             </div>
             <div>
               <p>
@@ -182,7 +191,8 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="section roots-section" aria-labelledby="roots-title">
+      <section id="ancrage" className="section roots-section" aria-labelledby="roots-title">
+        <SectionPathBackdrop variant="roots" />
         <div className="page-shell">
           <Reveal className="roots-section__headline">
             <p className="eyebrow">Notre point commun</p>
@@ -211,9 +221,12 @@ export function HomePage() {
 
             <Reveal className="roots-photo roots-photo--city" delay={90}>
               <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/BoboDioulasso-GrandMosqueN.JPG/1200px-BoboDioulasso-GrandMosqueN.JPG"
+                src="/images/bobo-grand-mosque.jpg"
                 alt="Grande Mosquée de Bobo-Dioulasso, exemple d’architecture soudano-sahélienne"
                 loading="lazy"
+                decoding="async"
+                width="1280"
+                height="960"
               />
               <div>
                 <span>L’identité de Sya</span>
@@ -223,7 +236,7 @@ export function HomePage() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Photo&nbsp;: Semiliki · CC BY-SA
+                  Photo&nbsp;: Semiliki · CC BY-SA 3.0
                 </a>
               </div>
             </Reveal>

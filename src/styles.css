@@ -176,6 +176,14 @@ textarea:focus-visible {
   font-size: 1rem;
 }
 
+.section-heading__line {
+  display: block;
+}
+
+.section-heading__mobile-break {
+  display: none;
+}
+
 .demo-note {
   color: #7a6551;
   font-size: 0.75rem;
@@ -984,10 +992,107 @@ textarea:focus-visible {
   background: var(--banco);
 }
 
+/* Section trajectory fields */
+
+.section-path-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.section-path-backdrop svg {
+  width: 100%;
+  height: 100%;
+}
+
+.section-path-backdrop path,
+.section-path-backdrop circle {
+  vector-effect: non-scaling-stroke;
+}
+
+.section-path-backdrop__grid path {
+  fill: none;
+  stroke: var(--path-grid);
+  stroke-width: 1;
+}
+
+.section-path-backdrop__routes path,
+.section-path-backdrop__architecture path {
+  fill: none;
+  stroke: var(--path-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.15;
+}
+
+.section-path-backdrop__routes path:nth-child(2n) {
+  stroke: var(--path-line-secondary);
+}
+
+.section-path-backdrop__rings circle {
+  fill: none;
+  stroke: var(--path-ring);
+  stroke-width: 1;
+  stroke-dasharray: 3 15;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.section-path-backdrop__nodes circle {
+  fill: var(--path-node);
+  filter: drop-shadow(0 0 5px var(--path-node-glow));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.section-path-backdrop__travelers circle {
+  fill: var(--path-traveler);
+  filter: drop-shadow(0 0 7px var(--path-traveler-glow));
+}
+
+.section-path-backdrop--profiles {
+  --path-grid: rgba(12, 41, 72, 0.055);
+  --path-line: rgba(12, 41, 72, 0.19);
+  --path-line-secondary: rgba(194, 125, 56, 0.3);
+  --path-ring: rgba(46, 90, 54, 0.2);
+  --path-node: #c27d38;
+  --path-node-glow: rgba(194, 125, 56, 0.5);
+  --path-traveler: #2e5a36;
+  --path-traveler-glow: rgba(46, 90, 54, 0.56);
+  opacity: 0.86;
+}
+
+.section-path-backdrop--roots {
+  --path-grid: transparent;
+  --path-line: rgba(12, 41, 72, 0.2);
+  --path-line-secondary: rgba(46, 90, 54, 0.26);
+  --path-ring: rgba(12, 41, 72, 0.17);
+  --path-node: #2e5a36;
+  --path-node-glow: rgba(46, 90, 54, 0.52);
+  --path-traveler: #9c5b24;
+  --path-traveler-glow: rgba(194, 125, 56, 0.58);
+  opacity: 0.76;
+}
+
+.section-path-backdrop--roots .section-path-backdrop__architecture path {
+  stroke: rgba(156, 91, 36, 0.24);
+}
+
 /* Alumni cards */
 
 .featured-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--paper);
+}
+
+.featured-section > .page-shell,
+.roots-section > .page-shell {
+  position: relative;
+  z-index: 1;
 }
 
 .featured-grid {
@@ -997,6 +1102,11 @@ textarea:focus-visible {
 }
 
 .alumni-card {
+  --card-motion-line: rgba(12, 41, 72, 0.22);
+  --card-motion-line-secondary: rgba(194, 125, 56, 0.34);
+  --card-motion-ring: rgba(12, 41, 72, 0.18);
+  --card-motion-node: #2e5a36;
+  --card-motion-traveler: #b46f2e;
   position: relative;
   display: flex;
   height: 100%;
@@ -1005,21 +1115,64 @@ textarea:focus-visible {
   justify-content: space-between;
   padding: 26px;
   overflow: hidden;
+  isolation: isolate;
   background: #f1e8dc;
   color: var(--ink);
   border-top: 4px solid var(--ink);
   transition: background-color 200ms ease;
 }
 
-.alumni-card::after {
-  content: "";
+.alumni-card-motion {
   position: absolute;
-  right: -50px;
-  bottom: -70px;
-  width: 170px;
-  height: 170px;
-  border: 1px solid rgba(12, 41, 72, 0.13);
-  border-radius: 50%;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.52;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.alumni-card-motion svg {
+  width: 100%;
+  height: 100%;
+}
+
+.alumni-card-motion path,
+.alumni-card-motion circle {
+  vector-effect: non-scaling-stroke;
+}
+
+.alumni-card-motion__routes path {
+  fill: none;
+  stroke: var(--card-motion-line);
+  stroke-linecap: round;
+  stroke-width: 1.1;
+}
+
+.alumni-card-motion__routes path:nth-child(2) {
+  stroke: var(--card-motion-line-secondary);
+}
+
+.alumni-card-motion__ring {
+  fill: none;
+  stroke: var(--card-motion-ring);
+  stroke-width: 1;
+  stroke-dasharray: 3 12;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.alumni-card-motion__nodes circle {
+  fill: var(--card-motion-node);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.alumni-card-motion__travelers circle {
+  fill: var(--card-motion-traveler);
+}
+
+.alumni-card:is(:hover, :focus-within) .alumni-card-motion {
+  opacity: 0.82;
 }
 
 .alumni-card:hover {
@@ -1027,6 +1180,11 @@ textarea:focus-visible {
 }
 
 .alumni-card--featured {
+  --card-motion-line: rgba(255, 253, 248, 0.27);
+  --card-motion-line-secondary: rgba(7, 29, 51, 0.32);
+  --card-motion-ring: rgba(255, 253, 248, 0.24);
+  --card-motion-node: #fff3df;
+  --card-motion-traveler: #0c2948;
   min-height: 480px;
   background: var(--banco);
   color: var(--chalk);
@@ -1035,12 +1193,6 @@ textarea:focus-visible {
 
 .alumni-card--featured:hover {
   background: #b97132;
-}
-
-.alumni-card--featured::after {
-  width: 240px;
-  height: 240px;
-  border-color: rgba(255,255,255,0.2);
 }
 
 .alumni-card--with-photo .alumni-card__avatar {
@@ -1380,6 +1532,9 @@ textarea:focus-visible {
 /* Roots */
 
 .roots-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--sand);
   color: var(--ink);
 }
@@ -1418,6 +1573,10 @@ textarea:focus-visible {
   object-fit: cover;
   filter: saturate(0.78) contrast(1.05);
   transition: transform 700ms cubic-bezier(.2,.7,.2,1), filter 400ms ease;
+}
+
+.roots-photo--city img {
+  object-position: 58% center;
 }
 
 .roots-photo:hover img {
@@ -3042,12 +3201,16 @@ textarea:focus-visible {
   .join-cta__inner,
   .directory-hero__inner,
   .account-page__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .section-heading--split {
     align-items: start;
     gap: 28px;
+  }
+
+  .section-heading--split > div {
+    min-width: 0;
   }
 
   .discovery-section__intro,
@@ -3340,8 +3503,26 @@ textarea:focus-visible {
     padding-block: 86px;
   }
 
+  .section-path-backdrop--profiles {
+    opacity: 0.66;
+  }
+
+  .section-path-backdrop--roots {
+    opacity: 0.58;
+  }
+
   .section-heading--split {
     margin-bottom: 42px;
+  }
+
+  .featured-section .section-heading h2 {
+    max-width: 100%;
+    font-size: clamp(2.35rem, 11vw, 2.8rem);
+    text-wrap: wrap;
+  }
+
+  .featured-section .section-heading__mobile-break {
+    display: block;
   }
 
   .featured-grid,

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { AlumniProfile } from "../../data/alumni";
 import { cn } from "../../lib/cn";
 import { Avatar } from "../ui/Avatar";
+import { AlumniCardMotion } from "./AlumniCardMotion";
 
 type AlumniCardProps = {
   profile: AlumniProfile;
@@ -16,6 +17,8 @@ export function AlumniCard({ profile, featured = false }: AlumniCardProps) {
       featured && "alumni-card--featured",
       profile.photoUrl && "alumni-card--with-photo",
     )}>
+      <AlumniCardMotion profileId={profile.id} />
+
       <div className="alumni-card__topline">
         <Avatar
           initials={profile.initials}
