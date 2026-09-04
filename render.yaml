@@ -1,10 +1,41 @@
 services:
   - type: web
-    name: lsnb-alumni
+    name: lsnb-alumni-web
     runtime: static
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.1
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_API_URL
+        sync: false
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  - type: web
+    name: lsnb-alumni-api
+    runtime: node
+    rootDir: api
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.1
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_ORIGINS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false

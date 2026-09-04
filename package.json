@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "npm --prefix api run dev",
     "build": "tsc -b && vite build",
+    "build:api": "npm --prefix api run build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "typecheck:api": "npm --prefix api run typecheck",
+    "test:api": "npm --prefix api run test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
