@@ -2,6 +2,13 @@
 
 Prototype du réseau des élèves et alumni du Lycée Scientifique National de Bobo-Dioulasso.
 
+## Guide pour l'équipe de développement
+
+- [Guide de reprise : existant, démarrage, configuration et reste à faire](docs/guide-developpement.md)
+- [Version PDF à partager](output/pdf/lsnb-reseau-guide-developpement.pdf)
+- [Dépôt GitHub](https://github.com/Mounir1200/lsnb-alumni)
+- [Site sur Render](https://lsnb-alumni-web.onrender.com/)
+
 Le produit met l’accent sur trois usages :
 
 - découvrir des parcours par spécialité, domaine ou pays ;
@@ -41,12 +48,11 @@ Elle répond sur `http://localhost:4000`, avec un contrôle de santé disponible
 
 Le projet fonctionne sans variables d’environnement en mode démonstration : l’inscription conserve un aperçu local du profil et ne stocke jamais le mot de passe.
 
-## Connecter Supabase
+## Configuration locale de Supabase
 
-1. Créer un projet Supabase.
-2. Exécuter [`supabase/migrations/202609040001_initial_schema.sql`](supabase/migrations/202609040001_initial_schema.sql) dans l’éditeur SQL.
-3. Copier `.env.example` vers `.env.local`.
-4. Ajouter l’URL du projet et la clé publique anonyme.
+**Supabase et Render sont déjà configurés. Le responsable du projet en conserve l'administration** : clés, droits d'accès, migrations appliquées à la base, fournisseurs de connexion comme Google et déploiements.
+
+Pour tester avec de vraies données, utiliser l'environnement d'essai et les valeurs fournis par le responsable du projet. Copier `.env.example` vers `.env.local`, puis renseigner l'URL Supabase et la clé publique reçues :
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -54,17 +60,19 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_API_URL=http://localhost:4000
 ```
 
-Pour l’API, copier `api/.env.example` vers `api/.env`. La clé `SUPABASE_SECRET_KEY` est strictement réservée au backend : elle ne doit jamais utiliser le préfixe `VITE_` ni être incluse dans le navigateur.
+Redémarrer le serveur local après une modification de ces valeurs. Sans environnement d'essai fourni, le mode démonstration reste disponible.
+
+Pour personnaliser l’API en local, copier `api/.env.example` vers `api/.env`. `VITE_API_URL`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY` sont utilisés pour la rubrique Highlight. Le job hebdomadaire utilise aussi `MISTRAL_API_KEY`. Ces deux clés sont strictement réservées au backend : elles ne doivent jamais utiliser le préfixe `VITE_` ni être incluses dans le navigateur. Ne pas ajouter les fichiers contenant de vraies valeurs à GitHub.
+
+Les développeurs préparent les modifications du code et les fichiers de migration SQL dans une branche, puis les proposent dans une pull request pour relecture. Le responsable coordonne leur application à Supabase. Le [schéma initial](supabase/migrations/202609040001_initial_schema.sql) sert de référence pour comprendre la base existante.
 
 Les coordonnées sont séparées des profils. Les règles RLS autorisent leur lecture uniquement à leur propriétaire ou lorsqu’il a choisi de les rendre visibles aux membres authentifiés.
 
+Le [guide de reprise](docs/guide-developpement.md) explique où sont stockés les données des membres et les fichiers photo, ainsi que leurs règles de visibilité.
+
 ### Redirections d’authentification
 
-Dans **Authentication → URL Configuration** de Supabase :
-
-- définir la Site URL sur `https://lsnb-alumni-web.onrender.com` ;
-- ajouter `https://lsnb-alumni-web.onrender.com/auth/callback` aux Redirect URLs ;
-- ajouter aussi `http://localhost:5173/auth/callback` et `http://127.0.0.1:5173/auth/callback` pour les tests locaux.
+Les adresses de retour après connexion ou confirmation d'e-mail sont gérées par le responsable dans Supabase. Pour les tests locaux, lui communiquer l'adresse affichée par Vite afin qu'il puisse confirmer qu'elle est autorisée pour l'environnement d'essai.
 
 Après confirmation de son e-mail, le membre revient sur `/auth/callback`, la session est enregistrée dans le navigateur puis il est dirigé vers `/espace`.
 La photo choisie à l’inscription est conservée localement pendant sept jours et envoyée après confirmation lorsque le lien est ouvert dans le même navigateur.
@@ -81,21 +89,21 @@ npm run build:api
 
 ## Déploiement Render
 
-Le fichier [`render.yaml`](render.yaml) crée deux services depuis le même dépôt :
+Le fichier [`render.yaml`](render.yaml) décrit trois services depuis le même dépôt :
 
 - `lsnb-alumni-web`, un site statique qui publie `dist` et réécrit les routes vers `index.html` ;
 - `lsnb-alumni-api`, un service web Node.js construit depuis `api/`, avec `/health` comme contrôle de disponibilité.
+- `lsnb-alumni-highlights`, un job du lundi à 00 h UTC avec reprise à 00 h 20, qui sauvegarde deux portraits pour la semaine. Son activation implique le tarif des jobs planifiés Render.
 
-Les deux builds utilisent une version Node.js épinglée afin d’éviter qu’un changement automatique de runtime ne casse un futur déploiement.
+Les builds utilisent une version Node.js épinglée afin d’éviter qu’un changement automatique de runtime ne casse un futur déploiement.
 
-Créer un **Blueprint** Render à partir du dépôt. Lors de la première synchronisation, renseigner :
+Les services et leurs variables sont administrés par le responsable du projet. L'équipe prépare et vérifie les modifications en local, puis ouvre une pull request en précisant les changements de configuration ou de base éventuellement nécessaires.
 
-- pour le frontend : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` et `VITE_API_URL` ;
-- pour l’API : `FRONTEND_ORIGINS`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY`.
+La mise en production est coordonnée par le responsable. La configuration prévoit un déploiement automatique lorsqu'un commit est envoyé sur GitHub dans la branche suivie par Render : l'intégration d'une pull request peut donc déclencher une publication. Le responsable coordonne cet envoi avec les éventuelles migrations et mises à jour des variables.
 
-`FRONTEND_ORIGINS` accepte plusieurs origines séparées par des virgules. En production, utiliser l’URL exacte du frontend Render.
+Les Highlights suivent le flux `frontend → API → Supabase` pour la lecture publique. Le job choisit deux alumni actifs au hasard avec rotation, privilégie un duo homme–femme et accepte les autres duos lorsque nécessaire. Mistral Small rédige les portraits à partir des profils ; la sélection et les textes sont conservés en base. Aucun appel IA n’a lieu au chargement des pages et Redis n’est pas nécessaire. La [documentation Highlights](docs/highlights.md) détaille la migration, les réglages, les reprises, les coûts et les limites des contrôles de fidélité.
 
-Les futures fonctionnalités serveur suivront le flux `frontend → API → Supabase`. L’alumni de la semaine sera sélectionné une fois puis conservé pour toute la semaine, et les résumés IA seront générés hors du chargement des pages puis mis en cache en base.
+La connexion avec Google et l'ajout de liens LinkedIn et portfolio aux profils sont également prévus. Ces fonctionnalités restent à développer ; les détails figurent dans le [guide de reprise](docs/guide-developpement.md).
 
 ## Direction visuelle
 

@@ -53,6 +53,7 @@ export function JoinPage() {
       first_name: String(data.get("firstName") ?? "").trim(),
       last_name: String(data.get("lastName") ?? "").trim(),
       member_role: role,
+      gender: String(data.get("gender") ?? "unspecified"),
       graduation_year: Number(data.get("graduationYear")),
       specialty: String(data.get("specialty") ?? "").trim(),
       country: String(data.get("country") ?? "").trim(),
@@ -177,6 +178,16 @@ export function JoinPage() {
               <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" required /></label>
             </div>
 
+            <label className="field-group">
+              <span>Genre (facultatif)</span>
+              <select name="gender" defaultValue="unspecified" aria-describedby="join-gender-help">
+                <option value="unspecified">Je préfère ne pas préciser</option>
+                <option value="female">Femme</option>
+                <option value="male">Homme</option>
+              </select>
+              <small id="join-gender-help">Cette information déclarée sert à équilibrer les duos Highlight. Elle n’est jamais déduite de votre nom ou de votre photo.</small>
+            </label>
+
             <div className="form-row">
               <label className="field-group">
                 <span>{role === "alumni" ? "Année du bac" : "Année prévue du bac"}</span>
@@ -237,6 +248,16 @@ export function JoinPage() {
               <input type="checkbox" required />
               <span>J’accepte que ces informations soient utilisées pour mon profil LSNB Réseau. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span>
             </label>
+
+            {role === "alumni" && (
+              <p className="highlight-disclosure">
+                Votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
+                sans connexion. Les informations de votre parcours sont alors transmises à
+                Mistral pour rédiger le portrait. Les champs de contact ne sont pas transmis ;
+                évitez d’ajouter des coordonnées privées dans le texte de votre parcours.
+                {" "}<Link to="/confidentialite#highlights">En savoir plus</Link>
+              </p>
+            )}
 
             {status.kind !== "idle" && status.message && (
               <div className={`form-status form-status--${status.kind}`} role="status">

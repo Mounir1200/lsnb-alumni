@@ -2,11 +2,14 @@ import type { AlumniProfile } from "../data/alumni";
 import { alumniProfiles } from "../data/alumni";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
+export type ProfileGender = "male" | "female" | "unspecified";
+
 type ProfileRow = {
   id: string;
   first_name: string;
   last_name: string;
   member_role: "alumni" | "student";
+  gender?: ProfileGender | null;
   graduation_year: number | null;
   specialty: string;
   specialties: string[] | null;
@@ -23,6 +26,7 @@ export type EditableProfile = {
   firstName: string;
   lastName: string;
   memberRole: "alumni" | "student";
+  gender: ProfileGender;
   graduationYear: number;
   specialty: string;
   domain: string;
@@ -125,7 +129,7 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
     supabase
       .from("profiles")
       .select(
-        "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, offers_mentoring, mentoring_topics",
+        "id, first_name, last_name, member_role, gender, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, offers_mentoring, mentoring_topics",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -145,6 +149,7 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
     firstName: row.first_name,
     lastName: row.last_name,
     memberRole: row.member_role,
+    gender: row.gender ?? "unspecified",
     graduationYear: row.graduation_year ?? new Date().getFullYear(),
     specialty: row.specialty,
     domain: row.domain ?? row.specialty,
@@ -183,6 +188,7 @@ export async function updateEditableProfile(
       first_name: profile.firstName.trim(),
       last_name: profile.lastName.trim(),
       member_role: profile.memberRole,
+      gender: profile.gender,
       graduation_year: profile.graduationYear,
       specialty: profile.specialty.trim(),
       specialties,
@@ -218,6 +224,7 @@ export async function updateEditableProfile(
       first_name: profile.firstName.trim(),
       last_name: profile.lastName.trim(),
       member_role: profile.memberRole,
+      gender: profile.gender,
       graduation_year: profile.graduationYear,
       specialty: profile.specialty.trim(),
       city: profile.city.trim(),

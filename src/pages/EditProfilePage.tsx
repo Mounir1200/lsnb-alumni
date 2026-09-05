@@ -23,12 +23,14 @@ import {
   loadEditableProfile,
   updateEditableProfile,
   type EditableProfile,
+  type ProfileGender,
 } from "../lib/profileRepository";
 
 type EditorForm = {
   firstName: string;
   lastName: string;
   memberRole: "alumni" | "student";
+  gender: ProfileGender;
   graduationYear: string;
   specialty: string;
   domain: string;
@@ -52,6 +54,7 @@ function toEditorForm(profile: EditableProfile): EditorForm {
     firstName: profile.firstName,
     lastName: profile.lastName,
     memberRole: profile.memberRole,
+    gender: profile.gender,
     graduationYear: String(profile.graduationYear),
     specialty: profile.specialty,
     domain: profile.domain,
@@ -181,6 +184,7 @@ export function EditProfilePage() {
         firstName: form.firstName,
         lastName: form.lastName,
         memberRole: form.memberRole,
+        gender: form.gender,
         graduationYear: Number(form.graduationYear),
         specialty: form.specialty,
         domain: form.domain,
@@ -321,6 +325,20 @@ export function EditProfilePage() {
                 <span>Actuellement au LSNB</span>
               </label>
             </fieldset>
+
+            <label className="field-group">
+              <span>Genre (facultatif)</span>
+              <select
+                value={form.gender}
+                onChange={(event) => updateField("gender", event.target.value as ProfileGender)}
+                aria-describedby="edit-gender-help"
+              >
+                <option value="unspecified">Je préfère ne pas préciser</option>
+                <option value="female">Femme</option>
+                <option value="male">Homme</option>
+              </select>
+              <small id="edit-gender-help">Cette information déclarée sert à équilibrer les duos Highlight. Elle n’est jamais déduite de votre nom ou de votre photo.</small>
+            </label>
 
             <div className="form-row">
               <label className="field-group">
@@ -524,6 +542,16 @@ export function EditProfilePage() {
                 {status.kind === "loading" ? "Enregistrement…" : "Enregistrer les modifications"}
               </Button>
             </div>
+
+            {form.memberRole === "alumni" && (
+              <p className="highlight-disclosure">
+                Votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
+                sans connexion. Les informations de votre parcours sont alors transmises à
+                Mistral pour rédiger le portrait. Les champs de contact ne sont pas transmis ;
+                évitez d’ajouter des coordonnées privées dans le texte de votre parcours.
+                {" "}<Link to="/confidentialite#highlights">En savoir plus</Link>
+              </p>
+            )}
           </form>
         </section>
       </div>

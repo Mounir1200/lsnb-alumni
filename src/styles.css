@@ -1107,6 +1107,268 @@ textarea:focus-visible {
   stroke: rgba(156, 91, 36, 0.24);
 }
 
+/* Weekly editorial portraits */
+
+.highlights-heading {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: end;
+  gap: clamp(32px, 6vw, 90px);
+  margin-bottom: 48px;
+}
+
+.highlights-heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(2.5rem, 4.9vw, 4.8rem);
+  line-height: 1.02;
+}
+
+.highlights-heading > p {
+  max-width: 440px;
+  margin: 0;
+  color: #536371;
+  font-size: 0.96rem;
+}
+
+.highlights-edition {
+  margin-bottom: 22px;
+  color: var(--mango);
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto auto 1fr auto;
+  column-gap: clamp(26px, 4vw, 60px);
+}
+
+.highlights-section .section-path-backdrop {
+  opacity: 0.24;
+}
+
+.highlight-portrait {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 4;
+  min-width: 0;
+  padding-top: 26px;
+  border-top: 3px solid var(--mango);
+  overflow-wrap: anywhere;
+}
+
+.highlight-portrait:nth-child(2) {
+  border-top-color: var(--banco);
+}
+
+.highlight-portrait__identity {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.highlight-portrait__photo.avatar {
+  width: 88px;
+  height: 106px;
+  border-radius: 2px;
+  font-size: 1.7rem;
+}
+
+.highlight-portrait__identity p {
+  margin-bottom: 0;
+}
+
+.highlight-portrait__promotion {
+  color: var(--mango);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.highlight-portrait__name {
+  margin-top: 6px;
+  color: var(--ink);
+  font-family: "Bricolage Grotesque", "Arial Narrow", sans-serif;
+  font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+  font-weight: 650;
+  line-height: 1.14;
+  letter-spacing: -0.035em;
+}
+
+.highlight-portrait__specialty {
+  margin-top: 7px;
+  color: #354e60;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.highlight-portrait__location {
+  margin-top: 3px;
+  color: #647078;
+  font-size: 0.75rem;
+}
+
+.highlight-portrait h3 {
+  margin: 28px 0 18px;
+  color: var(--ink);
+  font-size: clamp(1.55rem, 2.7vw, 2.35rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  text-wrap: pretty;
+}
+
+.highlight-portrait__body {
+  color: #415463;
+  font-size: 0.94rem;
+  line-height: 1.85;
+}
+
+.highlight-portrait__body p {
+  margin-bottom: 18px;
+}
+
+.highlight-portrait__footer {
+  display: grid;
+  justify-items: start;
+  align-content: end;
+  gap: 6px;
+  padding-top: 12px;
+}
+
+.highlight-portrait__footer > span {
+  color: #647078;
+  font-size: 0.7rem;
+}
+
+.highlight-portrait__source {
+  margin: 0 0 8px;
+  color: #647078;
+  font-size: 0.72rem;
+}
+
+.highlights-source-note {
+  margin: 36px 0 0;
+  color: #647078;
+  font-size: 0.75rem;
+}
+
+.highlights-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 185px;
+  padding: 30px 0;
+  color: #536371;
+  border-top: 2px solid var(--mango);
+  border-bottom: 1px solid var(--line);
+}
+
+.highlights-state[role="status"] {
+  justify-content: flex-start;
+}
+
+.highlights-state h3 {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 1.55rem;
+  line-height: 1.2;
+}
+
+.highlights-state p {
+  max-width: 620px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.highlights-state > svg,
+.highlights-state > button {
+  flex-shrink: 0;
+}
+
+.highlight-disclosure {
+  margin: 0;
+  padding-left: 16px;
+  color: #536371;
+  border-left: 2px solid var(--mango);
+  font-size: 0.74rem;
+  line-height: 1.7;
+}
+
+.highlight-disclosure a {
+  color: var(--mango);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.field-group select:focus-visible {
+  outline: 3px solid #f1b66f;
+  outline-offset: 3px;
+}
+
+@media (max-width: 860px) {
+  .highlights-heading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .highlights-heading > p {
+    max-width: 560px;
+  }
+
+  .highlight-portrait__identity {
+    grid-template-columns: 66px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .highlight-portrait__photo.avatar {
+    width: 66px;
+    height: 82px;
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 620px) {
+  .highlights-heading h2 {
+    font-size: clamp(2rem, 8.5vw, 3.1rem);
+  }
+
+  .highlights-grid {
+    display: block;
+  }
+
+  .highlight-portrait {
+    display: block;
+  }
+
+  .highlight-portrait + .highlight-portrait {
+    margin-top: 40px;
+  }
+
+  .highlight-portrait__identity {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .highlight-portrait__photo.avatar {
+    width: 80px;
+    height: 96px;
+  }
+
+  .highlights-state {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .highlights-state[role="status"] {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
 /* Alumni cards */
 
 .featured-section {

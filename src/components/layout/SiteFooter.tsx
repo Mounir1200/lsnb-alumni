@@ -16,6 +16,7 @@ export function SiteFooter() {
         <div className="site-footer__nav">
           <p>Explorer</p>
           <Link to="/annuaire">Annuaire</Link>
+          <Link to="/#highlights">Highlight de la semaine</Link>
           <Link to="/annuaire?mentor=true">Trouver un mentor</Link>
           <Link to="/rejoindre">Créer un profil</Link>
         </div>
