@@ -37,3 +37,27 @@ services:
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false
+
+  # Independent job: runs even when the free API service is asleep.
+  # Second run recovers an interrupted job after the 15-minute DB lease expires.
+  # It reuses the same edition and never repeats an attempted Mistral request.
+  - type: cron
+    name: lsnb-alumni-highlights
+    runtime: node
+    rootDir: api
+    plan: starter
+    schedule: "0,20 0 * * 1"
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run highlights:generate
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.1
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: MISTRAL_MODEL
+        value: mistral-small-latest

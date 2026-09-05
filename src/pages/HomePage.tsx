@@ -9,12 +9,11 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AlumniCard } from "../components/alumni/AlumniCard";
 import { Hero } from "../components/home/Hero";
+import { WeeklyHighlights } from "../components/home/WeeklyHighlights";
 import { Reveal } from "../components/motion/Reveal";
 import { ButtonLink } from "../components/ui/Button";
 import { SectionPathBackdrop } from "../components/visual/SectionPathBackdrop";
-import { alumniProfiles } from "../data/alumni";
 
 const discoveryPaths = [
   {
@@ -53,7 +52,7 @@ export function HomePage() {
     <>
       <Hero />
 
-      <section className="network-ribbon" aria-label="Promesse du réseau">
+      <section id="reseau" className="network-ribbon" aria-label="Promesse du réseau">
         <div className="page-shell network-ribbon__inner">
           <p>Un annuaire construit autour des parcours, pas des titres.</p>
           <div aria-hidden="true" className="network-ribbon__route">
@@ -65,49 +64,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section id="reseau" className="section featured-section">
-        <SectionPathBackdrop variant="profiles" />
-        <div className="page-shell">
-          <Reveal className="section-heading section-heading--split">
-            <div>
-              <p className="eyebrow eyebrow--dark">Parcours en lumière</p>
-              <h2>
-                <span className="section-heading__line">
-                  Des chemins<br className="section-heading__mobile-break" /> différents.
-                </span>
-                <span className="section-heading__line">
-                  Des repères<br className="section-heading__mobile-break" /> partageables.
-                </span>
-              </h2>
-            </div>
-            <div>
-              <p>
-                Chaque profil raconte les décisions, les transitions et les spécialités qui
-                ne tiennent pas sur un simple intitulé de poste.
-              </p>
-              <span className="demo-note">Profils fictifs présentés pour la maquette.</span>
-            </div>
-          </Reveal>
-
-          <div className="featured-grid">
-            <Reveal className="featured-grid__primary">
-              <AlumniCard profile={alumniProfiles[0]!} featured />
-            </Reveal>
-            <Reveal delay={90}>
-              <AlumniCard profile={alumniProfiles[1]!} />
-            </Reveal>
-            <Reveal delay={160}>
-              <AlumniCard profile={alumniProfiles[3]!} />
-            </Reveal>
-          </div>
-
-          <div className="section-link-row">
-            <Link to="/annuaire" className="text-link">
-              Parcourir tous les profils <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-          </div>
-        </div>
-      </section>
+      <WeeklyHighlights />
 
       <section className="section discovery-section" aria-labelledby="discovery-title">
         <div className="page-shell discovery-section__layout">

@@ -11,7 +11,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --import tsx --test src/app.test.ts"
+    "test": "node --import tsx --test src/app.test.ts src/highlights/*.test.ts",
+    "highlights:generate": "node dist/highlights/run.js",
+    "highlights:dev": "tsx src/highlights/run.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
@@ -20,6 +22,7 @@
     "fastify": "^5.12.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/node": "^26.4.1",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
