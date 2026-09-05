@@ -103,7 +103,7 @@ La mise en production est coordonnée par le responsable. La configuration prév
 
 Les Highlights suivent le flux `frontend → API → Supabase` pour la lecture publique. Le job choisit deux alumni actifs au hasard avec rotation, privilégie un duo homme–femme et accepte les autres duos lorsque nécessaire. Mistral Small rédige les portraits à partir des profils ; la sélection et les textes sont conservés en base. Aucun appel IA n’a lieu au chargement des pages et Redis n’est pas nécessaire. La [documentation Highlights](docs/highlights.md) détaille la migration, les réglages, les reprises, les coûts et les limites des contrôles de fidélité.
 
-La connexion avec Google et l'ajout de liens LinkedIn et portfolio aux profils sont également prévus. Ces fonctionnalités restent à développer ; les détails figurent dans le [guide de reprise](docs/guide-developpement.md).
+L’inscription et la connexion Google sont implémentées via Supabase Auth, avec complétion du profil au premier accès. Le [guide d’activation Google](docs/google-auth.md) détaille la nouvelle migration et les réglages Google/Supabase. Les liens LinkedIn et portfolio restent à développer.
 
 ## Direction visuelle
 

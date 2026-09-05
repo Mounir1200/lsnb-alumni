@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import { useAuth } from "./auth/AuthProvider";
 import { RequireAuth } from "./components/auth/RequireAuth";
@@ -16,13 +16,16 @@ import { MemberPage } from "./pages/MemberPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { CompleteProfilePage } from "./pages/CompleteProfilePage";
 
 function PostConfirmationRedirect() {
   const { lastEvent, user } = useAuth();
   const navigate = useNavigate();
+  const isLegacyReturn = useRef(window.location.pathname === "/" &&
+    /(?:[?#&])(access_token|code|token_hash)=/.test(window.location.search + window.location.hash));
 
   useEffect(() => {
-    if (lastEvent === "SIGNED_IN" && user && window.location.pathname === "/") {
+    if (isLegacyReturn.current && lastEvent === "SIGNED_IN" && user && window.location.pathname === "/") {
       let active = true;
       void uploadPendingAvatar(user)
         .then((photoUrl) => {
@@ -61,6 +64,7 @@ export function App() {
             <Route path="/rejoindre" element={<JoinPage />} />
             <Route path="/connexion" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/completer-profil" element={<RequireAuth allowIncomplete><CompleteProfilePage /></RequireAuth>} />
             <Route
               path="/espace"
               element={
