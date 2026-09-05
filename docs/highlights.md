@@ -30,19 +30,19 @@ PostgreSQL suffit : il sert de stockage durable et évite de régénérer les ar
 
 - `weekly_highlights` : une ligne unique par lundi, état de publication et verrou temporaire.
 - `highlight_articles` : deux positions uniques, références aux membres, instantanés et articles immuables, indicateur de tentative Mistral.
-- `highlight_article_repairs` : au maximum une tentative manuelle supplémentaire par article de secours, et son éventuel nouveau texte IA. Le texte original reste conservé.
+- `highlight_article_repairs` : une première tentative manuelle par article de secours, au maximum deux reprises explicites après échec ou expiration, l’historique des essais et l’éventuel nouveau texte IA. Le texte original reste conservé.
 - Les fonctions SQL réservent une édition dans une transaction avec un verrou consultatif et un verrou de ligne. Le bail expire après 15 minutes.
 - Le marqueur `ai_attempted_at` est écrit **avant** l’appel externe. Après un arrêt entre cet appel et sa sauvegarde, la reprise utilise le texte factuel de secours. Elle n’émet pas un nouvel appel potentiellement facturé.
 - Un article déjà enregistré est conservé. Les deux articles doivent être enregistrés avant publication.
 - Les tables et les fonctions de génération sont inaccessibles aux visiteurs et aux membres ordinaires. Seul le backend possède la clé privilégiée.
 
-Le cron émet au maximum deux requêtes Mistral par édition, soit généralement 8 à 10 par mois. Une réparation manuelle autorise au plus une requête supplémentaire par article de secours, donc deux supplémentaires au maximum pour la semaine concernée. Les lectures publiques utilisent une projection explicite des champs et `Cache-Control: no-store`, afin qu’un profil retiré ne reste pas affiché dans un cache intermédiaire. Ce choix n’occasionne aucun nouvel appel IA.
+Le cron émet au maximum deux requêtes Mistral par édition, soit généralement 8 à 10 par mois. Chaque lancement manuel de réparation autorise au plus une requête par article de secours. Avec les deux reprises explicites possibles, le plafond de réparation est de trois requêtes par article et par semaine, donc six pour le duo. Ces reprises ne sont jamais déclenchées par le cron ordinaire. Les lectures publiques utilisent une projection explicite des champs et `Cache-Control: no-store`, afin qu’un profil retiré ne reste pas affiché dans un cache intermédiaire. Ce choix n’occasionne aucun nouvel appel IA.
 
 Le Blueprint Render prépare un job séparé, indépendant de la veille de l’API gratuite, le lundi à 00 h puis à 00 h 20. Le second passage reprend uniquement une éventuelle interruption ; une édition publiée ne fait aucun travail supplémentaire. Si les deux passages échouent à accéder à la base, il faut relancer le job manuellement. Les logs indiquent `published`, `busy`, `empty` et le nombre de textes de secours. Chaque secours est accompagné d’un diagnostic local et, pour une erreur HTTP, du statut, sans clé, réponse brute du fournisseur ou contenu des profils.
 
 ## Remplacer les textes de secours de la semaine courante
 
-1. Appliquer [la migration de réparation](../supabase/migrations/202609050003_highlight_fallback_repair.sql) dans Supabase **avant de déployer cette version de l’API**. La relation utilisée pour la lecture des réparations doit exister. La migration conserve les articles et leurs instantanés.
+1. Appliquer [la migration de réparation](../supabase/migrations/202609050003_highlight_fallback_repair.sql), puis [la migration de reprise après échec](../supabase/migrations/202609050004_highlight_repair_retries.sql) dans Supabase **avant de déployer cette version de l’API**. Si la migration 003 est déjà appliquée, exécuter uniquement la nouvelle 004. Elles conservent les articles, leurs instantanés et les tentatives existantes.
 2. Déployer le code sur l’API, le frontend et le job Render. Vérifier que `MISTRAL_API_KEY` et `MISTRAL_MODEL` sont correctement configurés sur le job.
 3. Lancer explicitement, depuis `api/` après compilation :
 
@@ -55,14 +55,34 @@ Le Blueprint Render prépare un job séparé, indépendant de la veille de l’A
 
 La commande conserve le duo, les données du profil capturées lors du tirage et la semaine de publication. Seuls les articles `fallback` de la semaine courante, appartenant à un duo encore éligible, peuvent être réparés. Le texte déjà affiché reste visible jusqu’à la sauvegarde réussie du nouveau texte. Un article IA existant ne change pas. Aucune route publique ne permet cette opération.
 
-La tentative est enregistrée **avant** l’appel Mistral. Elle est consommée même en cas d’échec, de dépassement de délai ou d’arrêt du processus : relancer la commande ne refacture pas cet article. En cas de `failures > 0`, la commande termine avec un code d’échec pour que Render le signale, et le secours reste affiché ; corriger la configuration pour les éditions suivantes. Il n’existe pas de boucle de régénération automatique.
+La tentative est enregistrée **avant** l’appel Mistral. Elle reste consommée en cas d’échec, de dépassement de délai ou d’arrêt du processus : relancer `highlights:repair` ne refacture pas cet article. En cas de `failures > 0`, la commande termine avec un code d’échec pour que Render le signale, et le secours reste affiché. Un refus HTTP 429 est enregistré, puis le job s’arrête avant de réserver le profil suivant. L’en-tête `Retry-After`, lorsqu’il est présent, est pris en compte dans le délai de reprise, avec un plafond de 24 heures. Il n’existe pas de boucle de régénération automatique.
+
+### Reprendre les essais déjà échoués
+
+Après avoir résolu la cause fournisseur et appliqué la migration 004 :
+
+```sh
+npm run highlights:repair:retry
+```
+
+Sur Render, utiliser temporairement cette commande pour un lancement manuel, puis rétablir `npm run highlights:generate`. Ce mode autorise explicitement de nouvelles requêtes facturables : au maximum deux reprises par article, en plus de la première tentative de réparation. Un article déjà réparé n’est jamais réécrit.
+
+Un échec enregistré impose au moins 60 secondes d’attente, ou le délai fournisseur s’il est supérieur. Une ancienne tentative dont l’issue n’a pas été enregistrée, comme les refus 429 de l’ancienne version ou une sauvegarde interrompue, doit attendre l’expiration de son bail de 15 minutes. Aucun jeton actif n’est réutilisé. L’ancien essai est archivé avant la nouvelle réservation, les anciens jetons ne peuvent plus enregistrer d’article, et l’historique comme le plafond de reprises sont contrôlés par PostgreSQL.
+
+Les logs `highlight_repair_skipped` indiquent `cooldown` si le délai n’est pas écoulé, `attempted` si une tentative est encore active, si l’article est déjà réparé ou si son plafond est atteint, et `unavailable` si l’édition ou le profil n’est plus éligible.
+
+### Incident Mistral gratuit constaté le 5 septembre 2026
+
+La page d’état officielle indiquait un incident **« Free Tier Temporarily Disabled »**, commencé le 4 septembre et encore en cours lors de la vérification du 5 septembre. Mistral avait temporairement désactivé les complétions de l’API gratuite en raison de la charge et d’abus possibles. Cet incident est cohérent avec les refus 429 observés sur l’offre Experiment, malgré des plafonds affichés et aucune consommation enregistrée. [Incident officiel](https://status.mistral.ai/incident/44cb5e11-4736-4e6b-9198-97121820e15e)
+
+Consulter l’état actuel avant de relancer. Les options sont d’attendre le rétablissement de l’offre gratuite ou de choisir le paiement à l’usage. Changer de clé ou d’alias de modèle ne résout pas une suspension globale du niveau gratuit. Hors incident, vérifier **API → Limits** et **API → Usage** dans l’organisation à laquelle appartient la clé : les plafonds sont partagés par organisation. [Limites Mistral](https://help.mistral.ai/en/articles/698531-why-am-i-hitting-api-rate-limits-and-how-do-i-increase-them)
 
 ### Comprendre les diagnostics
 
 | Diagnostic dans les logs | Signification et vérification |
 |---|---|
 | `code: provider`, `reason: http_error`, `status: 401` ou `403` | Mistral refuse l’accès : vérifier la clé et ses autorisations sur le job. |
-| `status: 429` | Mistral limite la requête : vérifier les quotas et limites du compte. |
+| `status: 429` | Mistral refuse temporairement la requête : vérifier d’abord la [page d’état](https://status.mistral.ai/), puis les quotas et limites de l’organisation. Un 429 seul ne prouve pas un quota épuisé. |
 | `status: 400` ou `404` | Vérifier le modèle choisi et la configuration de la requête. |
 | `code: timeout` | Aucun article reçu dans les 45 secondes. |
 | `reason: truncated` | Mistral a atteint la limite de sortie avant de terminer. |
@@ -77,7 +97,7 @@ Render facture ses jobs planifiés avec un minimum annoncé de **1 USD par mois 
 
 ## Activation
 
-1. Appliquer les migrations du dépôt dans l’ordre dans l’environnement Supabase visé, y compris [la migration Highlights](../supabase/migrations/202609050001_weekly_highlights.sql) et [la migration de réparation](../supabase/migrations/202609050003_highlight_fallback_repair.sql). Elles conservent les profils existants ; le genre existant reste non renseigné jusqu’à sa déclaration par le membre.
+1. Appliquer les migrations du dépôt dans l’ordre dans l’environnement Supabase visé, jusqu’à [la migration de reprise 004](../supabase/migrations/202609050004_highlight_repair_retries.sql). Elles conservent les profils existants ; le genre existant reste non renseigné jusqu’à sa déclaration par le membre.
 2. Configurer `SUPABASE_URL` et `SUPABASE_SECRET_KEY` sur l’API. Utiliser une clé serveur `sb_secret_…` ou une ancienne clé `service_role`, jamais une clé publique.
 3. Configurer ces mêmes variables ainsi que `MISTRAL_API_KEY` sur le job Render `lsnb-alumni-highlights`. Le modèle par défaut est déjà défini dans le Blueprint.
 4. Configurer `VITE_API_URL` sur le site statique avec l’URL de l’API, et autoriser l’origine du site dans `FRONTEND_ORIGINS` sur l’API. Reconstruire le frontend après modification de ses variables.
@@ -100,7 +120,7 @@ npm run typecheck
 npm test
 ```
 
-Les tests incluent un PostgreSQL embarqué PGlite : les tests de réparation exécutent les quatre migrations dans une base éphémère. Ils couvrent les réponses Mistral simulées, les cas de reprise/concurrence, les permissions et les articles réparés. Ils ne lisent pas la base configurée et n’appellent pas Mistral. L’émulation PostgreSQL vérifie les fonctions et permissions ; elle ne remplace pas un essai de concurrence entre plusieurs connexions ni un test du proxy REST Supabase en environnement d’essai.
+Les tests incluent un PostgreSQL embarqué PGlite : les tests de réparation exécutent les cinq migrations dans une base éphémère, y compris un passage de 003 à 004 avec des tentatives préexistantes. Ils couvrent les réponses Mistral simulées, les cas de reprise/concurrence, les permissions et les articles réparés. Ils ne lisent pas la base configurée et n’appellent pas Mistral. L’émulation PostgreSQL vérifie les fonctions et permissions ; elle ne remplace pas un essai de concurrence entre plusieurs connexions ni un test du proxy REST Supabase en environnement d’essai.
 
 Références d’intégration : [sorties structurées Mistral](https://docs.mistral.ai/studio/conversations/structured-output/custom) et [clés API Supabase](https://supabase.com/docs/guides/getting-started/api-keys).
 

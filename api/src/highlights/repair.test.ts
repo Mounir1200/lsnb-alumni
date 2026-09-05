@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { repairWeeklyHighlight } from "./repair.js";
+import { HighlightGenerationError } from "./generator.js";
 import { createHighlightStore } from "./store.js";
-import type { GeneratedArticle, HighlightRepairStore, SourceProfile, StoredArticle } from "./types.js";
+import type { GeneratedArticle, HighlightRepairFailure, HighlightRepairStore, SourceProfile, StoredArticle } from "./types.js";
 
 const now = new Date("2026-09-05T12:00:00Z");
 const source: SourceProfile = {
@@ -24,6 +25,7 @@ function fixture() {
   }));
   const attempts = new Set<number>();
   const repairs = new Map<number, GeneratedArticle>();
+  const recordedFailures = new Map<number, HighlightRepairFailure>();
   const store: HighlightRepairStore = {
     current: async () => null, claim: async () => ({ outcome: "published" }),
     claimAi: async () => { throw new Error("Normal generation must not run."); },
@@ -37,13 +39,18 @@ function fixture() {
       attempts.add(slot);
       return { outcome: "claimed", repair_token: `token-${slot}`, article: structuredClone(article) };
     },
+    recordRepairFailure: async (_, slot, token, failure) => {
+      assert.equal(token, `token-${slot}`);
+      recordedFailures.set(slot, failure);
+      return true;
+    },
     saveRepair: async (_, slot, token, article) => {
       assert.equal(token, `token-${slot}`);
       repairs.set(slot, article);
       return true;
     },
   };
-  return { store, articles, attempts, repairs };
+  return { store, articles, attempts, repairs, recordedFailures };
 }
 
 test("two overlapping explicit repairs and later reruns spend at most one extra attempt per fallback", async () => {
@@ -157,5 +164,64 @@ test("repair storage sends only the scoped RPC payload and refuses fallback resu
     { path: "/rest/v1/rpc/claim_highlight_fallback_repair", body: { p_week_start: "2026-08-31", p_slot: 2 } },
     { path: "/rest/v1/rpc/save_highlight_fallback_repair", body: { p_week_start: "2026-08-31", p_slot: 2,
       p_repair_token: "repair-token", p_title: generated.title, p_paragraphs: generated.paragraphs, p_model: generated.model } },
+  ]);
+});
+
+test("a 429 is recorded with its delay and leaves the second profile unattempted", async () => {
+  const { store, attempts, recordedFailures } = fixture();
+  let calls = 0;
+  const result = await repairWeeklyHighlight({ store, now, generate: async () => {
+    calls++;
+    throw new HighlightGenerationError("provider", "http_error", 429, 120);
+  } });
+  assert.deepEqual(result, { outcome: "unchanged", attempted: 1, repaired: 0, failures: 1 });
+  assert.equal(calls, 1);
+  assert.deepEqual([...attempts], [1]);
+  assert.deepEqual(recordedFailures.get(1), { code: "rate_limited", httpStatus: 429, retryAfterSeconds: 120 });
+});
+
+test("explicit retries pass the admin flag and report cooldown without calling Mistral", async () => {
+  const { store } = fixture();
+  const skipped: unknown[] = [];
+  store.claimRepair = async (_, slot, retryFailed) => {
+    assert.equal(retryFailed, true);
+    return { outcome: slot === 1 ? "cooldown" : "attempted" };
+  };
+  const result = await repairWeeklyHighlight({ store, now, retryFailed: true,
+    onSkip: (slot, outcome) => skipped.push({ slot, outcome }),
+    generate: async () => { throw new Error("Must not call Mistral during cooldown."); },
+  });
+  assert.deepEqual(result, { outcome: "unchanged", attempted: 0, repaired: 0, failures: 0 });
+  assert.deepEqual(skipped, [{ slot: 1, outcome: "cooldown" }, { slot: 2, outcome: "attempted" }]);
+});
+
+test("failed failure bookkeeping stops the job and ambiguous saves are not misclassified as provider errors", async () => {
+  const first = fixture();
+  first.store.recordRepairFailure = async () => false;
+  let calls = 0;
+  await assert.rejects(repairWeeklyHighlight({ store: first.store, now, generate: async () => {
+    calls++;
+    throw new HighlightGenerationError("provider", "http_error", 429);
+  } }), /Unable to record/);
+  assert.equal(calls, 1);
+  const second = fixture();
+  second.store.saveRepair = async () => { throw new Error("Connection lost after possible commit."); };
+  await repairWeeklyHighlight({ store: second.store, now, generate: async () => generated });
+  assert.equal(second.recordedFailures.size, 0);
+});
+
+test("retry and failure recording RPC payloads contain only bounded diagnostic fields", async () => {
+  const requests: unknown[] = [];
+  const store = createHighlightStore({ url: "https://example.supabase.co", secretKey: "sb_secret_test" },
+    (async (url, init) => {
+      requests.push({ path: new URL(String(url)).pathname, body: JSON.parse(String(init?.body)) });
+      return Response.json(true);
+    }) as typeof fetch);
+  await store.claimRepair("2026-08-31", 1, true);
+  await store.recordRepairFailure("2026-08-31", 1, "token", { code: "rate_limited", httpStatus: 429, retryAfterSeconds: 180 });
+  assert.deepEqual(requests, [
+    { path: "/rest/v1/rpc/claim_highlight_fallback_repair", body: { p_week_start: "2026-08-31", p_slot: 1, p_retry_failed: true } },
+    { path: "/rest/v1/rpc/record_highlight_repair_failure", body: { p_week_start: "2026-08-31", p_slot: 1,
+      p_repair_token: "token", p_failure_code: "rate_limited", p_http_status: 429, p_retry_after_seconds: 180 } },
   ]);
 });

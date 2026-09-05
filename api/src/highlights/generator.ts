@@ -19,7 +19,7 @@ type Sources = Partial<Record<SourceField, string>>;
 
 export class HighlightGenerationError extends Error {
   constructor(readonly code: "provider" | "timeout" | "invalid_response",
-    readonly reason?: GenerationFailureReason, readonly status?: number) {
+    readonly reason?: GenerationFailureReason, readonly status?: number, readonly retryAfterSeconds?: number) {
     // Do not include a provider response, profile, API key, or original error.
     super(`Highlight generation failed (${code}).`);
     this.name = "HighlightGenerationError";
@@ -30,8 +30,21 @@ export class HighlightGenerationError extends Error {
 export function generationFailureDetails(error: unknown) {
   return error instanceof HighlightGenerationError
     ? { code: error.code, ...(error.reason ? { reason: error.reason } : {}),
-      ...(error.status ? { status: error.status } : {}) }
+      ...(error.status ? { status: error.status } : {}),
+      ...(error.retryAfterSeconds !== undefined ? { retryAfterSeconds: error.retryAfterSeconds } : {}) }
     : { code: "unexpected_error" as const };
+}
+
+function retryAfterSeconds(response: Response): number | undefined {
+  const value = response.headers.get("retry-after")?.trim();
+  if (!value) return undefined;
+  if (/^\d+$/.test(value)) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) ? Math.min(seconds, 86_400) : undefined;
+  }
+  if (!/^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), /i.test(value)) return undefined;
+  const target = Date.parse(value);
+  return Number.isFinite(target) ? Math.max(0, Math.min(86_400, Math.ceil((target - Date.now()) / 1000))) : undefined;
 }
 
 function clipped(value: string | null, maximum: number): string {
@@ -301,7 +314,7 @@ export function createMistralGenerator(
       });
       if (!response.ok) {
         void response.body?.cancel().catch(() => {});
-        throw new HighlightGenerationError("provider", "http_error", response.status);
+        throw new HighlightGenerationError("provider", "http_error", response.status, retryAfterSeconds(response));
       }
       const envelope = await readBoundedJson(response);
       if (!isObject(envelope) || !Array.isArray(envelope.choices) || envelope.choices.length !== 1) invalid("response_shape");

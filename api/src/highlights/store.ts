@@ -99,8 +99,13 @@ export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: 
     publish: (weekStart, leaseToken) => request<boolean>("rpc/publish_weekly_highlight", {
       p_week_start: weekStart, p_lease_token: leaseToken,
     }),
-    claimRepair: (weekStart, slot) => request<HighlightRepairClaim>("rpc/claim_highlight_fallback_repair", {
+    claimRepair: (weekStart, slot, retryFailed = false) => request<HighlightRepairClaim>("rpc/claim_highlight_fallback_repair", {
       p_week_start: weekStart, p_slot: slot,
+      ...(retryFailed ? { p_retry_failed: true } : {}),
+    }),
+    recordRepairFailure: (weekStart, slot, repairToken, failure) => request<boolean>("rpc/record_highlight_repair_failure", {
+      p_week_start: weekStart, p_slot: slot, p_repair_token: repairToken,
+      p_failure_code: failure.code, p_http_status: failure.httpStatus, p_retry_after_seconds: failure.retryAfterSeconds,
     }),
     saveRepair: (weekStart, slot, repairToken, article) => {
       if (article.generationMethod !== "ai") return Promise.resolve(false);
