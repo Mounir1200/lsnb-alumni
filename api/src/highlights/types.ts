@@ -66,12 +66,20 @@ export interface HighlightStore {
 }
 
 export type HighlightRepairClaim = {
-  outcome: "claimed" | "unavailable" | "attempted";
+  outcome: "claimed" | "unavailable" | "attempted" | "cooldown";
   repair_token?: string;
   article?: StoredArticle;
+  retry_after?: string;
+};
+
+export type HighlightRepairFailure = {
+  code: "rate_limited" | "provider" | "timeout" | "invalid_response" | "unexpected_error";
+  httpStatus: number | null;
+  retryAfterSeconds: number | null;
 };
 
 export interface HighlightRepairStore extends HighlightStore {
-  claimRepair(weekStart: string, slot: number): Promise<HighlightRepairClaim>;
+  claimRepair(weekStart: string, slot: number, retryFailed?: boolean): Promise<HighlightRepairClaim>;
+  recordRepairFailure(weekStart: string, slot: number, repairToken: string, failure: HighlightRepairFailure): Promise<boolean>;
   saveRepair(weekStart: string, slot: number, repairToken: string, article: GeneratedArticle): Promise<boolean>;
 }

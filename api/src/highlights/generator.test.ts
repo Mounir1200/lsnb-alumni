@@ -355,3 +355,29 @@ test("job diagnostics distinguish provider status, truncation and validation wit
   });
   assert.deepEqual(generationFailureDetails(new Error("private-key")), { code: "unexpected_error" });
 });
+
+test("Retry-After is preserved safely without retrying a refused provider request", async () => {
+  const cases: [string, number | undefined][] = [["120", 120], ["0", 0], ["999999999", 86400], ["invalid private response", undefined]];
+  for (const [header, expected] of cases) {
+    let calls = 0;
+    const generate = createMistralGenerator({ apiKey: "key", model: "small" }, fakeFetch(() => {
+      calls++;
+      return new Response("private upstream body", { status: 429, headers: { "retry-after": header } });
+    }));
+    await assert.rejects(generate(profile), (error) => {
+      assert.ok(error instanceof HighlightGenerationError);
+      assert.equal(error.retryAfterSeconds, expected);
+      assert.equal(JSON.stringify(generationFailureDetails(error)).includes("private"), false);
+      return true;
+    });
+    assert.equal(calls, 1);
+  }
+  const target = new Date(Date.now() + 180_000).toUTCString();
+  const generate = createMistralGenerator({ apiKey: "key", model: "small" }, fakeFetch(() =>
+    new Response("", { status: 429, headers: { "retry-after": target } })));
+  await assert.rejects(generate(profile), (error) => {
+    assert.ok(error instanceof HighlightGenerationError);
+    assert.ok(error.retryAfterSeconds !== undefined && error.retryAfterSeconds > 175 && error.retryAfterSeconds <= 180);
+    return true;
+  });
+});

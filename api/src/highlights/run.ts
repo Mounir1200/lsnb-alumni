@@ -7,8 +7,9 @@ import { createHighlightStore } from "./store.js";
 
 try {
   const args = process.argv.slice(2);
-  if (args.some((arg) => arg !== "--repair-fallbacks") || args.length > 1) {
-    throw new Error("Usage: highlights:generate [--repair-fallbacks]");
+  if (args.some((arg) => !["--repair-fallbacks", "--retry-failed"].includes(arg))
+    || new Set(args).size !== args.length || (args.includes("--retry-failed") && !args.includes("--repair-fallbacks"))) {
+    throw new Error("Usage: highlights:generate [--repair-fallbacks [--retry-failed]]");
   }
   const config = loadConfig();
   const apiKey = process.env.MISTRAL_API_KEY?.trim();
@@ -20,7 +21,8 @@ try {
   const store = createHighlightStore(config.highlightStorage);
   const generate = createMistralGenerator({ apiKey, model });
   const result = args.includes("--repair-fallbacks")
-    ? await repairWeeklyHighlight({ store, generate,
+    ? await repairWeeklyHighlight({ store, generate, retryFailed: args.includes("--retry-failed"),
+      onSkip: (slot, outcome) => console.info(JSON.stringify({ event: "highlight_repair_skipped", slot, reason: outcome })),
       onFailure: (slot, error) => console.warn(JSON.stringify({ event: "highlight_repair_failed", slot,
         ...generationFailureDetails(error) })),
     })
