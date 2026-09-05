@@ -1,8 +1,9 @@
 import { Camera, Check, LoaderCircle, LockKeyhole, Orbit, UserRound } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
 import { Button } from "../components/ui/Button";
-import { getAuthCallbackUrl } from "../lib/auth";
+import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository";
 import { savePendingAvatar } from "../lib/pendingAvatarStore";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
@@ -20,6 +21,9 @@ export function JoinPage() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>();
   const [status, setStatus] = useState<SubmissionStatus>({ kind: "idle" });
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const nextPath = getPostAuthPath(searchParams.get("next"));
+  const loginPath = searchParams.has("next") ? `/connexion?next=${encodeURIComponent(nextPath)}` : "/connexion";
 
   useEffect(() => {
     if (!photo) {
@@ -45,6 +49,7 @@ export function JoinPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (googleBusy || status.kind === "loading") return;
     const form = event.currentTarget;
     const data = new FormData(form);
     setStatus({ kind: "loading" });
@@ -82,7 +87,7 @@ export function JoinPage() {
         password,
         options: {
           data: profile,
-          emailRedirectTo: getAuthCallbackUrl(),
+          emailRedirectTo: getAuthCallbackUrl(searchParams.has("next") ? nextPath : null),
         },
       });
       if (authError) throw authError;
@@ -111,7 +116,7 @@ export function JoinPage() {
       });
       form.reset();
       setPhoto(null);
-      if (authData.session) navigate("/espace?created=true", { replace: true });
+      if (authData.session) navigate(searchParams.has("next") ? nextPath : "/espace?created=true", { replace: true });
     } catch (error) {
       setStatus({
         kind: "error",
@@ -141,6 +146,12 @@ export function JoinPage() {
           <div className="account-form-wrap__header">
             <p id="join-title">Créer un compte</p>
             <span>{isSupabaseConfigured ? "Supabase connecté" : "Mode démonstration local"}</span>
+          </div>
+
+          <div className="account-google">
+            <GoogleAuthButton next={nextPath} disabled={status.kind === "loading"} onBusyChange={setGoogleBusy} />
+            <p>Avec Google, vous compléterez votre profil à l’étape suivante.</p>
+            <div className="auth-divider"><span>ou inscrivez-vous avec votre e-mail</span></div>
           </div>
 
           <form className="account-form" onSubmit={handleSubmit}>
@@ -266,12 +277,12 @@ export function JoinPage() {
               </div>
             )}
 
-            <Button type="submit" size="lg" disabled={status.kind === "loading"}>
+            <Button type="submit" size="lg" disabled={status.kind === "loading" || googleBusy}>
               {status.kind === "loading" && <LoaderCircle className="spin" aria-hidden="true" />}
               Créer mon compte
             </Button>
 
-            <p className="account-form__login">Déjà membre&nbsp;? <Link to="/connexion">Se connecter</Link></p>
+            <p className="account-form__login">Déjà membre&nbsp;? <Link to={loginPath}>Se connecter</Link></p>
           </form>
         </section>
       </div>

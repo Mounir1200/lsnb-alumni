@@ -1,99 +1,46 @@
-import type { EmailOtpType } from "@supabase/supabase-js";
-import { AlertTriangle, CheckCircle2, LoaderCircle } from "lucide-react";
+import { AlertTriangle, LoaderCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { getPostAuthPath, getProfileCompletionPath } from "../lib/auth";
+import { resolveCallbackUser } from "../lib/authCallback";
 import { uploadPendingAvatar } from "../lib/avatarRepository";
+import { loadOnboardingProfile } from "../lib/onboardingRepository";
 import { supabase } from "../lib/supabase";
 
-type CallbackStatus = {
-  kind: "loading" | "error";
-  message: string;
-};
-
-function readCallbackError(url: URL) {
-  const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
-  return url.searchParams.get("error_description") ?? hash.get("error_description");
-}
-
 export function AuthCallbackPage() {
-  const { user, isLoading } = useAuth();
   const navigate = useNavigate();
-  const started = useRef(false);
-  const [status, setStatus] = useState<CallbackStatus>({
-    kind: "loading",
-    message: "Validation de votre adresse et ouverture de la session…",
-  });
+  const returnUrl = useRef(new URL(window.location.href));
+  const task = useRef<Promise<string> | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoading || started.current) return;
-    started.current = true;
-
-    const completeAuthentication = async () => {
-      if (!supabase) throw new Error("Supabase n’est pas configuré sur ce site.");
-
-      let confirmedUser = user;
-
-      if (!confirmedUser) {
-        const url = new URL(window.location.href);
-        const callbackError = readCallbackError(url);
-        if (callbackError) throw new Error(callbackError);
-
-        const code = url.searchParams.get("code");
-        const tokenHash = url.searchParams.get("token_hash");
-        const type = url.searchParams.get("type") as EmailOtpType | null;
-
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-        } else if (tokenHash && type) {
-          const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-          if (error) throw error;
-        }
-
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (!data.session) {
-          throw new Error("Le lien a été validé, mais aucune session n’a pu être ouverte. Connectez-vous avec votre mot de passe.");
-        }
-        confirmedUser = data.session.user;
-      }
-
+    let active = true;
+    task.current ??= (async () => {
+      if (!supabase) throw new Error("La connexion n’est pas configurée sur ce site.");
+      const user = await resolveCallbackUser(supabase.auth, returnUrl.current, () => new URL(window.location.href));
+      const profile = await loadOnboardingProfile(user.id);
+      const next = returnUrl.current.searchParams.get("next");
+      if (!profile.profile_completed) return getProfileCompletionPath(next);
       let photoState = "";
       try {
-        const photoUrl = await uploadPendingAvatar(confirmedUser);
-        if (photoUrl) photoState = "&photo=uploaded";
-      } catch {
-        photoState = "&photo=retry";
-      }
-
-      navigate(`/espace?confirmed=true${photoState}`, { replace: true });
-    };
-
-    void completeAuthentication().catch((error: unknown) => {
-      setStatus({
-        kind: "error",
-        message: error instanceof Error ? error.message : "Ce lien de confirmation n’est plus valide.",
-      });
+        if (await uploadPendingAvatar(user)) photoState = "&photo=uploaded";
+      } catch { photoState = "&photo=retry"; }
+      return next ? getPostAuthPath(next) : `/espace?confirmed=true${photoState}`;
+    })();
+    void task.current.then((path) => { if (active) navigate(path, { replace: true }); }).catch((cause: unknown) => {
+      if (active) setError(cause instanceof Error ? cause.message : "La connexion n’a pas abouti. Réessayez.");
     });
-  }, [isLoading, navigate, user]);
+    return () => { active = false; };
+  }, [navigate]);
 
+  const next = getPostAuthPath(returnUrl.current.searchParams.get("next"));
   return (
-    <div className="auth-state-page">
-      {status.kind === "loading" ? (
-        <LoaderCircle className="spin" aria-hidden="true" />
-      ) : (
-        <AlertTriangle aria-hidden="true" />
-      )}
-      <p className="eyebrow">Confirmation du compte</p>
-      <h1>{status.kind === "loading" ? "Un dernier passage." : "Le lien n’a pas abouti."}</h1>
-      <p>{status.message}</p>
-      {status.kind === "error" && (
-        <Link className="button button--primary button--md" to="/connexion">
-          <CheckCircle2 aria-hidden="true" />
-          Aller à la connexion
-        </Link>
-      )}
+    <div className="auth-state-page" role={error ? "alert" : "status"}>
+      {error ? <AlertTriangle aria-hidden="true" /> : <LoaderCircle className="spin" aria-hidden="true" />}
+      <p className="eyebrow">Connexion au réseau</p>
+      <h1>{error ? "La connexion n’a pas abouti." : "Un dernier passage."}</h1>
+      <p>{error ?? "Ouverture de votre session…"}</p>
+      {error && <Link className="button button--primary button--md" to={`/connexion?${new URLSearchParams({ next })}`}>Revenir à la connexion</Link>}
     </div>
   );
 }

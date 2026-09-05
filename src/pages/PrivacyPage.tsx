@@ -15,6 +15,14 @@ export function PrivacyPage() {
         moyen de contact. Le genre est facultatif et déclaré par la personne pour équilibrer
         les duos Highlight. Le mentorat est volontaire et peut être désactivé à tout moment.
       </p>
+      <h2>Inscription et connexion avec Google</h2>
+      <p>
+        Si vous choisissez Google, votre adresse e-mail, votre nom et votre photo de compte,
+        lorsqu’ils sont disponibles, sont transmis à Supabase pour vous identifier. Votre nom
+        et votre photo peuvent servir à préremplir votre profil. Vous complétez et vérifiez
+        les informations de votre parcours avant de rejoindre l’annuaire. Cette connexion
+        ne demande aucun accès à vos messages Gmail, à Google Drive ou à vos contacts Google.
+      </p>
       <h2 id="highlights">Les portraits Highlight</h2>
       <p>
         Chaque semaine, deux profils alumni actifs sont tirés au sort pour être mis à l’honneur.

@@ -3,6 +3,8 @@
 Pour l'équipe de développement, y compris les personnes qui débutent.
 État du code au 5 septembre 2026, commit de référence `f343098`.
 
+**Évolutions depuis ce commit :** les Highlights et l’authentification Google sont maintenant implémentés. Pour leur fonctionnement, les migrations, les tests et la configuration à jour, consulter le [guide Highlights](highlights.md) et le [guide Google](google-auth.md). Les mentions de ces fonctions comme travaux futurs ci-dessous décrivent l’ancien état du dépôt.
+
 ## 1. Comprendre l'existant
 
 - **Code GitHub :** [github.com/Mounir1200/lsnb-alumni](https://github.com/Mounir1200/lsnb-alumni)
