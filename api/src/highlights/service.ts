@@ -1,4 +1,4 @@
-import { buildFallbackArticle } from "./generator.js";
+import { buildFallbackArticle, generationFailureDetails } from "./generator.js";
 import type { GeneratedArticle, HighlightStore, SourceProfile } from "./types.js";
 import { currentWeekStart } from "./week.js";
 
@@ -6,7 +6,7 @@ export async function generateWeeklyHighlight(options: {
   store: HighlightStore;
   generate: (profile: SourceProfile) => Promise<GeneratedArticle>;
   now?: Date;
-  onFallback?: (slot: number) => void;
+  onFallback?: (slot: number, failure: ReturnType<typeof generationFailureDetails> | { code: "previous_attempt_interrupted" }) => void;
 }): Promise<{ outcome: "published" | "busy" | "empty"; generated: number; fallbacks: number }> {
   const weekStart = currentWeekStart(options.now);
   const claim = await options.store.claim(weekStart);
@@ -19,6 +19,7 @@ export async function generateWeeklyHighlight(options: {
   for (const article of articles) {
     if (article.generated_at) continue;
     let result: GeneratedArticle;
+    let failure: Parameters<NonNullable<typeof options.onFallback>>[1] = { code: "previous_attempt_interrupted" };
     if (article.ai_attempted_at) {
       // A process may have died after billing but before saving. Never pay for that article again.
       result = buildFallbackArticle(article.source_profile);
@@ -27,7 +28,8 @@ export async function generateWeeklyHighlight(options: {
       if (!acquired) throw new Error("Highlight generation lease is no longer available.");
       try {
         result = await options.generate(article.source_profile);
-      } catch {
+      } catch (error) {
+        failure = generationFailureDetails(error);
         result = buildFallbackArticle(article.source_profile);
       }
     }
@@ -37,7 +39,7 @@ export async function generateWeeklyHighlight(options: {
     generated += 1;
     if (result.generationMethod === "fallback") {
       fallbacks += 1;
-      options.onFallback?.(article.slot);
+      options.onFallback?.(article.slot, failure);
     }
   }
   if (!await options.store.publish(weekStart, leaseToken)) throw new Error("Highlight edition could not be published.");

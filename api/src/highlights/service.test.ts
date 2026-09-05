@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { generateWeeklyHighlight } from "./service.js";
+import { HighlightGenerationError } from "./generator.js";
 import { createHighlightStore, HighlightStorageError } from "./store.js";
 import type { GeneratedArticle, HighlightStore, SourceProfile, StoredArticle } from "./types.js";
 import { currentWeekStart, weekEnd } from "./week.js";
@@ -147,4 +148,19 @@ test("storage failure never exposes provider response or credentials", async () 
     assert.equal(error.message.includes("private"), false);
     return true;
   });
+});
+
+test("saved fallbacks report safe failure diagnostics and interrupted attempts separately", async () => {
+  const { store, articles } = fixture();
+  articles[1]!.ai_attempted_at = "2026-09-07T00:00:00Z";
+  const failures: unknown[] = [];
+  const result = await generateWeeklyHighlight({ store,
+    generate: async () => { throw new HighlightGenerationError("provider", "http_error", 401); },
+    onFallback: (slot, failure) => { failures.push({ slot, ...failure }); },
+  });
+  assert.equal(result.fallbacks, 2);
+  assert.deepEqual(failures, [
+    { slot: 1, code: "provider", reason: "http_error", status: 401 },
+    { slot: 2, code: "previous_attempt_interrupted" },
+  ]);
 });

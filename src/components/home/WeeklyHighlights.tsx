@@ -48,7 +48,7 @@ function HighlightPortrait({ article, index }: { article: HighlightArticle; inde
         <p className="highlight-portrait__source">
           {article.generationMethod === "ai"
             ? "Portrait rédigé avec l’aide de l’IA"
-            : "Portrait composé à partir du profil"}
+            : "Aperçu du profil · rédaction IA indisponible"}
         </p>
         <Link
           to={user ? profilePath : `/connexion?next=${encodeURIComponent(profilePath)}`}

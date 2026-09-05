@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test src/app.test.ts src/highlights/*.test.ts",
     "highlights:generate": "node dist/highlights/run.js",
+    "highlights:repair": "node dist/highlights/run.js --repair-fallbacks",
     "highlights:dev": "tsx src/highlights/run.ts"
   },
   "dependencies": {

@@ -64,3 +64,14 @@ export interface HighlightStore {
   save(weekStart: string, slot: number, leaseToken: string, article: GeneratedArticle): Promise<boolean>;
   publish(weekStart: string, leaseToken: string): Promise<boolean>;
 }
+
+export type HighlightRepairClaim = {
+  outcome: "claimed" | "unavailable" | "attempted";
+  repair_token?: string;
+  article?: StoredArticle;
+};
+
+export interface HighlightRepairStore extends HighlightStore {
+  claimRepair(weekStart: string, slot: number): Promise<HighlightRepairClaim>;
+  saveRepair(weekStart: string, slot: number, repairToken: string, article: GeneratedArticle): Promise<boolean>;
+}
