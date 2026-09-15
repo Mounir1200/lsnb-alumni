@@ -1,8 +1,10 @@
-import { ArrowRight, LoaderCircle, RefreshCw } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp, LoaderCircle, RefreshCw } from "lucide-react";
+import { useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { useWeeklyHighlight } from "../../hooks/useWeeklyHighlight";
 import type { HighlightArticle } from "../../lib/highlightRepository";
+import { buildHighlightPreviews } from "../../lib/highlightPreview";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { SectionPathBackdrop } from "../visual/SectionPathBackdrop";
@@ -14,8 +16,14 @@ const dateFormat = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "UTC",
 });
 
-function HighlightPortrait({ article, index }: { article: HighlightArticle; index: number }) {
+function HighlightPortrait({ article, index, preview }: {
+  article: HighlightArticle;
+  index: number;
+  preview: ReturnType<typeof buildHighlightPreviews>[number];
+}) {
   const { user } = useAuth();
+  const [expanded, setExpanded] = useState(false);
+  const storyId = useId();
   const name = `${article.firstName} ${article.lastName}`.trim();
   const profilePath = `/alumni/${encodeURIComponent(article.profileId)}`;
   const location = [article.city, article.country].filter(Boolean).join(", ");
@@ -42,7 +50,24 @@ function HighlightPortrait({ article, index }: { article: HighlightArticle; inde
 
       <h3 id={`highlight-title-${index}`}>{article.title}</h3>
       <div className="highlight-portrait__body">
-        {article.paragraphs.map((paragraph, paragraphIndex) => <p key={paragraphIndex}>{paragraph}</p>)}
+        <div id={storyId} className="highlight-portrait__text">
+          {expanded || !preview.hasMore
+            ? article.paragraphs.map((paragraph, paragraphIndex) => <p key={paragraphIndex}>{paragraph}</p>)
+            : <p>{preview.text}</p>}
+        </div>
+        {preview.hasMore && (
+          <button
+            type="button"
+            className="text-link text-link--dark highlight-portrait__toggle"
+            aria-expanded={expanded}
+            aria-controls={storyId}
+            aria-label={`${expanded ? "Réduire le portrait" : "Lire le portrait complet"} de ${name}`}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {expanded ? "Réduire le portrait" : "Lire le portrait complet"}
+            {expanded ? <ChevronUp size={17} aria-hidden="true" /> : <ChevronDown size={17} aria-hidden="true" />}
+          </button>
+        )}
       </div>
       <footer className="highlight-portrait__footer">
         <p className="highlight-portrait__source">
@@ -65,6 +90,7 @@ function HighlightPortrait({ article, index }: { article: HighlightArticle; inde
 
 export function WeeklyHighlights() {
   const { status, highlight, retry } = useWeeklyHighlight();
+  const previews = highlight ? buildHighlightPreviews(highlight.articles) : [];
 
   return (
     <section id="highlights" className="section featured-section highlights-section" aria-labelledby="highlights-title">
@@ -113,7 +139,14 @@ export function WeeklyHighlights() {
                 {" au "}<time dateTime={highlight.weekEnd}>{dateFormat.format(new Date(`${highlight.weekEnd}T00:00:00Z`))}</time>
               </p>
               <div className="highlights-grid">
-                {highlight.articles.map((article, index) => <HighlightPortrait key={article.profileId} article={article} index={index} />)}
+                {highlight.articles.map((article, index) => (
+                  <HighlightPortrait
+                    key={`${highlight.weekStart}-${article.profileId}-${article.title}`}
+                    article={article}
+                    index={index}
+                    preview={previews[index]!}
+                  />
+                ))}
               </div>
               <p className="highlights-source-note">
                 Ces portraits s’appuient sur les informations partagées dans les profils.

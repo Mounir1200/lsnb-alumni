@@ -1220,6 +1220,9 @@ textarea:focus-visible {
 }
 
 .highlight-portrait__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   color: #415463;
   font-size: 0.94rem;
   line-height: 1.85;
@@ -1227,6 +1230,25 @@ textarea:focus-visible {
 
 .highlight-portrait__body p {
   margin-bottom: 18px;
+}
+
+.highlight-portrait__text {
+  width: 100%;
+}
+
+.highlight-portrait__toggle {
+  min-height: 44px;
+  margin-top: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.highlight-portrait__toggle:focus-visible {
+  outline: 3px solid var(--mango);
+  outline-offset: 5px;
 }
 
 .highlight-portrait__footer {

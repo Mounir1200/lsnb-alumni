@@ -13,7 +13,8 @@ export function PrivacyPage() {
       <p>
         Nom, prénom, statut, promotion, parcours, spécialités, expérience, ville, pays, photo et
         moyen de contact. Le genre est facultatif et déclaré par la personne pour équilibrer
-        les duos Highlight. Le mentorat est volontaire et peut être désactivé à tout moment.
+        les duos Highlight et adapter les pronoms et les accords du portrait. Il n’est jamais
+        déduit du nom ou de la photo. Le mentorat est volontaire et peut être désactivé à tout moment.
       </p>
       <h2>Inscription et connexion avec Google</h2>
       <p>
@@ -31,7 +32,9 @@ export function PrivacyPage() {
       </p>
       <p>
         Pour rédiger ces portraits, les informations nécessaires sur le parcours sont envoyées
-        à Mistral, un service d’intelligence artificielle. Les données de connexion et les
+        à OpenAI, un service d’intelligence artificielle, avec une indication d’accord féminin,
+        masculin ou neutre issue de votre choix de genre. Sans précision, le texte utilise votre
+        prénom et des formulations neutres. Les données de connexion et les
         coordonnées enregistrées dans les champs de contact ne sont pas transmises. Le texte est fondé sur
         les informations du profil, puis enregistré pour la semaine ; chaque visite ne déclenche
         pas une nouvelle rédaction.
@@ -39,7 +42,7 @@ export function PrivacyPage() {
       <p>
         Vous pouvez corriger vos informations dans votre espace membre. Un portrait déjà publié
         reflète les informations du profil au moment de sa rédaction. N’ajoutez pas de coordonnées
-        privées dans le texte de votre parcours : ce texte peut être transmis à Mistral et repris
+        privées dans le texte de votre parcours : ce texte peut être transmis à OpenAI et repris
         dans un portrait public.
       </p>
       <h2>Mode démonstration</h2>

@@ -19,6 +19,8 @@ type Claim = {
 let db: PGlite
 let week: string
 let legacyGender: unknown
+let legacySourcesBefore: Record<string, unknown>[]
+let legacySourcesAfter: Record<string, unknown>[]
 
 async function value<T>(sql: string, params: unknown[] = []): Promise<T> {
   const result = await db.query<{ result: T }>(sql, params)
@@ -44,7 +46,7 @@ const claimAi = (lease: string, slot = 1) => value<boolean>(
 )
 const save = (lease: string, slot = 1, method = 'fallback', paragraphs: unknown = ['Profil vérifié.']) => value<boolean>(
   'select public.save_highlight_article($1::date, $2, $3::uuid, $4, $5::jsonb, $6, $7) as result',
-  [week, slot, lease, 'Un parcours à découvrir', JSON.stringify(paragraphs), method, 'mistral-small-latest'],
+  [week, slot, lease, 'Un parcours à découvrir', JSON.stringify(paragraphs), method, 'gpt-5-nano'],
 )
 const publish = (lease: string) => value<boolean>(
   'select public.publish_weekly_highlight($1::date, $2::uuid) as result', [week, lease],
@@ -61,7 +63,7 @@ function leaseOf(result: Claim) {
 describe('weekly Highlights PostgreSQL migration and RPCs', { concurrency: false }, () => {
   before(async () => {
     db = new PGlite()
-    // Minimal Supabase-owned objects; both application migrations run verbatim.
+    // Minimal Supabase-owned objects; application migrations run verbatim.
     await db.exec(`
       create role anon;
       create role authenticated;
@@ -80,10 +82,23 @@ describe('weekly Highlights PostgreSQL migration and RPCs', { concurrency: false
     await db.exec(await readFile(new URL('../../../supabase/migrations/202609050001_weekly_highlights.sql', import.meta.url), 'utf8'))
     legacyGender = await value('select gender as result from public.profiles limit 1')
     week = await value<string>("select date_trunc('week', timezone('Africa/Ouagadougou', clock_timestamp()))::date::text as result")
+    await seed('male')
+    await seed('female')
+    legacySourcesBefore = (await claim()).articles.map(article => article.source_profile)
+    await db.exec(await readFile(new URL('../../../supabase/migrations/202609150001_highlight_snapshot_gender.sql', import.meta.url), 'utf8'))
+    await db.exec("update public.profiles set gender = 'unspecified'")
+    await expireLease()
+    legacySourcesAfter = (await claim()).articles.map(article => article.source_profile)
   })
 
   beforeEach(async () => { await db.exec('truncate public.weekly_highlights, auth.users cascade') })
   after(async () => { await db?.close() })
+
+  it('keeps pre-migration snapshots unchanged and gender unknown during lease recovery', () => {
+    assert.equal(legacySourcesBefore.length, 2)
+    assert.deepEqual(legacySourcesAfter, legacySourcesBefore)
+    for (const source of legacySourcesAfter) assert.equal(Object.hasOwn(source, 'gender'), false)
+  })
 
   it('keeps legacy gender unknown and validates explicit signup metadata', async () => {
     assert.equal(legacyGender, null)
@@ -111,9 +126,12 @@ describe('weekly Highlights PostgreSQL migration and RPCs', { concurrency: false
     const result = await claim()
     assert.equal(result.outcome, 'claimed')
     assert.deepEqual(new Set(result.articles.map(article => article.profile_id)), new Set([male, female]))
-    const expected = ['id', 'first_name', 'last_name', 'graduation_year', 'specialty', 'specialties', 'domain',
+    const expected = ['id', 'first_name', 'last_name', 'gender', 'graduation_year', 'specialty', 'specialties', 'domain',
       'city', 'country', 'experience', 'photo_url', 'offers_mentoring', 'mentoring_topics'].sort()
-    for (const article of result.articles) assert.deepEqual(Object.keys(article.source_profile).sort(), expected)
+    for (const article of result.articles) {
+      assert.deepEqual(Object.keys(article.source_profile).sort(), expected)
+      assert.equal(article.source_profile.gender, article.profile_id === male ? 'male' : 'female')
+    }
   })
 
   for (const gender of ['male', 'female', null, 'unspecified']) {
@@ -122,6 +140,7 @@ describe('weekly Highlights PostgreSQL migration and RPCs', { concurrency: false
       const result = await claim()
       assert.equal(result.outcome, 'claimed')
       assert.deepEqual(new Set(result.articles.map(article => article.profile_id)), new Set(ids))
+      for (const article of result.articles) assert.equal(article.source_profile.gender, gender)
     })
   }
 
@@ -144,7 +163,7 @@ describe('weekly Highlights PostgreSQL migration and RPCs', { concurrency: false
     const first = claims.find(result => result.outcome === 'claimed')!
     const firstLease = leaseOf(first)
     assert.equal(await claimAi(firstLease), true)
-    await db.exec("update public.profiles set experience = 'Profil modifié depuis le tirage'")
+    await db.exec("update public.profiles set experience = 'Profil modifié depuis le tirage', gender = 'unspecified'")
     await seed('male')
     await expireLease()
     const recovered = await claim()

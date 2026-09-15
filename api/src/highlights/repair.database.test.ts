@@ -8,6 +8,7 @@ let db: PGlite;
 let week: string;
 let legacyBefore: Record<string, unknown>[];
 let legacyAfter: Record<string, unknown>[];
+let legacySource: Record<string, unknown>;
 const badToken = "00000000-0000-0000-0000-000000000000";
 async function value<T>(sql: string, params: unknown[] = []): Promise<T> {
   const result = await db.query<{ result: T }>(sql, params);
@@ -92,6 +93,8 @@ describe("bounded administrative Highlight fallback repairs in PostgreSQL", { co
     legacyBefore = await value("select jsonb_agg(to_jsonb(r) order by slot) as result from public.highlight_article_repairs r");
     await db.exec(await readFile(new URL("../../../supabase/migrations/202609050004_highlight_repair_retries.sql", import.meta.url), "utf8"));
     legacyAfter = await value("select jsonb_agg(to_jsonb(r) order by slot) as result from public.highlight_article_repairs r");
+    legacySource = await value("select source_profile as result from public.highlight_articles where slot = 1");
+    await db.exec(await readFile(new URL("../../../supabase/migrations/202609150001_highlight_snapshot_gender.sql", import.meta.url), "utf8"));
   });
   beforeEach(async () => { await db.exec("truncate public.weekly_highlights, auth.users cascade"); });
   after(async () => { await db?.close(); });
@@ -123,6 +126,27 @@ describe("bounded administrative Highlight fallback repairs in PostgreSQL", { co
     assert.deepEqual(await originals(), initial);
     assert.deepEqual(await value("select published_at as result from public.weekly_highlights"), published);
     assert.equal(await value("select title as result from public.highlight_article_repairs"), "Awa Test, les statistiques en pratique");
+  });
+
+  it("repairs a legacy snapshot without adding gender from the current profile", async () => {
+    assert.equal(Object.hasOwn(legacySource, "gender"), false);
+    await seed();
+    await db.query("insert into public.weekly_highlights (week_start, status, published_at) values ($1::date, 'published', clock_timestamp())", [week]);
+    const profiles = await db.query<{ id: string }>("select id from public.profiles order by id");
+    for (const [index, profile] of profiles.rows.entries()) {
+      await db.query(`insert into public.highlight_articles (
+        week_start, slot, profile_id, source_profile, title, paragraphs, generation_method, generated_at
+      ) values ($1::date, $2, $3::uuid, $4::jsonb, 'Original', '["Secours"]'::jsonb, 'fallback', clock_timestamp())`,
+      [week, index + 1, profile.id, JSON.stringify({ ...legacySource, id: profile.id })]);
+    }
+    const beforeRepair = await originals();
+    const reservation = await claim();
+    assert.equal(reservation.outcome, "claimed");
+    assert.ok(reservation.article);
+    assert.equal(Object.hasOwn(reservation.article.source_profile, "gender"), false);
+    assert.ok(reservation.repair_token);
+    assert.equal(await save(reservation.repair_token), true);
+    assert.deepEqual(await originals(), beforeRepair);
   });
 
   it("refuses AI articles, unpublished editions, missing editions and non-current slots", async () => {
