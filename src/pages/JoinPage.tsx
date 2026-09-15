@@ -196,7 +196,7 @@ export function JoinPage() {
                 <option value="female">Femme</option>
                 <option value="male">Homme</option>
               </select>
-              <small id="join-gender-help">Cette information déclarée sert à équilibrer les duos Highlight. Elle n’est jamais déduite de votre nom ou de votre photo.</small>
+              <small id="join-gender-help">Ce choix sert à équilibrer les duos Highlight et à adapter les pronoms et les accords de votre portrait. Sans précision, le texte utilise votre prénom et des formulations neutres.</small>
             </label>
 
             <div className="form-row">
@@ -264,7 +264,7 @@ export function JoinPage() {
               <p className="highlight-disclosure">
                 Votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
                 sans connexion. Les informations de votre parcours sont alors transmises à
-                Mistral pour rédiger le portrait. Les champs de contact ne sont pas transmis ;
+                OpenAI pour rédiger le portrait. Les champs de contact ne sont pas transmis ;
                 évitez d’ajouter des coordonnées privées dans le texte de votre parcours.
                 {" "}<Link to="/confidentialite#highlights">En savoir plus</Link>
               </p>

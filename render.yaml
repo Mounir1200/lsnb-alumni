@@ -40,7 +40,7 @@ services:
 
   # Independent job: runs even when the free API service is asleep.
   # Second run recovers an interrupted job after the 15-minute DB lease expires.
-  # It reuses the same edition and never repeats an attempted Mistral request.
+  # It reuses the same edition and never repeats an attempted OpenAI request.
   - type: cron
     name: lsnb-alumni-highlights
     runtime: node
@@ -57,7 +57,7 @@ services:
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false
-      - key: MISTRAL_API_KEY
+      - key: OPENAI_API_KEY
         sync: false
-      - key: MISTRAL_MODEL
-        value: mistral-small-latest
+      - key: OPENAI_MODEL
+        value: gpt-5-nano

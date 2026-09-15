@@ -62,7 +62,7 @@ VITE_API_URL=http://localhost:4000
 
 Redémarrer le serveur local après une modification de ces valeurs. Sans environnement d'essai fourni, le mode démonstration reste disponible.
 
-Pour personnaliser l’API en local, copier `api/.env.example` vers `api/.env`. `VITE_API_URL`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY` sont utilisés pour la rubrique Highlight. Le job hebdomadaire utilise aussi `MISTRAL_API_KEY`. Ces deux clés sont strictement réservées au backend : elles ne doivent jamais utiliser le préfixe `VITE_` ni être incluses dans le navigateur. Ne pas ajouter les fichiers contenant de vraies valeurs à GitHub.
+Pour personnaliser l’API en local, copier `api/.env.example` vers `api/.env`. `VITE_API_URL`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY` sont utilisés pour la rubrique Highlight. Seul le job hebdomadaire utilise aussi `OPENAI_API_KEY` et `OPENAI_MODEL=gpt-5-nano`. Les clés `SUPABASE_SECRET_KEY` et `OPENAI_API_KEY` sont strictement réservées au backend : elles ne doivent jamais utiliser le préfixe `VITE_` ni être incluses dans le navigateur. Ne pas ajouter les fichiers contenant de vraies valeurs à GitHub.
 
 Les développeurs préparent les modifications du code et les fichiers de migration SQL dans une branche, puis les proposent dans une pull request pour relecture. Le responsable coordonne leur application à Supabase. Le [schéma initial](supabase/migrations/202609040001_initial_schema.sql) sert de référence pour comprendre la base existante.
 
@@ -101,7 +101,7 @@ Les services et leurs variables sont administrés par le responsable du projet. 
 
 La mise en production est coordonnée par le responsable. La configuration prévoit un déploiement automatique lorsqu'un commit est envoyé sur GitHub dans la branche suivie par Render : l'intégration d'une pull request peut donc déclencher une publication. Le responsable coordonne cet envoi avec les éventuelles migrations et mises à jour des variables.
 
-Les Highlights suivent le flux `frontend → API → Supabase` pour la lecture publique. Le job choisit deux alumni actifs au hasard avec rotation, privilégie un duo homme–femme et accepte les autres duos lorsque nécessaire. Mistral Small rédige les portraits à partir des profils ; la sélection et les textes sont conservés en base. Aucun appel IA n’a lieu au chargement des pages et Redis n’est pas nécessaire. La [documentation Highlights](docs/highlights.md) détaille la migration, les réglages, les reprises, les coûts et les limites des contrôles de fidélité.
+Les Highlights suivent le flux `frontend → API → Supabase` pour la lecture publique. Le job choisit deux alumni actifs au hasard avec rotation, privilégie un duo homme–femme et accepte les autres duos lorsque nécessaire. GPT-5 nano d’OpenAI rédige les portraits à partir des profils ; la sélection et les textes sont conservés en base. Aucun appel IA n’a lieu au chargement des pages et Redis n’est pas nécessaire. La [documentation Highlights](docs/highlights.md) détaille la migration, les réglages, les reprises, les coûts et les limites des contrôles de fidélité.
 
 L’inscription et la connexion Google sont implémentées via Supabase Auth, avec complétion du profil au premier accès. Le [guide d’activation Google](docs/google-auth.md) détaille la nouvelle migration et les réglages Google/Supabase. Les liens LinkedIn et portfolio restent à développer.
 

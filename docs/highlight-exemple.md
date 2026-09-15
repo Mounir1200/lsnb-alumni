@@ -1,13 +1,11 @@
 # Mounir DABIRE, de la data à l’IA pédagogique
 
-À l’ESSCA, à Angers, Mounir DABIRE travaille sur un assistant pédagogique qui répond aux utilisateurs à partir des ressources de l’établissement. Pour ce membre de la promotion 2020 du LSNB, l’intelligence artificielle prend ainsi la forme d’un outil ancré dans les contenus d’une école.
+À l’ESSCA, à Angers, Mounir DABIRE développe un assistant pédagogique qui s’appuie sur les ressources de l’établissement pour répondre aux questions des utilisateurs. Ancien élève du LSNB, promotion 2020, il y travaille aujourd’hui comme développeur IA.
 
-Le parcours de formation passe par les classes préparatoires de La Salle, à Ouagadougou, puis par l’ESAIP, en France, avec une spécialisation en Big Data. Des échanges universitaires en Lituanie et en Allemagne complètent ces études d’ingénieur. Du Burkina Faso à ces établissements européens, les étapes dessinent un parcours de formation international.
+Son parcours passe par les classes préparatoires de La Salle, à Ouagadougou, puis par l’ESAIP, en France, où il se spécialise en Big Data. Sa formation d’ingénieur le conduit aussi en Lituanie et en Allemagne, à l’occasion d’échanges universitaires.
 
-L’expérience dans la data chez Moov Africa Burkina précède les travaux en intelligence artificielle à l’ESSCA. Mounir y exerce aujourd’hui comme développeur IA. Avec l’assistant pédagogique, la recherche d’information se retrouve au cœur d’une application concrète : retrouver dans les ressources disponibles de quoi répondre à une question.
-
-Cette activité se prolonge dans des projets personnels et open source autour des agents IA, de leur mémoire et de la recherche d’information. En parallèle du travail à l’ESSCA, Mounir développe ainsi des outils consacrés à la manière dont ces agents conservent et retrouvent des informations.
+Son expérience dans la data chez Moov Africa Burkina précède ses travaux à l’ESSCA. En parallèle de son activité professionnelle, Mounir développe des projets personnels et open source autour des agents IA. Il y travaille sur leur mémoire et la recherche d’information : comment ces agents conservent et retrouvent les informations.
 
 ---
 
-Exemple éditorial préparé dans cette tâche uniquement à partir des informations visibles sur le profil partagé. Il illustre le style demandé au générateur ; ce n’est pas une sortie de l’API Mistral et il n’a pas été enregistré dans la base ni publié sur le site.
+Exemple éditorial préparé uniquement à partir des informations visibles sur le profil partagé. Il illustre le style demandé au générateur, sans être envoyé au modèle. Ce texte n’est pas une sortie de l’API et n’a pas été enregistré dans la base ni publié sur le site.

@@ -180,7 +180,7 @@ test("a 429 is recorded with its delay and leaves the second profile unattempted
   assert.deepEqual(recordedFailures.get(1), { code: "rate_limited", httpStatus: 429, retryAfterSeconds: 120 });
 });
 
-test("explicit retries pass the admin flag and report cooldown without calling Mistral", async () => {
+test("explicit retries pass the admin flag and report cooldown without calling OpenAI", async () => {
   const { store } = fixture();
   const skipped: unknown[] = [];
   store.claimRepair = async (_, slot, retryFailed) => {
@@ -189,7 +189,7 @@ test("explicit retries pass the admin flag and report cooldown without calling M
   };
   const result = await repairWeeklyHighlight({ store, now, retryFailed: true,
     onSkip: (slot, outcome) => skipped.push({ slot, outcome }),
-    generate: async () => { throw new Error("Must not call Mistral during cooldown."); },
+    generate: async () => { throw new Error("Must not call OpenAI during cooldown."); },
   });
   assert.deepEqual(result, { outcome: "unchanged", attempted: 0, repaired: 0, failures: 0 });
   assert.deepEqual(skipped, [{ slot: 1, outcome: "cooldown" }, { slot: 2, outcome: "attempted" }]);

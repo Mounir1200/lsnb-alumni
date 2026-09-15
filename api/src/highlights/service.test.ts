@@ -100,7 +100,7 @@ test("a rejected AI claim stops processing before any provider request or save",
   assert.equal(calls, 0);
 });
 
-test("insufficient pool and busy edition never invoke Mistral", async () => {
+test("insufficient pool and busy edition never invoke OpenAI", async () => {
   const { store } = fixture();
   let calls = 0;
   for (const outcome of ["empty", "busy", "published"] as const) {

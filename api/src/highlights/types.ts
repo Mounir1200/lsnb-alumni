@@ -2,6 +2,8 @@ export type SourceProfile = {
   id: string;
   first_name: string;
   last_name: string;
+  // Legacy immutable snapshots predate this field; absence means unknown.
+  gender?: "male" | "female" | "unspecified" | null;
   graduation_year: number | null;
   specialty: string;
   specialties: string[];

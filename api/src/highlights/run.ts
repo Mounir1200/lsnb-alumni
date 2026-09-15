@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { loadConfig } from "../config.js";
-import { createMistralGenerator, generationFailureDetails } from "./generator.js";
+import { createOpenAIGenerator, generationFailureDetails } from "./generator.js";
 import { repairWeeklyHighlight } from "./repair.js";
 import { generateWeeklyHighlight } from "./service.js";
 import { createHighlightStore } from "./store.js";
@@ -12,14 +12,14 @@ try {
     throw new Error("Usage: highlights:generate [--repair-fallbacks [--retry-failed]]");
   }
   const config = loadConfig();
-  const apiKey = process.env.MISTRAL_API_KEY?.trim();
-  const model = process.env.MISTRAL_MODEL?.trim() || "mistral-small-latest";
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const model = process.env.OPENAI_MODEL?.trim() || "gpt-5-nano";
   // Configuration errors must not reserve a week or consume the single AI attempt.
   if (!config.highlightStorage || !apiKey) {
-    throw new Error("Set SUPABASE_URL, SUPABASE_SECRET_KEY and MISTRAL_API_KEY before running Highlights.");
+    throw new Error("Set SUPABASE_URL, SUPABASE_SECRET_KEY and OPENAI_API_KEY before running Highlights.");
   }
   const store = createHighlightStore(config.highlightStorage);
-  const generate = createMistralGenerator({ apiKey, model });
+  const generate = createOpenAIGenerator({ apiKey, model });
   const result = args.includes("--repair-fallbacks")
     ? await repairWeeklyHighlight({ store, generate, retryFailed: args.includes("--retry-failed"),
       onSkip: (slot, outcome) => console.info(JSON.stringify({ event: "highlight_repair_skipped", slot, reason: outcome })),
