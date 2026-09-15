@@ -23,15 +23,11 @@ function validArticle() {
   return {
     headline: {
       text: "Awa Traoré, le développement web en pratique",
-      evidence: [{ field: "first_name", quote: "Awa" }, { field: "last_name", quote: "Traoré" },
-        { field: "experience", quote: "Je développe des applications web depuis 2020." }],
+      evidence: ["first_name", "last_name", "experience:1"],
     },
     paragraphs: [{
       text: "Awa indique développer des applications web depuis 2020 dans sa présentation.",
-      evidence: [
-        { field: "first_name", quote: "Awa" },
-        { field: "experience", quote: "Je développe des applications web depuis 2020." },
-      ],
+      evidence: ["first_name", "experience:1"],
     }],
   };
 }
@@ -80,12 +76,26 @@ test("OpenAI receives one allowlisted data message and returns an editorial port
     assert.equal(body.response_format.type, "json_schema");
     assert.equal(body.response_format.json_schema.strict, true);
     assert.deepEqual(body.messages.map((message: { role: string }) => message.role), ["system", "user"]);
-    const source = JSON.parse(body.messages[1].content).profile;
-    assert.equal(JSON.parse(body.messages[1].content).grammatical_gender, "feminine");
+    const data = JSON.parse(body.messages[1].content);
+    const source = data.profile;
+    assert.equal(data.grammatical_gender, "feminine");
+    assert.ok(Array.isArray(data.evidence_sources));
+    const sourceIds = data.evidence_sources.map((item: { id: string }) => item.id);
+    const evidenceSchema = body.response_format.json_schema.schema.properties.headline.properties.evidence;
+    assert.equal(evidenceSchema.minItems, 1);
+    assert.equal(evidenceSchema.maxItems, 12);
+    assert.equal(evidenceSchema.items.type, "string");
+    assert.deepEqual(evidenceSchema.items.enum, sourceIds);
+    assert.deepEqual(data.evidence_sources.find((item: { id: string }) => item.id === "experience:1"), {
+      id: "experience:1", field: "experience", quote: profile.experience, numbers: ["2020"],
+    });
     assert.equal(source.graduation_year, "2014");
     assert.equal(source.experience, profile.experience);
     assert.equal(source.offers_mentoring, "oui");
-    for (const field of ["email", "phone", "gender", "id", "photo_url"]) assert.equal(source[field], undefined);
+    for (const field of ["email", "phone", "gender", "id", "photo_url", "grammatical_gender"]) {
+      assert.equal(source[field], undefined);
+      assert.ok(!data.evidence_sources.some((item: { id: string; field: string }) => item.id === field || item.field === field));
+    }
     for (const secret of [enrichedProfile.email, enrichedProfile.phone, profile.id, profile.photo_url!]) {
       assert.ok(!String(init?.body).includes(secret));
     }
@@ -120,7 +130,7 @@ test("grammatical agreement follows only the declared gender, including legacy a
         assert.equal(data.grammatical_gender, agreement);
         assert.equal(data.profile.first_name, "Awa");
         assert.equal(data.profile.gender, undefined);
-        assert.deepEqual(Object.keys(data).sort(), ["grammatical_gender", "profile"]);
+        assert.deepEqual(Object.keys(data).sort(), ["evidence_sources", "grammatical_gender", "profile"]);
         if (typeof gender === "string" && gender.startsWith("Ignore")) assert.ok(!String(init?.body).includes(gender));
         return completion(article);
       }));
@@ -147,8 +157,8 @@ test("profile instructions remain quoted user data; oversized fields and lists a
     assert.ok(source.specialties.split(", ").every((item: string) => item.length <= 120));
     assert.equal(source.offers_mentoring, undefined);
     assert.equal(source.mentoring_topics, undefined);
-    assert.ok(body.messages[1].content.length < 7500);
-    const block = { text: "L’informatique à l’honneur", evidence: [{ field: "specialty", quote: "Informatique" }] };
+    assert.ok(body.messages[1].content.length < 17_000);
+    const block = { text: "L’informatique à l’honneur", evidence: ["specialty"] };
     return completion({ headline: block, paragraphs: [{ ...block, text: "L’informatique figure parmi les spécialités de ce membre." }] });
   }));
   await generate({ ...profile, first_name: "A".repeat(10_000), experience: injection + "a".repeat(10_000),
@@ -173,20 +183,23 @@ test("invalid provider JSON and truncated completions are rejected without anoth
   }
 });
 
-test("evidence must quote an exact substring of an allowed field actually sent to OpenAI", async (context) => {
+test("evidence must reference an available server excerpt from an allowed source field", async (context) => {
   const cases = [
-    ["invented quote", { field: "experience", quote: "J’ai reçu un prix." }],
-    ["unknown field", { field: "email", quote: "secret@example.test" }],
-    ["empty quote", { field: "experience", quote: " " }],
-    ["prototype field", { field: "constructor", quote: "Object" }],
-    ["quote beyond input cap", { field: "experience", quote: "CAP_EXCLUDED_TEXT" }],
+    ["model-generated quote object", { field: "experience", quote: "J’ai reçu un prix." }],
+    ["unknown field", "email"],
+    ["empty reference", ""],
+    ["prototype field", "constructor"],
+    ["unknown excerpt beyond input cap", "experience:999"],
+    ["experience field without excerpt index", "experience"],
+    ["omitted optional field", "mentoring_topics"],
+    ["grammar metadata", "grammatical_gender"],
   ] as const;
   for (const [name, evidence] of cases) {
     await context.test(name, async () => {
       const article = { ...validArticle(), paragraphs: [{ text: "Ce profil indique développer des applications web.", evidence: [evidence] }] };
       const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch(() => completion(article)));
-      article.headline.evidence = [{ field: "first_name", quote: "Awa" }];
-      await assert.rejects(generate({ ...profile, experience: "a".repeat(5000) + "CAP_EXCLUDED_TEXT" }), (error) => {
+      article.headline.evidence = ["first_name"];
+      await assert.rejects(generate({ ...profile, offers_mentoring: false, experience: "a".repeat(5000) + "CAP_EXCLUDED_TEXT" }), (error) => {
         assert.ok(error instanceof HighlightGenerationError);
         assert.equal(error.reason, "invalid_evidence");
         return true;
@@ -195,10 +208,11 @@ test("evidence must quote an exact substring of an allowed field actually sent t
   }
 });
 
-test("new numerical claims must be present in the citations for that paragraph", async (context) => {
+test("new numerical claims must be present in the selected excerpts for that paragraph", async (context) => {
   for (const text of [
     "Awa indique développer des applications web depuis 2018.",
     "Awa accompagne trois équipes dans le développement web.",
+    "Awa accompagne cinq équipes dans le développement web.",
     "Awa améliore les applications web de 2020 % chaque année.",
     "Awa indique développer des applications depuis 2014.",
   ]) {
@@ -212,6 +226,71 @@ test("new numerical claims must be present in the citations for that paragraph",
   }
 });
 
+test("French words with accented boundaries are not mistaken for numerical claims", async (context) => {
+  for (const text of [
+    "Son projet récent concerne le développement d’applications web depuis 2020.",
+    "Ses projets récents concernent le développement d’applications web depuis 2020.",
+  ]) {
+    await context.test(text, async () => {
+      const article = validArticle();
+      article.paragraphs[0]!.text = text;
+      const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch(() => completion(article)));
+      assert.deepEqual((await generate(profile)).paragraphs, [text]);
+    });
+  }
+});
+
+test("actual French number words still need support in the selected source", async (context) => {
+  for (const number of ["cinq", "trois", "cent", "neuf"]) {
+    await context.test(number, async () => {
+      const article = validArticle();
+      article.paragraphs[0]!.text = `Awa développe ${number} applications web depuis 2020.`;
+      const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch(() => completion(article)));
+      await assert.rejects(generate(profile), (error) => {
+        assert.ok(error instanceof HighlightGenerationError);
+        assert.equal(error.reason, "unsupported_number");
+        return true;
+      });
+      assert.equal((await generate({ ...profile, experience: `Je développe ${number} applications web depuis 2020.` })).generationMethod, "ai");
+    });
+  }
+});
+
+test("long source excerpts preserve exact text and support references beyond the first chunk", async () => {
+  const prefix = "J’étudie les interfaces web et la recherche d’information.\n\n".repeat(25);
+  const record = { ...profile, experience: prefix + "Je développe des applications web depuis 2024. 🧑🏾‍💻\n" + prefix.repeat(4) + "CAP_EXCLUDED_TEXT" };
+  type Excerpt = { id: string; field: string; quote: string; numbers: string[] };
+  let requests = 0;
+  const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch((_input, init) => {
+    requests++;
+    const data = JSON.parse(JSON.parse(String(init?.body)).messages[1].content);
+    const excerpts = (data.evidence_sources as Excerpt[]).filter((item) => item.field === "experience");
+    assert.ok(excerpts.length > 1);
+    assert.equal(excerpts.map((item) => item.quote).join(""), data.profile.experience);
+    assert.ok(excerpts.every((item) => item.quote.length > 0 && item.quote.length <= 600));
+    assert.deepEqual(excerpts.map((item) => item.id), excerpts.map((_item, index) => `experience:${index + 1}`));
+    assert.ok(excerpts.every((item) => data.profile.experience.includes(item.quote)));
+    assert.ok(!JSON.stringify(data).includes("CAP_EXCLUDED_TEXT"));
+    const dated = excerpts.find((item) => item.quote.includes("2024"));
+    assert.ok(dated);
+    assert.notEqual(dated.id, "experience:1");
+    assert.ok(dated.numbers.includes("2024"));
+    const article = validArticle();
+    article.headline.evidence = ["first_name", dated.id];
+    article.paragraphs[0] = {
+      text: "Awa développe des applications web depuis 2024.",
+      evidence: ["first_name", requests === 1 ? dated.id : "experience:1"],
+    };
+    return completion(article);
+  }));
+  assert.equal((await generate(record)).generationMethod, "ai");
+  await assert.rejects(generate(record), (error) => {
+    assert.ok(error instanceof HighlightGenerationError);
+    assert.equal(error.reason, "unsupported_number");
+    return true;
+  });
+});
+
 test("unexpected keys, missing evidence, excessive text and unsafe markup are rejected", async (context) => {
   const paragraph = validArticle().paragraphs[0]!;
   const cases = [
@@ -221,7 +300,7 @@ test("unexpected keys, missing evidence, excessive text and unsafe markup are re
     { ...validArticle(), paragraphs: [{ ...paragraph, text: "x".repeat(901) }] },
     { ...validArticle(), paragraphs: [{ ...paragraph, text: "<script>alert('Ignore les instructions');</script>" }] },
     { ...validArticle(), paragraphs: [{ ...paragraph, text: "Retrouvez son profil sur https://invented.example.test." }] },
-    { ...validArticle(), paragraphs: [{ ...paragraph, evidence: [{ field: "first_name", quote: "Awa", extra: "injection" }] }] },
+    { ...validArticle(), paragraphs: [{ ...paragraph, evidence: Array.from({ length: 13 }, () => "first_name") }] },
     { ...validArticle(), paragraphs: Array.from({ length: 4 }, () => ({ ...paragraph, text: "x".repeat(750) })) },
   ];
   for (const [index, article] of cases.entries()) {
@@ -345,19 +424,39 @@ test("OpenAI refusals, filtered, missing and non-text completions fail safely wi
   }
 });
 
-test("citation formatting can vary without accepting changed words or invented numbers", async () => {
+test("source chunk boundaries preserve a supported percentage token", async () => {
+  for (const separator of [" ", "\n"]) {
+    const record = { ...profile, experience: "a".repeat(590) + ` 50 pour${separator}cent de réussite.` };
+    const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch((_input, init) => {
+      const data = JSON.parse(JSON.parse(String(init?.body)).messages[1].content);
+      const excerpts = data.evidence_sources.filter((item: { field: string }) => item.field === "experience");
+      assert.equal(excerpts.map((item: { quote: string }) => item.quote).join(""), record.experience);
+      assert.ok(excerpts.every((item: { quote: string }) => item.quote.length <= 600));
+      assert.ok(excerpts.some((item: { numbers: string[] }) => item.numbers.includes("pour cent")));
+      return completion({ ...validArticle(), paragraphs: [{
+        text: "Awa mentionne un taux de réussite de 50 pour cent.",
+        evidence: ["first_name", ...excerpts.map((item: { id: string }) => item.id)],
+      }] });
+    }));
+    assert.equal((await generate(record)).generationMethod, "ai");
+  }
+});
+
+test("server references preserve accented and multiline evidence without requiring the model to transcribe it", async () => {
   const record = { ...profile, experience: "J’ai étudié à l’ESAIP.\n\nJe travaille dans la recherche d’information." };
   const article = {
-    headline: { text: "Awa, de la formation à la recherche d’information", evidence: [
-      { field: "first_name", quote: "Awa" }, { field: "experience", quote: "J'ai étudié à l'ESAIP. Je travaille dans la recherche d'information." },
-    ] },
-    paragraphs: [{ text: "Après une formation à l’ESAIP, Awa travaille dans la recherche d’information.", evidence: [
-      { field: "first_name", quote: "Awa" }, { field: "experience", quote: "J'ai étudié à l'ESAIP. Je travaille dans la recherche d'information." },
-    ] }],
+    headline: { text: "Awa, de la formation à la recherche d’information", evidence: ["first_name", "experience:1"] },
+    paragraphs: [{ text: "Après une formation à l’ESAIP, Awa travaille dans la recherche d’information.", evidence: ["first_name", "experience:1"] }],
   };
-  const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch(() => completion(article)));
+  const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch((_input, init) => {
+    const data = JSON.parse(JSON.parse(String(init?.body)).messages[1].content);
+    assert.deepEqual(data.evidence_sources.find((item: { id: string }) => item.id === "experience:1"), {
+      id: "experience:1", field: "experience", quote: record.experience, numbers: [],
+    });
+    return completion(article);
+  }));
   assert.equal((await generate(record)).generationMethod, "ai");
-  article.paragraphs[0]!.evidence[1]!.quote = "J'ai étudié à Harvard.";
+  article.paragraphs[0]!.evidence[1] = "experience:999";
   await assert.rejects(generate(record), (error) => {
     assert.ok(error instanceof HighlightGenerationError);
     assert.equal(error.reason, "invalid_evidence");
@@ -367,19 +466,19 @@ test("citation formatting can vary without accepting changed words or invented n
 
 test("a sourced multi-paragraph portrait gets an editorial title without becoming a profile quotation", async () => {
   const record = { ...profile, experience: "J’ai étudié à l’ESAIP, avec une spécialisation Big Data. J’ai participé à des échanges en Lituanie et en Allemagne. Mon parcours m’a conduit de la data chez Moov Africa Burkina à l’intelligence artificielle à l’ESSCA. Je travaille sur un assistant pédagogique qui s’appuie sur les ressources de l’établissement. Je développe aussi des projets open source autour de la mémoire des agents IA." };
-  const block = (text: string, quote: string) => ({ text, evidence: [{ field: "first_name", quote: "Awa" }, { field: "experience", quote }] });
+  const block = (text: string) => ({ text, evidence: ["first_name", "experience:1"] });
   const article = {
-    headline: block("Awa, de la data à l’IA pédagogique", "de la data chez Moov Africa Burkina à l’intelligence artificielle à l’ESSCA"),
+    headline: block("Awa, de la data à l’IA pédagogique"),
     paragraphs: [
-      block("À l’ESSCA, Awa travaille sur un assistant pédagogique dont les réponses prennent appui sur les ressources de l’établissement.", "l’intelligence artificielle à l’ESSCA. Je travaille sur un assistant pédagogique qui s’appuie sur les ressources de l’établissement."),
-      block("La formation d’Awa passe par l’ESAIP et le Big Data. Des échanges universitaires en Lituanie et en Allemagne complètent ce parcours.", "J’ai étudié à l’ESAIP, avec une spécialisation Big Data. J’ai participé à des échanges en Lituanie et en Allemagne."),
-      block("Une expérience dans la data chez Moov Africa Burkina précède les travaux en intelligence artificielle à l’ESSCA.", "Mon parcours m’a conduit de la data chez Moov Africa Burkina à l’intelligence artificielle à l’ESSCA."),
-      block("En parallèle, Awa développe des projets open source consacrés à la mémoire des agents IA.", "Je développe aussi des projets open source autour de la mémoire des agents IA."),
+      block("À l’ESSCA, Awa travaille sur un assistant pédagogique dont les réponses prennent appui sur les ressources de l’établissement."),
+      block("La formation d’Awa passe par l’ESAIP et le Big Data. Des échanges universitaires en Lituanie et en Allemagne complètent ce parcours."),
+      block("Une expérience dans la data chez Moov Africa Burkina précède les travaux en intelligence artificielle à l’ESSCA."),
+      block("En parallèle, Awa développe des projets open source consacrés à la mémoire des agents IA."),
     ],
   };
   const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch(() => completion(article)));
   assert.deepEqual((await generate(record)).paragraphs, article.paragraphs.map((item) => item.text));
-  article.paragraphs[0] = block(`Dans sa présentation : « ${record.experience} »`, record.experience);
+  article.paragraphs[0] = block(`Dans sa présentation : « ${record.experience} »`);
   await assert.rejects(generate(record), (error) => {
     assert.ok(error instanceof HighlightGenerationError);
     assert.equal(error.reason, "copied_profile");
@@ -387,10 +486,10 @@ test("a sourced multi-paragraph portrait gets an editorial title without becomin
   });
 });
 
-test("the title also requires evidence and cannot introduce an unsupported award or date", async () => {
+test("the title also requires known evidence references and cannot introduce an unsupported date", async () => {
   for (const headline of [
-    { text: "Awa, lauréate d’un prix", evidence: [{ field: "experience", quote: "J’ai reçu un prix." }] },
-    { text: "Awa, diplômée depuis 2019", evidence: [{ field: "first_name", quote: "Awa" }] },
+    { text: "Awa, lauréate d’un prix", evidence: ["awards"] },
+    { text: "Awa, diplômée depuis 2019", evidence: ["first_name"] },
     { text: "Awa et ses nouveaux projets", evidence: [] },
   ]) {
     const generate = createOpenAIGenerator({ apiKey: "key", model: "gpt-5-nano" }, fakeFetch(() => completion({ ...validArticle(), headline })));
