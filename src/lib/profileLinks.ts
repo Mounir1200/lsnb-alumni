@@ -1,4 +1,12 @@
 export type ProfileLinkKind = "linkedin" | "portfolio";
+/** Offer links follow the portfolio rules, matching is_valid_profile_link(url, false). */
+export type PublicLinkKind = ProfileLinkKind | "offer";
+
+const linkLabels: Record<PublicLinkKind, string> = {
+  linkedin: "LinkedIn",
+  portfolio: "du portfolio",
+  offer: "de l’offre",
+};
 
 export const PROFILE_LINK_MAX_LENGTH = 2048;
 
@@ -65,12 +73,12 @@ function isAllowedProfileHost(hostname: string) {
 /** Empty links are optional; only explicitly supplied addresses are validated. */
 export function normalizeProfileLink(
   value: string | null | undefined,
-  kind: ProfileLinkKind,
+  kind: PublicLinkKind,
 ): string | null {
   const link = value?.trim() ?? "";
   if (!link) return null;
 
-  const label = kind === "linkedin" ? "LinkedIn" : "du portfolio";
+  const label = linkLabels[kind];
   if (link.length > PROFILE_LINK_MAX_LENGTH) {
     throw new Error(`Le lien ${label} doit contenir au maximum ${PROFILE_LINK_MAX_LENGTH} caractères.`);
   }
@@ -104,7 +112,7 @@ export function normalizeProfileLink(
 }
 
 /** Keep malformed stored data from becoming a clickable link. */
-export function getSafeProfileLink(value: string | null | undefined, kind: ProfileLinkKind) {
+export function getSafeProfileLink(value: string | null | undefined, kind: PublicLinkKind) {
   try {
     return normalizeProfileLink(value, kind) ?? undefined;
   } catch {

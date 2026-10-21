@@ -12,16 +12,10 @@ import {
 import { Button } from "../components/ui/Button";
 import type { AlumniProfile } from "../data/alumni";
 import { useDirectoryProfiles } from "../hooks/useDirectoryProfiles";
+import { normalizeSearchText as normalize } from "../lib/searchText";
 import "../components/directory/DirectoryViewControls.css";
 
 const noProfiles: AlumniProfile[] = [];
-
-function normalize(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
 
 export function DirectoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
