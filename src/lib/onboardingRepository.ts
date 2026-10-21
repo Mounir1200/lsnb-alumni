@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { normalizeProfileLink } from "./profileLinks";
 
 export type OnboardingProfile = {
   id: string;
@@ -13,6 +14,7 @@ export type ProfileCompletion = {
   graduationYear: number; specialty: string; city: string; country: string;
   experience: string; gender: "male" | "female" | "unspecified";
   offersMentoring: boolean; contactVisible: boolean; termsAccepted: boolean;
+  linkedinUrl?: string; portfolioUrl?: string;
 };
 
 export async function loadOnboardingProfile(userId: string): Promise<OnboardingProfile> {
@@ -32,6 +34,8 @@ export async function completeMemberProfile(profile: ProfileCompletion): Promise
     p_experience: profile.experience.trim(), p_gender: profile.gender,
     p_offers_mentoring: profile.memberRole === "alumni" && profile.offersMentoring,
     p_contact_visible: profile.contactVisible, p_terms_accepted: profile.termsAccepted,
+    p_linkedin_url: normalizeProfileLink(profile.linkedinUrl, "linkedin"),
+    p_portfolio_url: normalizeProfileLink(profile.portfolioUrl, "portfolio"),
   });
   if (error) throw new Error("Le profil n’a pas pu être enregistré. Vérifiez les champs et réessayez.");
 }

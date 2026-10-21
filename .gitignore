@@ -6,5 +6,10 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+api/src/highlights/google-auth.database.test.ts
+api/src/highlights/mentorship.database.test.ts
+api/src/highlights/mentorship.repository.test.ts
+api/src/highlights/profile-links.test.ts
+api/src/highlights/fixtures/
 
 

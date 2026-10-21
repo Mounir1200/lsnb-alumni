@@ -1,4 +1,4 @@
-import { RotateCcw, Search, SlidersHorizontal } from "lucide-react";
+import { LayoutGrid, List, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlumniCard } from "../components/alumni/AlumniCard";
@@ -6,6 +6,7 @@ import { DirectoryConstellation } from "../components/directory/DirectoryConstel
 import { Button } from "../components/ui/Button";
 import { alumniProfiles, type AlumniProfile } from "../data/alumni";
 import { loadProfiles } from "../lib/profileRepository";
+import "../components/directory/DirectoryViewControls.css";
 
 function normalize(value: string) {
   return value
@@ -22,6 +23,7 @@ export function DirectoryPage() {
   const domain = searchParams.get("domaine") ?? "";
   const country = searchParams.get("pays") ?? "";
   const mentoringOnly = searchParams.get("mentor") === "true";
+  const listView = searchParams.get("vue") === "liste";
 
   useEffect(() => {
     let active = true;
@@ -59,6 +61,12 @@ export function DirectoryPage() {
     } else {
       next.delete(key);
     }
+    setSearchParams(next, { replace: true });
+  };
+
+  const resetFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    ["q", "domaine", "pays", "mentor"].forEach((key) => next.delete(key));
     setSearchParams(next, { replace: true });
   };
 
@@ -160,7 +168,7 @@ export function DirectoryPage() {
             </label>
 
             {hasFilters && (
-              <Button className="directory-filters__reset" variant="outline" onClick={() => setSearchParams({})}>
+              <Button className="directory-filters__reset" variant="outline" onClick={resetFilters}>
                 <RotateCcw size={16} aria-hidden="true" /> Réinitialiser
               </Button>
             )}
@@ -168,17 +176,27 @@ export function DirectoryPage() {
         </aside>
 
         <div className="directory-results">
-          <div className="directory-results__bar">
-            <p role="status" aria-live="polite">
-              <b>{filteredProfiles.length}</b> profil{filteredProfiles.length > 1 ? "s" : ""} trouvé{filteredProfiles.length > 1 ? "s" : ""}
-            </p>
-            <span>
-              {profileSource === "demo" ? "Profils fictifs · démonstration" : "Profils des membres"}
-            </span>
+          <div className="directory-view-toolbar">
+            <div className="directory-view-summary">
+              <p className="directory-view-summary__count" role="status" aria-live="polite">
+                <b>{filteredProfiles.length}</b> profil{filteredProfiles.length > 1 ? "s" : ""} trouvé{filteredProfiles.length > 1 ? "s" : ""}
+              </p>
+              <span className="directory-view-summary__source">
+                {profileSource === "demo" ? "Profils fictifs · démonstration" : "Profils des membres"}
+              </span>
+            </div>
+            <div className="directory-view-controls" role="group" aria-label="Affichage des profils">
+              <button type="button" aria-pressed={!listView} onClick={() => updateFilter("vue", "")}>
+                <LayoutGrid size={16} aria-hidden="true" /> Cartes
+              </button>
+              <button type="button" aria-pressed={listView} onClick={() => updateFilter("vue", "liste")}>
+                <List size={16} aria-hidden="true" /> Liste
+              </button>
+            </div>
           </div>
 
           {filteredProfiles.length > 0 ? (
-            <div className="directory-grid">
+            <div className={listView ? "directory-grid directory-grid--list" : "directory-grid"}>
               {filteredProfiles.map((profile) => (
                 <AlumniCard key={profile.id} profile={profile} />
               ))}
@@ -188,7 +206,7 @@ export function DirectoryPage() {
               <Search size={34} aria-hidden="true" />
               <h2>Aucun parcours ne correspond encore.</h2>
               <p>Essayez une spécialité plus large ou retirez un filtre.</p>
-              <Button variant="outline" onClick={() => setSearchParams({})}>
+              <Button variant="outline" onClick={resetFilters}>
                 Voir tous les profils
               </Button>
             </div>

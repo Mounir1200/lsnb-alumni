@@ -17,6 +17,8 @@ export type AlumniProfile = {
   initials: string;
   avatarTone: "ochre" | "green" | "blue" | "sand";
   photoUrl?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
   isDemo?: boolean;
 };
 

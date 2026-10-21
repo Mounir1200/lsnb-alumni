@@ -25,6 +25,7 @@ import {
   type EditableProfile,
   type ProfileGender,
 } from "../lib/profileRepository";
+import { normalizeProfileLink } from "../lib/profileLinks";
 
 type EditorForm = {
   firstName: string;
@@ -38,6 +39,8 @@ type EditorForm = {
   city: string;
   country: string;
   experience: string;
+  linkedinUrl: string;
+  portfolioUrl: string;
   offersMentoring: boolean;
   mentoringTopics: string;
   contactVisible: boolean;
@@ -64,6 +67,8 @@ function toEditorForm(profile: EditableProfile): EditorForm {
     city: profile.city,
     country: profile.country,
     experience: profile.experience,
+    linkedinUrl: profile.linkedinUrl ?? "",
+    portfolioUrl: profile.portfolioUrl ?? "",
     offersMentoring: profile.offersMentoring,
     mentoringTopics: profile.mentoringTopics.join("\n"),
     contactVisible: profile.contactVisible,
@@ -192,6 +197,8 @@ export function EditProfilePage() {
         city: form.city,
         country: form.country,
         experience: form.experience,
+        linkedinUrl: normalizeProfileLink(form.linkedinUrl, "linkedin") ?? undefined,
+        portfolioUrl: normalizeProfileLink(form.portfolioUrl, "portfolio") ?? undefined,
         offersMentoring: form.memberRole === "alumni" && form.offersMentoring,
         mentoringTopics: parseList(form.mentoringTopics),
         contactVisible: form.contactVisible,
@@ -435,6 +442,34 @@ export function EditProfilePage() {
                 required
               />
             </label>
+
+            <div className="form-row">
+              <label className="field-group">
+                <span>Profil LinkedIn (facultatif)</span>
+                <input
+                  name="linkedinUrl"
+                  type="url"
+                  maxLength={2048}
+                  value={form.linkedinUrl}
+                  onChange={(event) => updateField("linkedinUrl", event.target.value)}
+                  placeholder="https://www.linkedin.com/in/votre-profil"
+                  aria-describedby="edit-links-help"
+                />
+              </label>
+              <label className="field-group">
+                <span>Portfolio (facultatif)</span>
+                <input
+                  name="portfolioUrl"
+                  type="url"
+                  maxLength={2048}
+                  value={form.portfolioUrl}
+                  onChange={(event) => updateField("portfolioUrl", event.target.value)}
+                  placeholder="https://votre-site.fr"
+                  aria-describedby="edit-links-help"
+                />
+              </label>
+            </div>
+            <p id="edit-links-help" className="account-form__login">Ces liens facultatifs sont visibles par les membres du réseau sur votre profil. Utilisez HTTPS ; les adresses locales ou privées sont refusées. Laissez un champ vide pour supprimer le lien correspondant.</p>
 
             <div className="profile-editor-photo">
               <div className="profile-editor-photo__visual" aria-hidden="true">

@@ -12,9 +12,25 @@ export function PrivacyPage() {
       <h2>Données collectées</h2>
       <p>
         Nom, prénom, statut, promotion, parcours, spécialités, expérience, ville, pays, photo et
-        moyen de contact. Le genre est facultatif et déclaré par la personne pour équilibrer
+        moyen de contact. Vous pouvez aussi ajouter un lien LinkedIn et un lien de portfolio :
+        ils sont facultatifs, visibles par les membres connectés sur votre fiche et modifiables
+        ou supprimables depuis votre espace membre. Le genre est facultatif et déclaré par la personne pour équilibrer
         les duos Highlight et adapter les pronoms et les accords du portrait. Il n’est jamais
-        déduit du nom ou de la photo. Le mentorat est volontaire et peut être désactivé à tout moment.
+        déduit du nom ou de la photo. Le mentorat est volontaire.
+      </p>
+      <h2 id="mentorat">Demandes et liens de mentorat</h2>
+      <p>
+        Un membre peut envoyer une demande à une personne qui propose du mentorat. Cette
+        personne choisit de l’accepter ou de la refuser ; l’auteur peut l’annuler tant qu’elle
+        est en attente. Le message de la demande et son suivi sont réservés aux deux personnes
+        concernées. Ils ne sont pas affichés aux autres membres du réseau.
+      </p>
+      <p>
+        Après acceptation, le lien entre le mentor et la personne accompagnée apparaît sur leurs
+        fiches, pour les membres connectés. Chacun peut mettre fin à ce lien depuis son espace
+        de relations : il cesse alors d’apparaître sur les fiches. Désactiver votre offre de
+        mentorat dans votre profil arrête les nouvelles demandes, mais ne met pas fin à vos
+        relations existantes. La visibilité de vos coordonnées reste un réglage distinct.
       </p>
       <h2>Inscription et connexion avec Google</h2>
       <p>
