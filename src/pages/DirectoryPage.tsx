@@ -1,12 +1,20 @@
 import { LayoutGrid, List, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlumniCard } from "../components/alumni/AlumniCard";
 import { DirectoryConstellation } from "../components/directory/DirectoryConstellation";
+import {
+  DirectoryEmpty,
+  DirectoryLoadError,
+  DirectoryLoading,
+  DirectoryNoResults,
+} from "../components/directory/DirectoryStates";
 import { Button } from "../components/ui/Button";
-import { alumniProfiles, type AlumniProfile } from "../data/alumni";
-import { loadProfiles } from "../lib/profileRepository";
+import type { AlumniProfile } from "../data/alumni";
+import { useDirectoryProfiles } from "../hooks/useDirectoryProfiles";
 import "../components/directory/DirectoryViewControls.css";
+
+const noProfiles: AlumniProfile[] = [];
 
 function normalize(value: string) {
   return value
@@ -17,31 +25,13 @@ function normalize(value: string) {
 
 export function DirectoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [profiles, setProfiles] = useState<AlumniProfile[]>(alumniProfiles);
-  const [profileSource, setProfileSource] = useState<"demo" | "supabase">("demo");
+  const directory = useDirectoryProfiles();
+  const profiles = directory.status === "ready" ? directory.profiles : noProfiles;
   const query = searchParams.get("q") ?? "";
   const domain = searchParams.get("domaine") ?? "";
   const country = searchParams.get("pays") ?? "";
   const mentoringOnly = searchParams.get("mentor") === "true";
   const listView = searchParams.get("vue") === "liste";
-
-  useEffect(() => {
-    let active = true;
-    loadProfiles()
-      .then((result) => {
-        if (!active) return;
-        setProfiles(result.profiles);
-        setProfileSource(result.source);
-      })
-      .catch(() => {
-        if (!active) return;
-        setProfiles(alumniProfiles);
-        setProfileSource("demo");
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const availableDomains = useMemo(
     () => [...new Set(profiles.map((profile) => profile.domain))].sort(),
@@ -96,6 +86,20 @@ export function DirectoryPage() {
 
   const hasFilters = Boolean(query || domain || country || mentoringOnly);
   const activeFilterCount = [query, domain, country, mentoringOnly].filter(Boolean).length;
+
+  const renderResults = () => {
+    if (directory.status === "loading") return <DirectoryLoading listView={listView} />;
+    if (directory.status === "error") return <DirectoryLoadError onRetry={directory.retry} />;
+    if (profiles.length === 0) return <DirectoryEmpty />;
+    if (filteredProfiles.length === 0) return <DirectoryNoResults onReset={resetFilters} />;
+    return (
+      <div className={listView ? "directory-grid directory-grid--list" : "directory-grid"}>
+        {filteredProfiles.map((profile) => (
+          <AlumniCard key={profile.id} profile={profile} />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="directory-page">
@@ -179,11 +183,16 @@ export function DirectoryPage() {
           <div className="directory-view-toolbar">
             <div className="directory-view-summary">
               <p className="directory-view-summary__count" role="status" aria-live="polite">
-                <b>{filteredProfiles.length}</b> profil{filteredProfiles.length > 1 ? "s" : ""} trouvé{filteredProfiles.length > 1 ? "s" : ""}
+                {directory.status === "ready" && (
+                  <><b>{filteredProfiles.length}</b> profil{filteredProfiles.length > 1 ? "s" : ""} trouvé{filteredProfiles.length > 1 ? "s" : ""}</>
+                )}
+                {directory.status === "loading" && "Chargement des profils…"}
               </p>
-              <span className="directory-view-summary__source">
-                {profileSource === "demo" ? "Profils fictifs · démonstration" : "Profils des membres"}
-              </span>
+              {directory.status === "ready" && (
+                <span className="directory-view-summary__source">
+                  {directory.source === "demo" ? "Profils fictifs · démonstration" : "Profils des membres"}
+                </span>
+              )}
             </div>
             <div className="directory-view-controls" role="group" aria-label="Affichage des profils">
               <button type="button" aria-pressed={!listView} onClick={() => updateFilter("vue", "")}>
@@ -195,22 +204,7 @@ export function DirectoryPage() {
             </div>
           </div>
 
-          {filteredProfiles.length > 0 ? (
-            <div className={listView ? "directory-grid directory-grid--list" : "directory-grid"}>
-              {filteredProfiles.map((profile) => (
-                <AlumniCard key={profile.id} profile={profile} />
-              ))}
-            </div>
-          ) : (
-            <div className="directory-empty">
-              <Search size={34} aria-hidden="true" />
-              <h2>Aucun parcours ne correspond encore.</h2>
-              <p>Essayez une spécialité plus large ou retirez un filtre.</p>
-              <Button variant="outline" onClick={resetFilters}>
-                Voir tous les profils
-              </Button>
-            </div>
-          )}
+          {renderResults()}
         </div>
       </section>
     </div>
