@@ -103,7 +103,9 @@ La mise en production est coordonnée par le responsable. La configuration prév
 
 Les Highlights suivent le flux `frontend → API → Supabase` pour la lecture publique. Le job choisit deux alumni actifs au hasard avec rotation, privilégie un duo homme–femme et accepte les autres duos lorsque nécessaire. GPT-5 nano d’OpenAI rédige les portraits à partir des profils ; la sélection et les textes sont conservés en base. Aucun appel IA n’a lieu au chargement des pages et Redis n’est pas nécessaire. La [documentation Highlights](docs/highlights.md) détaille la migration, les réglages, les reprises, les coûts et les limites des contrôles de fidélité.
 
-L’inscription et la connexion Google sont implémentées via Supabase Auth, avec complétion du profil au premier accès. Le [guide d’activation Google](docs/google-auth.md) détaille la nouvelle migration et les réglages Google/Supabase. Les liens LinkedIn et portfolio restent à développer.
+L’inscription et la connexion Google sont implémentées via Supabase Auth, avec complétion du profil au premier accès. Le [guide d’activation Google](docs/google-auth.md) détaille la migration et les réglages Google/Supabase. Les liens LinkedIn et portfolio sont facultatifs à l’inscription et modifiables depuis l’espace membre. Le [guide des liens de profil](docs/profile-links.md) décrit leur stockage, leur visibilité et la migration à appliquer avant de déployer le frontend.
+
+Les demandes d’échange et de mentorat se gèrent dans **Mon espace → Mes relations et demandes**. Les relations de mentorat acceptées alimentent les compteurs et listes « Mentors » / « Mentorés » des profils, visibles aux membres connectés. Le [guide du mentorat](docs/mentorship.md) décrit le consentement, les droits, la fin d’une relation et la migration appliquée à Supabase Cloud.
 
 ## Direction visuelle
 

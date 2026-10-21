@@ -6,6 +6,7 @@ import { Button } from "../components/ui/Button";
 import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository";
 import { savePendingAvatar } from "../lib/pendingAvatarStore";
+import { normalizeProfileLink } from "../lib/profileLinks";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type SubmissionStatus = {
@@ -54,21 +55,23 @@ export function JoinPage() {
     const data = new FormData(form);
     setStatus({ kind: "loading" });
 
-    const profile = {
-      first_name: String(data.get("firstName") ?? "").trim(),
-      last_name: String(data.get("lastName") ?? "").trim(),
-      member_role: role,
-      gender: String(data.get("gender") ?? "unspecified"),
-      graduation_year: Number(data.get("graduationYear")),
-      specialty: String(data.get("specialty") ?? "").trim(),
-      country: String(data.get("country") ?? "").trim(),
-      city: String(data.get("city") ?? "").trim(),
-      experience: String(data.get("experience") ?? "").trim(),
-      offers_mentoring: role === "alumni" && offersMentoring,
-      contact_visible: data.get("contactVisible") === "on",
-    };
-
     try {
+      const profile = {
+        first_name: String(data.get("firstName") ?? "").trim(),
+        last_name: String(data.get("lastName") ?? "").trim(),
+        member_role: role,
+        gender: String(data.get("gender") ?? "unspecified"),
+        graduation_year: Number(data.get("graduationYear")),
+        specialty: String(data.get("specialty") ?? "").trim(),
+        country: String(data.get("country") ?? "").trim(),
+        city: String(data.get("city") ?? "").trim(),
+        experience: String(data.get("experience") ?? "").trim(),
+        offers_mentoring: role === "alumni" && offersMentoring,
+        contact_visible: data.get("contactVisible") === "on",
+        linkedin_url: normalizeProfileLink(String(data.get("linkedinUrl") ?? ""), "linkedin"),
+        portfolio_url: normalizeProfileLink(String(data.get("portfolioUrl") ?? ""), "portfolio"),
+      };
+
       if (!supabase || !isSupabaseConfigured) {
         localStorage.setItem("lsnb-demo-profile", JSON.stringify(profile));
         setStatus({
@@ -221,6 +224,18 @@ export function JoinPage() {
                 required
               />
             </label>
+
+            <div className="form-row">
+              <label className="field-group">
+                <span>Profil LinkedIn (facultatif)</span>
+                <input name="linkedinUrl" type="url" maxLength={2048} placeholder="https://www.linkedin.com/in/votre-profil" aria-describedby="join-links-help" />
+              </label>
+              <label className="field-group">
+                <span>Portfolio (facultatif)</span>
+                <input name="portfolioUrl" type="url" maxLength={2048} placeholder="https://votre-site.fr" aria-describedby="join-links-help" />
+              </label>
+            </div>
+            <p id="join-links-help" className="account-form__login">Ces liens facultatifs seront visibles par les membres du réseau sur votre profil. Utilisez HTTPS ; les adresses locales ou privées sont refusées. Vous pouvez laisser les deux champs vides et les ajouter plus tard.</p>
 
             <label className="photo-upload">
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhoto} />

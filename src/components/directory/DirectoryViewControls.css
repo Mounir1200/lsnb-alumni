@@ -1,0 +1,81 @@
+.directory-view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.directory-view-summary {
+  display: grid;
+  flex: 1 1 180px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.directory-view-summary__count {
+  margin: 0;
+  color: #596b78;
+  font-size: 0.82rem;
+}
+
+.directory-view-summary__count b {
+  color: var(--ink);
+  font-size: 1.12rem;
+}
+
+.directory-view-summary__source {
+  color: #62716b;
+  font-size: 0.7rem;
+}
+
+.directory-view-controls {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  margin-left: auto;
+  padding: 3px;
+  border: 1px solid #d7dfda;
+  border-radius: 10px;
+  background: #edf1ed;
+}
+
+.directory-view-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 13px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #52635e;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.directory-view-controls button:hover {
+  color: var(--ink);
+  background: #e2e9e3;
+}
+
+.directory-view-controls button[aria-pressed="true"] {
+  border-color: #d7dfda;
+  background: #fffefa;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(12 41 72 / 6%);
+}
+
+.directory-view-controls button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid #3e745b;
+  outline-offset: 3px;
+}

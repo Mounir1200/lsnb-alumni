@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { Button } from "../components/ui/Button";
 import { getPostAuthPath } from "../lib/auth";
 import { completeMemberProfile, loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
+import { normalizeProfileLink } from "../lib/profileLinks";
 import { supabase } from "../lib/supabase";
 
 export function CompleteProfilePage() {
@@ -50,6 +51,8 @@ export function CompleteProfilePage() {
         gender: String(data.get("gender") ?? "unspecified") as "male" | "female" | "unspecified",
         offersMentoring: data.get("offersMentoring") === "on", contactVisible: data.get("contactVisible") === "on",
         termsAccepted: data.get("termsAccepted") === "on",
+        linkedinUrl: normalizeProfileLink(String(data.get("linkedinUrl") ?? ""), "linkedin") ?? undefined,
+        portfolioUrl: normalizeProfileLink(String(data.get("portfolioUrl") ?? ""), "portfolio") ?? undefined,
       });
       await refreshProfile();
       navigate(next, { replace: true });
@@ -104,6 +107,17 @@ export function CompleteProfilePage() {
                 <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" maxLength={150} required disabled={busy} /></label>
               </div>
               <label className="field-group"><span>Parcours et expériences</span><textarea name="experience" rows={5} maxLength={5000} placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager." required disabled={busy} /></label>
+              <div className="form-row">
+                <label className="field-group">
+                  <span>Profil LinkedIn (facultatif)</span>
+                  <input name="linkedinUrl" type="url" maxLength={2048} placeholder="https://www.linkedin.com/in/votre-profil" aria-describedby="complete-links-help" disabled={busy} />
+                </label>
+                <label className="field-group">
+                  <span>Portfolio (facultatif)</span>
+                  <input name="portfolioUrl" type="url" maxLength={2048} placeholder="https://votre-site.fr" aria-describedby="complete-links-help" disabled={busy} />
+                </label>
+              </div>
+              <p id="complete-links-help" className="account-form__login">Ces liens facultatifs seront visibles par les membres du réseau sur votre profil. Utilisez HTTPS ; les adresses locales ou privées sont refusées. Vous pouvez laisser les deux champs vides et les ajouter plus tard.</p>
               {role === "alumni" && <label className="form-check form-check--mentor"><input name="offersMentoring" type="checkbox" disabled={busy} /><span><b>Je souhaite proposer du mentorat</b>Je pourrai accepter ou refuser les demandes.</span></label>}
               <label className="form-check"><input name="contactVisible" type="checkbox" disabled={busy} /><span><b>Rendre mon contact visible aux membres</b>Ce choix peut être modifié plus tard.</span></label>
               <label className="form-consent"><input name="termsAccepted" type="checkbox" required disabled={busy} /><span>J’accepte que ces informations soient utilisées pour mon profil LSNB Réseau. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span></label>

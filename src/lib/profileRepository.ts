@@ -1,6 +1,7 @@
 import type { AlumniProfile } from "../data/alumni";
 import { alumniProfiles } from "../data/alumni";
 import { isSupabaseConfigured, supabase } from "./supabase";
+import { getSafeProfileLink, normalizeProfileLink } from "./profileLinks";
 
 export type ProfileGender = "male" | "female" | "unspecified";
 
@@ -18,6 +19,8 @@ type ProfileRow = {
   country: string | null;
   experience: string;
   photo_url: string | null;
+  linkedin_url: string | null;
+  portfolio_url: string | null;
   offers_mentoring: boolean;
   mentoring_topics: string[] | null;
 };
@@ -35,6 +38,8 @@ export type EditableProfile = {
   country: string;
   experience: string;
   photoUrl?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
   offersMentoring: boolean;
   mentoringTopics: string[];
   contactVisible: boolean;
@@ -80,6 +85,8 @@ function mapProfile(row: ProfileRow): AlumniProfile {
     initials: `${row.first_name[0] ?? ""}${row.last_name[0] ?? ""}`.toUpperCase(),
     avatarTone: avatarToneFromId(row.id),
     photoUrl: row.photo_url ?? undefined,
+    linkedinUrl: getSafeProfileLink(row.linkedin_url, "linkedin"),
+    portfolioUrl: getSafeProfileLink(row.portfolio_url, "portfolio"),
     isDemo: false,
   };
 }
@@ -92,7 +99,7 @@ export async function loadProfiles() {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, offers_mentoring, mentoring_topics",
+      "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics",
     )
     .eq("is_active", true)
     .order("last_name");
@@ -110,7 +117,7 @@ export async function loadProfile(id: string) {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, offers_mentoring, mentoring_topics",
+      "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics",
     )
     .eq("id", id)
     .eq("is_active", true)
@@ -129,7 +136,7 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
     supabase
       .from("profiles")
       .select(
-        "id, first_name, last_name, member_role, gender, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, offers_mentoring, mentoring_topics",
+        "id, first_name, last_name, member_role, gender, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -158,6 +165,8 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
     country: row.country ?? "",
     experience: row.experience,
     photoUrl: row.photo_url ?? undefined,
+    linkedinUrl: row.linkedin_url ?? undefined,
+    portfolioUrl: row.portfolio_url ?? undefined,
     offersMentoring: row.offers_mentoring,
     mentoringTopics: row.mentoring_topics?.filter(Boolean) ?? [],
     contactVisible: contactResult.data?.is_visible === true,
@@ -181,6 +190,8 @@ export async function updateEditableProfile(
     ? [...new Set(profile.mentoringTopics.map((value) => value.trim()).filter(Boolean))]
     : [];
   const offersMentoring = profile.memberRole === "alumni" && profile.offersMentoring;
+  const linkedinUrl = normalizeProfileLink(profile.linkedinUrl, "linkedin");
+  const portfolioUrl = normalizeProfileLink(profile.portfolioUrl, "portfolio");
 
   const { error: profileError } = await supabase
     .from("profiles")
@@ -196,6 +207,8 @@ export async function updateEditableProfile(
       city: profile.city.trim() || null,
       country: profile.country.trim() || null,
       experience: profile.experience.trim(),
+      linkedin_url: linkedinUrl,
+      portfolio_url: portfolioUrl,
       offers_mentoring: offersMentoring,
       mentoring_topics: mentoringTopics,
     })
@@ -230,6 +243,8 @@ export async function updateEditableProfile(
       city: profile.city.trim(),
       country: profile.country.trim(),
       experience: profile.experience.trim(),
+      linkedin_url: linkedinUrl,
+      portfolio_url: portfolioUrl,
       offers_mentoring: offersMentoring,
       contact_visible: profile.contactVisible,
     },

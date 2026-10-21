@@ -5,9 +5,10 @@ import { cn } from "../../lib/cn";
 type AvatarProps = Pick<AlumniProfile, "initials" | "avatarTone" | "photoUrl"> & {
   className?: string;
   label?: string;
+  loading?: "lazy" | "eager";
 };
 
-export function Avatar({ initials, avatarTone, photoUrl, className, label }: AvatarProps) {
+export function Avatar({ initials, avatarTone, photoUrl, className, label, loading }: AvatarProps) {
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export function Avatar({ initials, avatarTone, photoUrl, className, label }: Ava
       aria-label={label ?? `Portrait de démonstration ${initials}`}
     >
       {photoUrl && !imageFailed ? (
-        <img src={photoUrl} alt="" onError={() => setImageFailed(true)} />
+        <img src={photoUrl} alt="" loading={loading} decoding="async" onError={() => setImageFailed(true)} />
       ) : (
         <span aria-hidden="true">{initials}</span>
       )}

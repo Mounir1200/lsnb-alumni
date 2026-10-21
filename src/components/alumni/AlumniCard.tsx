@@ -1,9 +1,8 @@
-import { ArrowUpRight, MapPin, Orbit } from "lucide-react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { AlumniProfile } from "../../data/alumni";
 import { cn } from "../../lib/cn";
 import { Avatar } from "../ui/Avatar";
-import { AlumniCardMotion } from "./AlumniCardMotion";
 
 type AlumniCardProps = {
   profile: AlumniProfile;
@@ -11,50 +10,54 @@ type AlumniCardProps = {
 };
 
 export function AlumniCard({ profile, featured = false }: AlumniCardProps) {
+  const fullName = `${profile.firstName} ${profile.lastName}`;
+  const location = [profile.city, profile.country].filter(Boolean).join(", ");
+  const specialties = [...new Set(profile.specialties)]
+    .filter((item) => item && item !== profile.currentRole && item !== profile.domain)
+    .slice(0, 2);
+
   return (
     <article className={cn(
       "alumni-card",
       featured && "alumni-card--featured",
       profile.photoUrl && "alumni-card--with-photo",
     )}>
-      <AlumniCardMotion profileId={profile.id} />
+      <Link className="alumni-card__link" to={`/alumni/${profile.id}`} aria-label={`Voir le profil de ${fullName}`}>
+        <div className="alumni-card__media">
+          <Avatar
+            initials={profile.initials}
+            avatarTone={profile.avatarTone}
+            photoUrl={profile.photoUrl}
+            className="alumni-card__avatar"
+            loading="lazy"
+            label={`${profile.isDemo === false ? "Photo" : "Portrait fictif"} de ${fullName}`}
+          />
+          {profile.graduationYear > 0 && <span className="alumni-card__promotion">Promo {profile.graduationYear}</span>}
+        </div>
 
-      <div className="alumni-card__topline">
-        <Avatar
-          initials={profile.initials}
-          avatarTone={profile.avatarTone}
-          photoUrl={profile.photoUrl}
-          className="alumni-card__avatar"
-          label={`${profile.isDemo === false ? "Photo" : "Portrait fictif"} de ${profile.firstName} ${profile.lastName}`}
-        />
-        <span className="alumni-card__promotion">Promo {profile.graduationYear}</span>
-      </div>
+        <div className="alumni-card__body">
+          <div className="alumni-card__identity">
+            {profile.domain && profile.domain !== profile.currentRole && <p className="alumni-card__domain">{profile.domain}</p>}
+            <h3>{fullName}</h3>
+            <p className="alumni-card__role">{profile.currentRole}</p>
+            {(location || profile.graduationYear > 0) && (
+              <p className="alumni-card__location">
+                {location && <><MapPin size={14} aria-hidden="true" /><span>{location}</span></>}
+                {profile.graduationYear > 0 && <span className="alumni-card__inline-promotion">Promo {profile.graduationYear}</span>}
+              </p>
+            )}
+          </div>
+          {specialties.length > 0 && <ul className="alumni-card__specialties" aria-label="Spécialités">{specialties.map((item) => <li key={item}>{item}</li>)}</ul>}
+        </div>
 
-      <div className="alumni-card__body">
-        <p className="alumni-card__domain">{profile.domain}</p>
-        <h3>{profile.firstName} {profile.lastName}</h3>
-        <p className="alumni-card__role">{profile.currentRole}</p>
-        <p className="alumni-card__location">
-          <MapPin size={15} aria-hidden="true" />
-          {profile.city}, {profile.country}
-        </p>
-      </div>
-
-      <div className="alumni-card__footer">
-        {profile.offersMentoring ? (
-          <span className="alumni-card__mentor">
-            <Orbit size={15} aria-hidden="true" /> Mentorat proposé
+        <div className="alumni-card__footer">
+          <span className="alumni-card__invitation">
+            {profile.offersMentoring ? <span className="alumni-card__mentor"><i aria-hidden="true" /> Mentorat ouvert</span> : <span>Découvrir son parcours</span>}
+            <b>Voir le profil</b>
           </span>
-        ) : (
-          <span className="alumni-card__specialty">{profile.specialties[0]}</span>
-        )}
-        <Link
-          to={`/alumni/${profile.id}`}
-          aria-label={`Voir le profil de ${profile.firstName} ${profile.lastName}`}
-        >
-          Voir le profil <ArrowUpRight size={16} aria-hidden="true" />
-        </Link>
-      </div>
+          <span className="alumni-card__arrow"><ArrowUpRight size={19} aria-hidden="true" /></span>
+        </div>
+      </Link>
     </article>
   );
 }

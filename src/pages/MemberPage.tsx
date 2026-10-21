@@ -145,6 +145,9 @@ export function MemberPage() {
             <ButtonLink to="/espace/modifier" size="lg" variant="outline">
               <PencilLine aria-hidden="true" /> Modifier mon profil
             </ButtonLink>
+            <ButtonLink to="/espace/relations" size="lg" variant="outline">
+              <Network aria-hidden="true" /> Mes relations et demandes
+            </ButtonLink>
           </div>
         </section>
 

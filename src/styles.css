@@ -42,7 +42,7 @@ html {
 }
 
 body {
-  min-width: 320px;
+  min-width: min(320px, 100%);
   min-height: 100vh;
   margin: 0;
   background: var(--paper);
@@ -282,32 +282,54 @@ textarea:focus-visible {
 .site-header__desktop-nav {
   display: flex;
   align-items: center;
-  gap: 34px;
+  gap: 10px;
 }
 
 .site-header__link,
 .site-header__login {
-  position: relative;
-  color: rgba(255, 253, 248, 0.76);
+  color: rgba(255, 253, 248, 0.78);
   font-size: 0.82rem;
-  font-weight: 600;
-  transition: color 180ms ease;
+  font-weight: 650;
+  transition: color 180ms ease, border-color 180ms ease;
+}
+
+.site-header__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 253, 248, 0.2);
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
 .site-header__link:hover,
-.site-header__link.is-active,
 .site-header__login:hover {
   color: var(--chalk);
 }
 
-.site-header__link.is-active::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: -12px;
-  left: 0;
-  height: 2px;
-  background: var(--banco-light);
+.site-header__link:hover {
+  border-color: rgba(255, 253, 248, 0.42);
+}
+
+.site-header__link.is-active {
+  border-color: var(--banco-light);
+  color: var(--chalk);
+}
+
+.site-header__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  padding-inline: 6px;
+  border-radius: 10px;
+  background: rgba(231, 183, 125, 0.16);
+  color: var(--banco-light);
+  font-size: 0.68rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 
 .site-header__actions {
@@ -318,6 +340,7 @@ textarea:focus-visible {
 }
 
 .site-header__menu-button {
+  position: relative;
   display: none;
   width: 44px;
   height: 44px;
@@ -327,6 +350,17 @@ textarea:focus-visible {
   background: transparent;
   color: var(--chalk);
   cursor: pointer;
+}
+
+.site-header__menu-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--banco-light);
 }
 
 .site-header__mobile-panel {
@@ -343,14 +377,20 @@ textarea:focus-visible {
 
 .site-header__mobile-panel nav {
   display: grid;
-  gap: 2px;
+  gap: 8px;
   padding-block: 18px 28px;
 }
 
-.site-header__mobile-panel nav > a:not(.button) {
-  padding-block: 13px;
-  color: rgba(255, 255, 255, 0.82);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.site-header__mobile-panel .site-header__link {
+  min-height: 52px;
+  font-size: 0.95rem;
+}
+
+.site-header__mobile-login {
+  padding: 13px 18px;
+  color: rgba(255, 253, 248, 0.78);
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 /* Buttons */
@@ -1412,120 +1452,211 @@ textarea:focus-visible {
   gap: 18px;
 }
 
+/* Directory cards: portraits first, with one clear profile destination. */
 .alumni-card {
-  --card-motion-line: rgba(12, 41, 72, 0.22);
-  --card-motion-line-secondary: rgba(194, 125, 56, 0.34);
-  --card-motion-ring: rgba(12, 41, 72, 0.18);
-  --card-motion-node: #2e5a36;
-  --card-motion-traveler: #b46f2e;
-  position: relative;
-  display: flex;
+  min-width: 0;
   height: 100%;
-  min-height: 390px;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 26px;
-  overflow: hidden;
-  isolation: isolate;
-  background: #f1e8dc;
+  background: var(--chalk);
   color: var(--ink);
-  border-top: 4px solid var(--ink);
-  transition: background-color 200ms ease;
-}
-
-.alumni-card-motion {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.52;
-  pointer-events: none;
-  transition: opacity 260ms ease;
-}
-
-.alumni-card-motion svg {
-  width: 100%;
-  height: 100%;
-}
-
-.alumni-card-motion path,
-.alumni-card-motion circle {
-  vector-effect: non-scaling-stroke;
-}
-
-.alumni-card-motion__routes path {
-  fill: none;
-  stroke: var(--card-motion-line);
-  stroke-linecap: round;
-  stroke-width: 1.1;
-}
-
-.alumni-card-motion__routes path:nth-child(2) {
-  stroke: var(--card-motion-line-secondary);
-}
-
-.alumni-card-motion__ring {
-  fill: none;
-  stroke: var(--card-motion-ring);
-  stroke-width: 1;
-  stroke-dasharray: 3 12;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.alumni-card-motion__nodes circle {
-  fill: var(--card-motion-node);
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.alumni-card-motion__travelers circle {
-  fill: var(--card-motion-traveler);
-}
-
-.alumni-card:is(:hover, :focus-within) .alumni-card-motion {
-  opacity: 0.82;
+  border: 1px solid #e4e4da;
+  border-radius: 20px;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 
 .alumni-card:hover {
-  background: #ebddcc;
+  border-color: #b4c5b4;
+  box-shadow: 0 8px 24px -18px rgba(12, 41, 72, 0.4);
 }
 
-.alumni-card--featured {
-  --card-motion-line: rgba(255, 253, 248, 0.27);
-  --card-motion-line-secondary: rgba(7, 29, 51, 0.32);
-  --card-motion-ring: rgba(255, 253, 248, 0.24);
-  --card-motion-node: #fff3df;
-  --card-motion-traveler: #0c2948;
-  min-height: 480px;
-  background: var(--banco);
-  color: var(--chalk);
-  border-color: #7f461e;
+.alumni-card:focus-within {
+  outline: 3px solid var(--banco);
+  outline-offset: 4px;
 }
 
-.alumni-card--featured:hover {
-  background: #b97132;
-}
-
-.alumni-card--with-photo .alumni-card__avatar {
-  width: 96px;
-  height: 118px;
-  border: 2px solid rgba(12, 41, 72, 0.15);
-  box-shadow: 7px 8px 0 rgba(12, 41, 72, 0.07);
-}
-
-.alumni-card--featured.alumni-card--with-photo .alumni-card__avatar {
-  width: 122px;
-  height: 150px;
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 8px 9px 0 rgba(7, 29, 51, 0.13);
-}
-
-.alumni-card__topline {
-  position: relative;
-  z-index: 1;
+.alumni-card__link {
   display: flex;
-  align-items: flex-start;
+  height: 100%;
+  flex-direction: column;
+  border-radius: inherit;
+}
+
+.alumni-card__link:focus-visible {
+  outline: none;
+}
+
+.alumni-card__media {
+  position: relative;
+  height: 210px;
+  margin: 8px 8px 0;
+  overflow: hidden;
+  border-radius: 14px;
+  isolation: isolate;
+}
+
+.alumni-card .alumni-card__avatar {
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  font-size: 4.8rem;
+  font-weight: 600;
+}
+
+.alumni-card__avatar > img {
+  min-height: 0;
+  object-position: center 25%;
+  transition: transform 380ms cubic-bezier(0.2, 0.65, 0.3, 1);
+}
+
+.alumni-card__avatar > span {
+  width: 120px;
+  padding-top: 18px;
+  border: 1px solid currentColor;
+  border-bottom: 0;
+  border-radius: 70px 70px 0 0;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.alumni-card__promotion {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 5px 10px;
+  background: var(--chalk);
+  color: var(--ink);
+  border-radius: 7px;
+  font-size: 0.65rem;
+  font-weight: 750;
+}
+
+.alumni-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  padding: 21px 22px 19px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.alumni-card__domain {
+  margin: 0 0 7px;
+  color: var(--mango);
+  font-size: 0.63rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.alumni-card h3 {
+  margin: 0 0 7px;
+  font-size: 1.55rem;
+  line-height: 1.15;
+  text-wrap: wrap;
+}
+
+.alumni-card__role {
+  margin: 0 0 12px;
+  color: #465866;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.alumni-card__location {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: #596976;
+  font-size: 0.72rem;
+}
+
+.alumni-card__location svg {
+  flex: 0 0 auto;
+}
+
+.alumni-card__inline-promotion {
+  display: none;
+}
+
+.alumni-card__specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alumni-card__specialties li {
+  padding: 4px 8px;
+  background: #f2f1e9;
+  color: #4c5c5a;
+  border-radius: 5px;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.alumni-card__footer {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 14px;
+  min-height: 74px;
+  padding: 15px 22px;
+  border-top: 1px solid #e9e9df;
+}
+
+.alumni-card__invitation {
+  display: grid;
+  gap: 4px;
+  color: #596976;
+  font-size: 0.67rem;
+}
+
+.alumni-card__invitation b {
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+
+.alumni-card__mentor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mango);
+  font-weight: 700;
+}
+
+.alumni-card__mentor i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.alumni-card__arrow {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #edf0e8;
+  color: var(--mango);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+.alumni-card:is(:hover, :focus-within) .alumni-card__arrow {
+  background: var(--mango);
+  color: white;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .alumni-card:hover .alumni-card__avatar > img {
+    transform: scale(1.045);
+  }
 }
 
 .avatar {
@@ -1565,82 +1696,6 @@ textarea:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.alumni-card__promotion {
-  color: currentColor;
-  font-size: 0.66rem;
-  font-weight: 750;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0.64;
-}
-
-.alumni-card__body {
-  position: relative;
-  z-index: 1;
-  margin-top: auto;
-  padding-block: 38px 24px;
-}
-
-.alumni-card__domain {
-  margin-bottom: 8px;
-  color: var(--mango);
-  font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.alumni-card--featured .alumni-card__domain {
-  color: #f7ddb9;
-}
-
-.alumni-card h3 {
-  margin-bottom: 6px;
-  font-size: clamp(1.6rem, 2.4vw, 2.3rem);
-  line-height: 1;
-}
-
-.alumni-card__role {
-  margin-bottom: 18px;
-  color: currentColor;
-  font-size: 0.86rem;
-  font-weight: 600;
-  opacity: 0.8;
-}
-
-.alumni-card__location {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0;
-  font-size: 0.73rem;
-  opacity: 0.69;
-}
-
-.alumni-card__footer {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding-top: 18px;
-  border-top: 1px solid currentColor;
-  font-size: 0.7rem;
-  opacity: 0.88;
-}
-
-.alumni-card__mentor,
-.alumni-card__footer a {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.alumni-card__footer a {
-  font-weight: 750;
 }
 
 .section-link-row {
@@ -2545,11 +2600,7 @@ textarea:focus-visible {
 .directory-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.directory-grid .alumni-card {
-  min-height: 370px;
+  gap: 24px;
 }
 
 .directory-empty {
@@ -2607,6 +2658,12 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 28px;
+  min-width: 0;
+}
+
+.profile-hero__identity > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .profile-hero__identity .avatar {
@@ -2779,6 +2836,22 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
+.profile-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.profile-links a > span:first-of-type {
+  flex: 1;
+}
+
 .specialty-list {
   display: flex;
   flex-wrap: wrap;
@@ -2908,6 +2981,492 @@ textarea:focus-visible {
   margin: 0;
   color: #66727d;
   font-size: 0.8rem;
+}
+
+/* Member connections and the profile mentoring network */
+
+.connections-page {
+  padding-block: 48px 100px;
+}
+
+.connections-page__header {
+  max-width: 820px;
+  margin-block: 32px 44px;
+}
+
+.connections-page__header h1 {
+  color: var(--ink);
+  font-size: clamp(2.6rem, 5vw, 4.6rem);
+  line-height: 1.02;
+}
+
+.connections-page__header > p:last-child {
+  max-width: 680px;
+  color: #596976;
+}
+
+.connections-page__toolbar,
+.connections-section__heading,
+.connection-card__heading,
+.connection-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.connections-page__toolbar {
+  padding-block: 20px;
+  border-block: 1px solid var(--line);
+}
+
+.connections-page__toolbar p,
+.connections-section__heading h2 {
+  margin: 0;
+}
+
+.connections-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 36px;
+  margin-top: 40px;
+}
+
+.connections-section {
+  min-width: 0;
+  margin-top: 42px;
+}
+
+.connections-columns > .connections-section {
+  margin-top: 0;
+}
+
+.connections-section__heading {
+  margin-bottom: 22px;
+}
+
+.connections-section__heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-size: 1.65rem;
+}
+
+.connections-count {
+  min-width: 30px;
+  padding: 3px 10px;
+  background: var(--sand);
+  color: var(--ink);
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.connections-list {
+  display: grid;
+  gap: 18px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.connection-card {
+  min-width: 0;
+  padding: 24px;
+  background: var(--chalk);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--banco);
+}
+
+.connection-card__person {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+}
+
+.connection-card__person .avatar {
+  width: 44px;
+  height: 52px;
+  flex: 0 0 auto;
+  border-radius: 24px 24px 4px 4px;
+  font-size: 0.75rem;
+}
+
+.connection-card__person > span {
+  display: grid;
+  min-width: 0;
+  color: #5e6e7b;
+  font-size: 0.75rem;
+}
+
+.connection-card__person b {
+  color: var(--ink);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+a.connection-card__person:hover b {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.connection-status {
+  padding: 4px 8px;
+  background: var(--sand);
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.connection-status--accepted {
+  background: #e3eee2;
+  color: #244b2c;
+}
+
+.connection-status--declined,
+.connection-status--cancelled,
+.connection-status--ended {
+  background: #ece9e3;
+  color: #62676b;
+}
+
+.connection-card__kind {
+  margin: 18px 0 8px;
+  color: var(--mango);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.connection-card__message {
+  margin: 0 0 20px;
+  color: #465866;
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.connection-card__actions {
+  justify-content: flex-start;
+  margin-top: 18px;
+}
+
+.connection-card__note,
+.connection-card time {
+  color: #5e6e7b;
+  font-size: 0.75rem;
+}
+
+.connection-card__note {
+  margin: 12px 0 0;
+}
+
+.connection-card .form-check,
+.profile-request-form .form-check {
+  font-size: 0.78rem;
+}
+
+.connection-confirm {
+  margin-top: 18px;
+  padding: 16px;
+  background: #f4ebdd;
+  border-left: 3px solid var(--banco);
+  font-size: 0.84rem;
+}
+
+.connection-confirm p {
+  margin-bottom: 10px;
+}
+
+.connections-empty,
+.connections-loading {
+  padding: 22px;
+  margin: 0;
+  background: #f0ebe3;
+  color: #596976;
+  font-size: 0.88rem;
+}
+
+.connections-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-request-form .form-check {
+  grid-column: 2;
+}
+
+.profile-network {
+  padding-block: 38px 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-network__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 24px;
+  color: var(--ink);
+}
+
+.profile-network__heading h2 {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+}
+
+.profile-network__heading > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #596976;
+  font-size: 0.74rem;
+}
+
+.profile-network > p {
+  color: #596976;
+  font-size: 0.83rem;
+}
+
+.profile-network__tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-network__tabs button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 2px 14px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #596976;
+  cursor: pointer;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.profile-network__tabs button span {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-network__tabs button[aria-selected="true"] {
+  border-bottom-color: var(--mango);
+  color: var(--mango);
+}
+
+.profile-network__tabs button:hover {
+  color: var(--ink);
+}
+
+.profile-network [role="tabpanel"]:focus-visible {
+  outline: 2px solid var(--banco);
+  outline-offset: 4px;
+}
+
+.profile-network__description {
+  margin: 20px 0 2px;
+  color: #596976;
+  font-size: 0.8rem;
+}
+
+.profile-network__people {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 32px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.profile-network__people > li {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.mentorship-person {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  height: 100%;
+  padding: 20px 8px;
+  border-radius: 4px;
+  transition: background-color 160ms ease;
+}
+
+.mentorship-person:hover {
+  background: #f0ebe3;
+}
+
+.mentorship-person .avatar {
+  width: 60px;
+  height: 72px;
+  border-radius: 32px 32px 5px 5px;
+  font-size: 1.05rem;
+}
+
+.mentorship-person__info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mentorship-person__info b {
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.mentorship-person__info > span {
+  color: #465866;
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.mentorship-person__info small {
+  color: #596976;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.mentorship-person__arrow {
+  color: #596976;
+}
+
+.profile-network__empty {
+  padding-block: 28px 12px;
+}
+
+.profile-network__empty p {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 0.94rem;
+}
+
+.profile-network__empty span {
+  color: #596976;
+  font-size: 0.8rem;
+}
+
+.connections-columns--mentorships {
+  gap: 48px;
+}
+
+.connections-columns--mentorships .connections-section__heading {
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.connections-columns--mentorships .connections-section__heading h2 {
+  font-size: 1.3rem;
+}
+
+.connections-columns--mentorships .connections-count {
+  padding: 0;
+  min-width: auto;
+  background: transparent;
+  color: var(--mango);
+  font-size: 1.25rem;
+}
+
+.connections-columns--mentorships .connections-list {
+  gap: 0;
+}
+
+.mentorship-row {
+  min-width: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mentorship-row .mentorship-person {
+  height: auto;
+  padding-bottom: 10px;
+}
+
+.mentorship-row__details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-left: 84px;
+  color: #596976;
+  font-size: 0.74rem;
+}
+
+.mentorship-row__details .button {
+  min-height: 44px;
+  padding: 8px 0;
+  color: #596976;
+  font-size: 0.74rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mentorship-row__unavailable {
+  margin: 0;
+  padding: 20px 8px 10px;
+}
+
+@media (max-width: 1100px) {
+  .profile-network__people {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 24px;
+  }
+}
+
+@media (max-width: 860px) {
+  .connections-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .connection-card {
+    padding: 18px;
+  }
+
+  .profile-hero__action {
+    min-width: 0;
+  }
+
+  .profile-network__people {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-network {
+    padding-top: 28px;
+  }
+
+  .profile-network__heading {
+    gap: 8px;
+  }
+
+  .mentorship-person {
+    gap: 12px;
+    padding-inline: 0;
+  }
+
+  .mentorship-row__details {
+    padding-left: 72px;
+  }
+
+  .profile-request-form .form-check {
+    grid-column: 1;
+  }
 }
 
 /* Account pages */
@@ -3961,8 +4520,17 @@ textarea:focus-visible {
 }
 
 @media (max-width: 1080px) {
+  .site-header__inner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
   .site-header__desktop-nav {
-    gap: 20px;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .site-header__link {
+    padding-inline: 14px;
   }
 
   .site-header__actions {
@@ -4534,11 +5102,6 @@ textarea:focus-visible {
     display: block;
   }
 
-  .alumni-card,
-  .alumni-card--featured {
-    min-height: 370px;
-  }
-
   .discovery-path {
     grid-template-columns: 28px 1fr auto;
     min-height: 160px;
@@ -4694,7 +5257,8 @@ textarea:focus-visible {
   }
 
   .profile-hero h1 {
-    font-size: clamp(3rem, 15vw, 4.8rem);
+    font-size: clamp(2rem, 9vw, 3.2rem);
+    line-height: 1.05;
   }
 
   .profile-layout {
@@ -4837,6 +5401,118 @@ textarea:focus-visible {
   .site-footer__bottom {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+/* Compact browsing uses the same accessible card and profile link. */
+.directory-grid--list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.directory-grid--list .alumni-card__link {
+  display: grid;
+  grid-template-columns: 154px minmax(0, 1fr) 195px;
+  align-items: center;
+}
+
+.directory-grid--list .alumni-card__media {
+  height: 150px;
+  margin: 8px;
+}
+
+.directory-grid--list .alumni-card__body {
+  gap: 12px;
+  padding: 20px 24px;
+}
+
+.directory-grid--list .alumni-card__specialties {
+  margin-top: 0;
+}
+
+.directory-grid--list .alumni-card__promotion {
+  display: none;
+}
+
+.directory-grid--list .alumni-card__inline-promotion {
+  display: inline;
+  margin-left: 4px;
+  color: var(--mango);
+}
+
+.directory-grid--list .alumni-card__footer {
+  border-top: 0;
+  border-left: 1px solid #e9e9df;
+  padding: 18px;
+}
+
+.directory-grid--list .alumni-card__avatar > span {
+  width: 90px;
+  padding-top: 10px;
+  font-size: 3.6rem;
+}
+
+@media (max-width: 860px) {
+  .directory-grid--list .alumni-card__link {
+    grid-template-columns: 128px minmax(0, 1fr);
+  }
+
+  .directory-grid--list .alumni-card__media {
+    grid-row: 1 / 3;
+    align-self: start;
+    height: 142px;
+    margin: 12px 0 12px 12px;
+  }
+
+  .directory-grid--list .alumni-card__body {
+    padding: 18px 20px 10px;
+  }
+
+  .directory-grid--list .alumni-card__footer {
+    grid-column: 2;
+    min-height: auto;
+    padding: 0 20px 16px;
+    border: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .alumni-card__media {
+    height: 200px;
+  }
+
+  .directory-grid--list .alumni-card__link {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .directory-grid--list .alumni-card__media {
+    height: 96px;
+    margin-top: 18px;
+    border-radius: 40px 40px 10px 10px;
+  }
+
+  .directory-grid--list .alumni-card__promotion {
+    display: none;
+  }
+
+  .directory-grid--list .alumni-card__body {
+    padding: 18px 14px 10px;
+  }
+
+  .directory-grid--list .alumni-card h3 {
+    font-size: 1.25rem;
+  }
+
+  .directory-grid--list .alumni-card__avatar > span {
+    width: auto;
+    padding: 0;
+    border: 0;
+    font-size: 1.8rem;
+  }
+
+  .directory-grid--list .alumni-card__footer {
+    gap: 8px;
+    padding: 0 14px 16px;
   }
 }
 

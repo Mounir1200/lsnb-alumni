@@ -1,21 +1,28 @@
 import {
   ArrowLeft,
+  ArrowUpRight,
   BookOpen,
   Check,
   GraduationCap,
+  Globe,
+  Linkedin,
+  LoaderCircle,
   MapPin,
   MessageCircle,
   Orbit,
   PencilLine,
 } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { ProfileMentorshipNetwork } from "../components/mentoring/ProfileMentorshipNetwork";
 import { Avatar } from "../components/ui/Avatar";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { alumniProfiles, getAlumniProfile, type AlumniProfile } from "../data/alumni";
 import { loadProfile } from "../lib/profileRepository";
-import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { getProfileCompletionPath } from "../lib/auth";
+import { createConnectionRequest, getConnectionErrorMessage, loadActiveMentorships, loadProfileConnections, type ConnectionRequest, type Mentorship } from "../lib/mentorshipRepository";
+import { isSupabaseConfigured } from "../lib/supabase";
 import { NotFoundPage } from "./NotFoundPage";
 
 type RequestStatus = {
@@ -25,13 +32,24 @@ type RequestStatus = {
 
 export function ProfilePage() {
   const { profileId = "" } = useParams();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading, profileCompleted } = useAuth();
   const demoProfile = getAlumniProfile(profileId);
   const [profile, setProfile] = useState<AlumniProfile | undefined>(demoProfile);
   const [loading, setLoading] = useState(Boolean(!demoProfile && isSupabaseConfigured));
   const [requestSent, setRequestSent] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
   const [requestStatus, setRequestStatus] = useState<RequestStatus>({ kind: "idle" });
+  const [connectionsReload, setConnectionsReload] = useState(0);
+  const [connections, setConnections] = useState<{ scope: string; requests?: ConnectionRequest[]; mentorships?: Mentorship[]; error?: string }>();
+  const requestScope = `${user?.id ?? ""}:${profileId}`;
+  const currentScope = useRef(requestScope);
+  currentScope.current = requestScope;
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   useEffect(() => {
     setRequestSent(false);
@@ -45,11 +63,13 @@ export function ProfilePage() {
       return;
     }
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || (!authLoading && !user)) {
       setProfile(undefined);
       setLoading(false);
       return;
     }
+
+    if (authLoading) return;
 
     let active = true;
     setLoading(true);
@@ -66,9 +86,29 @@ export function ProfilePage() {
     return () => {
       active = false;
     };
-  }, [profileId]);
+  }, [profileId, user?.id, authLoading]);
 
-  if (loading) {
+  useEffect(() => {
+    if (!user || !profileCompleted || demoProfile || authLoading) return;
+    let active = true;
+    setConnections({ scope: requestScope });
+    void Promise.all([loadProfileConnections(user.id, profileId), loadActiveMentorships(user.id)])
+      .then(([requests, mentorships]) => { if (active) setConnections({ scope: requestScope, requests, mentorships }); })
+      .catch((error: unknown) => { if (active) setConnections({ scope: requestScope, error: getConnectionErrorMessage(error) }); });
+    return () => { active = false; };
+  }, [user?.id, profileId, profileCompleted, authLoading, Boolean(demoProfile), connectionsReload, requestScope]);
+
+  if (!demoProfile && isSupabaseConfigured && !authLoading && !user) {
+    return (
+      <section className="auth-state-page">
+        <h1>Retrouvez ce membre du réseau.</h1>
+        <p>Connectez-vous pour consulter son profil et son réseau de mentorat.</p>
+        <ButtonLink to={`/connexion?next=${encodeURIComponent(`/alumni/${profileId}`)}`}>Se connecter</ButtonLink>
+      </section>
+    );
+  }
+
+  if (loading || authLoading || (profile && profile.id !== profileId)) {
     return (
       <section className="simple-page page-shell" aria-live="polite">
         <p className="eyebrow eyebrow--dark">Chargement</p>
@@ -85,6 +125,18 @@ export function ProfilePage() {
         .filter((item) => item.id !== profile.id && item.domain === profile.domain)
         .slice(0, 2);
   const isOwnProfile = profile.isDemo === false && user?.id === profile.id;
+  const currentConnections = connections?.scope === requestScope ? connections : undefined;
+  const connectionsReady = currentConnections?.requests !== undefined && currentConnections.mentorships !== undefined;
+  const requestKind = profile.offersMentoring ? "mentoring" : "contact";
+  const relevantRequests = currentConnections?.requests?.filter((item) => item.kind === requestKind) ?? [];
+  const pendingRequest = relevantRequests.find((item) => item.status === "pending" && (
+    requestKind === "contact" || item.requesterId === user?.id
+  ));
+  const activeMentorship = currentConnections?.mentorships?.find((item) => item.mentorId === profile.id && item.menteeId === user?.id);
+  const acceptedContact = requestKind === "contact" && relevantRequests.some((item) => item.status === "accepted");
+  const relationshipExists = requestKind === "mentoring" ? Boolean(activeMentorship) : acceptedContact;
+  const declinedRequest = relevantRequests.find((item) => item.status === "declined" && item.requesterId === user?.id);
+  const requestUnavailable = profile.isDemo === false && (!connectionsReady || Boolean(pendingRequest) || relationshipExists);
 
   const handleRequestClick = () => {
     if (profile.isDemo !== false) {
@@ -96,41 +148,35 @@ export function ProfilePage() {
 
   const handleRequestSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!supabase) {
-      setRequestStatus({ kind: "error", message: "Supabase n’est pas configuré." });
-      return;
-    }
-
-    setRequestStatus({ kind: "loading" });
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData.user) {
+    if (!user || !profileCompleted) {
       setRequestStatus({
         kind: "login",
-        message: "Connectez-vous pour envoyer cette demande.",
+        message: "Connectez-vous et complétez votre profil pour envoyer cette demande.",
       });
       return;
     }
-    if (authData.user.id === profile.id) {
+    if (user.id === profile.id) {
       setRequestStatus({ kind: "error", message: "Vous ne pouvez pas vous envoyer une demande." });
       return;
     }
-
+    if (requestStatus.kind === "loading" || requestUnavailable) return;
     const data = new FormData(event.currentTarget);
-    const { error } = await supabase.from("connection_requests").insert({
-      requester_id: authData.user.id,
-      recipient_id: profile.id,
-      request_kind: profile.offersMentoring ? "mentoring" : "contact",
-      message: String(data.get("message") ?? "").trim(),
-    });
-
-    if (error) {
-      setRequestStatus({ kind: "error", message: error.message });
+    if (requestKind === "mentoring" && data.get("networkConsent") !== "on") {
+      setRequestStatus({ kind: "error", message: "Confirmez la visibilité du mentorat avant d’envoyer votre demande." });
       return;
     }
-
-    setRequestSent(true);
-    setRequestOpen(false);
-    setRequestStatus({ kind: "success", message: "Votre demande a été transmise." });
+    const actingScope = requestScope;
+    setRequestStatus({ kind: "loading" });
+    try {
+      await createConnectionRequest(user.id, profile.id, requestKind, String(data.get("message") ?? "").trim());
+      if (!mounted.current || currentScope.current !== actingScope) return;
+      setRequestSent(true);
+      setRequestOpen(false);
+      setRequestStatus({ kind: "success", message: "Votre demande a été transmise. Retrouvez-la dans Mes relations et demandes." });
+      setConnectionsReload((value) => value + 1);
+    } catch (error) {
+      if (mounted.current && currentScope.current === actingScope) setRequestStatus({ kind: "error", message: getConnectionErrorMessage(error) });
+    }
   };
 
   return (
@@ -167,16 +213,24 @@ export function ProfilePage() {
               <ButtonLink to="/espace/modifier" size="lg">
                 <PencilLine size={18} aria-hidden="true" /> Modifier mon profil
               </ButtonLink>
+            ) : profile.isDemo === false && !profileCompleted ? (
+              <ButtonLink to={getProfileCompletionPath(`/alumni/${profileId}`)} size="lg">Compléter mon profil</ButtonLink>
             ) : (
               <Button
                 size="lg"
                 onClick={handleRequestClick}
-                disabled={requestSent}
+                disabled={(profile.isDemo !== false && requestSent) || requestUnavailable}
               >
-                {requestSent ? (
+                {profile.isDemo === false && !connectionsReady && !currentConnections?.error ? (
+                  <><LoaderCircle size={18} className="spin" aria-hidden="true" /> Vérification des demandes…</>
+                ) : relationshipExists ? (
+                  <><Check size={18} aria-hidden="true" /> {requestKind === "mentoring" ? "Mentorat en cours" : "Échange accepté"}</>
+                ) : pendingRequest ? (
+                  <><Check size={18} aria-hidden="true" /> {pendingRequest.requesterId === user?.id ? "Demande en attente" : "Demande reçue"}</>
+                ) : requestSent && profile.isDemo !== false ? (
                   <><Check size={18} aria-hidden="true" /> Demande enregistrée</>
                 ) : (
-                  <><MessageCircle size={18} aria-hidden="true" /> Demander un échange</>
+                  <><MessageCircle size={18} aria-hidden="true" /> {requestKind === "mentoring" ? "Demander un mentorat" : "Demander un échange"}</>
                 )}
               </Button>
             )}
@@ -187,11 +241,14 @@ export function ProfilePage() {
                   : "Mode démonstration : aucun message réel n’a été envoyé."}
               </span>
             )}
+            {!isOwnProfile && currentConnections?.error && <span role="alert">{currentConnections.error} <Button size="sm" variant="light" onClick={() => setConnectionsReload((value) => value + 1)}>Réessayer</Button></span>}
+            {!isOwnProfile && (pendingRequest || relationshipExists || requestSent) && profile.isDemo === false && <ButtonLink to="/espace/relations" size="sm" variant="light">Gérer mes relations et demandes</ButtonLink>}
+            {!isOwnProfile && connectionsReady && declinedRequest && !pendingRequest && !relationshipExists && !requestSent && <span>Votre précédente demande a été refusée. Vous pouvez formuler une nouvelle demande.</span>}
           </div>
         </section>
 
-        {requestOpen && (
-          <form className="profile-request-form" onSubmit={handleRequestSubmit}>
+        {requestOpen && !requestUnavailable && (
+          <form key={requestScope} className="profile-request-form" onSubmit={handleRequestSubmit}>
             <div>
               <p className="eyebrow eyebrow--dark">
                 {profile.offersMentoring ? "Demande de mentorat" : "Demande de contact"}
@@ -204,10 +261,19 @@ export function ProfilePage() {
                 name="message"
                 rows={4}
                 minLength={20}
+                maxLength={1200}
+                disabled={requestStatus.kind === "loading"}
                 placeholder="Expliquez brièvement votre situation et le conseil recherché."
                 required
               />
+              <small>20 à 1 200 caractères. Ce message est visible uniquement par vous et son destinataire.</small>
             </label>
+            {requestKind === "mentoring" && (
+              <label className="form-check">
+                <input type="checkbox" name="networkConsent" required disabled={requestStatus.kind === "loading"} />
+                <span>Si cette demande est acceptée, j’accepte que notre mentorat apparaisse sur nos deux profils, visible par les membres connectés.</span>
+              </label>
+            )}
             {requestStatus.message && (
               <div className={`form-status form-status--${requestStatus.kind}`} role="status">
                 {requestStatus.message}
@@ -215,11 +281,13 @@ export function ProfilePage() {
               </div>
             )}
             <div className="profile-request-form__actions">
-              <Button variant="outline" onClick={() => setRequestOpen(false)}>Annuler</Button>
+              <Button variant="outline" disabled={requestStatus.kind === "loading"} onClick={() => setRequestOpen(false)}>Annuler</Button>
               <Button type="submit" disabled={requestStatus.kind === "loading"}>Envoyer la demande</Button>
             </div>
           </form>
         )}
+
+        <ProfileMentorshipNetwork profileId={profile.id} firstName={profile.firstName} isDemo={profile.isDemo !== false} />
 
         <div className="profile-layout">
           <article className="profile-story">
@@ -244,6 +312,27 @@ export function ProfilePage() {
           </article>
 
           <aside className="profile-aside">
+            {(profile.linkedinUrl || profile.portfolioUrl) && (
+              <section className="profile-links" aria-label="Liens du profil">
+                <p>Retrouver {profile.firstName}</p>
+                {profile.linkedinUrl && (
+                  <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
+                    <Linkedin size={18} aria-hidden="true" />
+                    <span>Profil LinkedIn</span>
+                    <ArrowUpRight size={16} aria-hidden="true" />
+                    <span className="sr-only"> (nouvel onglet)</span>
+                  </a>
+                )}
+                {profile.portfolioUrl && (
+                  <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer">
+                    <Globe size={18} aria-hidden="true" />
+                    <span>Portfolio</span>
+                    <ArrowUpRight size={16} aria-hidden="true" />
+                    <span className="sr-only"> (nouvel onglet)</span>
+                  </a>
+                )}
+              </section>
+            )}
             <section>
               <p>Spécialités</p>
               <div className="specialty-list">
