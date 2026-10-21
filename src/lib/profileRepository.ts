@@ -105,10 +105,7 @@ export async function loadProfiles() {
     .order("last_name");
 
   if (error) throw error;
-  const profiles = (data as ProfileRow[]).map(mapProfile);
-  return profiles.length
-    ? { profiles, source: "supabase" as const }
-    : { profiles: alumniProfiles, source: "demo" as const };
+  return { profiles: (data as ProfileRow[]).map(mapProfile), source: "supabase" as const };
 }
 
 export async function loadProfile(id: string) {
