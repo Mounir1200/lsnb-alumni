@@ -18,6 +18,7 @@ export function SiteFooter() {
           <Link to="/annuaire">Annuaire</Link>
           <Link to="/highlights">Highlight de la semaine</Link>
           <Link to="/annuaire?mentor=true">Trouver un mentor</Link>
+          <Link to="/offres">Stages, bourses et admissions</Link>
           <Link to="/rejoindre">Créer un profil</Link>
         </div>
 

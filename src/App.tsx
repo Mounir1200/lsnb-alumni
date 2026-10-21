@@ -15,6 +15,9 @@ import { JoinPage } from "./pages/JoinPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MemberPage } from "./pages/MemberPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { OfferEditorPage } from "./pages/OfferEditorPage";
+import { OfferPage } from "./pages/OfferPage";
+import { OffersPage } from "./pages/OffersPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { CompleteProfilePage } from "./pages/CompleteProfilePage";
@@ -63,6 +66,24 @@ export function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/annuaire" element={<DirectoryPage />} />
             <Route path="/highlights" element={<HighlightsPage />} />
+            <Route path="/offres" element={<OffersPage />} />
+            <Route
+              path="/offres/publier"
+              element={
+                <RequireAuth>
+                  <OfferEditorPage />
+                </RequireAuth>
+              }
+            />
+            <Route path="/offres/:offerId" element={<OfferPage />} />
+            <Route
+              path="/offres/:offerId/modifier"
+              element={
+                <RequireAuth>
+                  <OfferEditorPage />
+                </RequireAuth>
+              }
+            />
             <Route path="/alumni/:profileId" element={<ProfilePage />} />
             <Route path="/rejoindre" element={<JoinPage />} />
             <Route path="/connexion" element={<LoginPage />} />

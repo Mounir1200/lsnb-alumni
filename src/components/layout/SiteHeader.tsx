@@ -28,6 +28,7 @@ const navigation: NavigationItem[] = [
       || location.pathname.startsWith("/alumni/"),
   },
   { label: "Mentorat", to: "/annuaire?mentor=true", isCurrent: isMentorDirectory },
+  { label: "Offres", to: "/offres", isCurrent: ({ pathname }) => pathname === "/offres" || pathname.startsWith("/offres/") },
   { label: "Highlights", to: "/highlights", isCurrent: ({ pathname }) => pathname === "/highlights" },
 ];
 

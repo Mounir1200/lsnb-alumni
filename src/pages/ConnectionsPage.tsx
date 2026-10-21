@@ -115,7 +115,14 @@ export function ConnectionsPage() {
           <MemberIdentity member={member} />
           <span className={`connection-status connection-status--${request.status}`}>{requestStatusLabels[request.status]}</span>
         </div>
-        <p className="connection-card__kind">{request.kind === "mentoring" ? "Demande de mentorat" : "Demande d’échange"}</p>
+        <p className="connection-card__kind">{request.offerId ? "Question sur une offre" : request.kind === "mentoring" ? "Demande de mentorat" : "Demande d’échange"}</p>
+        {request.offerId && (
+          <p className="connection-card__offer">
+            {request.offer
+              ? <>Offre : <Link className="text-link text-link--dark" to={`/offres/${request.offer.id}`}>{request.offer.title}</Link></>
+              : "Cette offre n’est plus visible."}
+          </p>
+        )}
         <p className="connection-card__message">{request.message}</p>
         <time dateTime={request.createdAt}>Envoyée le {new Date(request.createdAt).toLocaleDateString("fr-FR")}</time>
         {request.status === "pending" && incoming && (

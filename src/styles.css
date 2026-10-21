@@ -3194,6 +3194,18 @@ a.connection-card__person:hover b {
   font-weight: 750;
 }
 
+.connection-card__offer {
+  margin: -4px 0 10px;
+  color: #465866;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.connection-card__offer .text-link {
+  display: inline;
+  font-size: inherit;
+}
+
 .connection-card__message {
   margin: 0 0 20px;
   color: #465866;
