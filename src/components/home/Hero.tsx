@@ -31,8 +31,8 @@ export function Hero() {
     });
 
     return () => {
-      entranceAnimation.cancel();
-      titleAnimation.cancel();
+      entranceAnimation.revert();
+      titleAnimation.revert();
     };
   }, [reducedMotion]);
 
