@@ -11,5 +11,6 @@ api/src/highlights/mentorship.database.test.ts
 api/src/highlights/mentorship.repository.test.ts
 api/src/highlights/profile-links.test.ts
 api/src/highlights/fixtures/
+brag-output/
 
 
