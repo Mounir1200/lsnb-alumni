@@ -1,0 +1,139 @@
+/* Career steps editor, shared by the join, completion and edit forms. */
+
+.career-editor {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.career-editor legend {
+  padding: 0;
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.career-editor legend span {
+  color: #6d7882;
+  font-weight: 600;
+}
+
+.career-editor__hint {
+  margin: 0;
+  color: #6d7882;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.career-editor__list {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.career-step-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--banco);
+}
+
+.career-step-card--work {
+  border-left-color: var(--mango);
+}
+
+/* A help text under one field must not stretch its neighbour. */
+.career-step-card .form-row {
+  align-items: start;
+}
+
+.career-step-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.career-step-card__header > b {
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+
+.career-step-card__kinds {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #d7dfda;
+  border-radius: 8px;
+  background: #edf1ed;
+}
+
+.career-step-card__kinds label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 11px;
+  border-radius: 6px;
+  color: #52635e;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.career-step-card__kinds label.is-selected {
+  background: #fffefa;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(12 41 72 / 6%);
+}
+
+.career-step-card__kinds input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.career-step-card__kinds label:has(input:focus-visible) {
+  outline: 3px solid #f1b66f;
+  outline-offset: 2px;
+}
+
+.career-step-card__remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  margin-left: auto;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: #7d301d;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.career-step-card__remove:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.career-editor__add.button {
+  justify-self: start;
+}
+
+.career-editor:disabled .career-step-card__kinds label,
+.career-editor:disabled .career-step-card__remove {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

@@ -107,6 +107,8 @@ L’inscription et la connexion Google sont implémentées via Supabase Auth, av
 
 Les demandes d’échange et de mentorat se gèrent dans **Mon espace → Mes relations et demandes**. Les relations de mentorat acceptées alimentent les compteurs et listes « Mentors » / « Mentorés » des profils, visibles aux membres connectés. Le [guide du mentorat](docs/mentorship.md) décrit le consentement, les droits, la fin d’une relation et la migration appliquée à Supabase Cloud.
 
+Les membres renseignent leur parcours en quelques phrases et ses **étapes clés** datées (formations, expériences), affichées dans les repères de leur profil. Le [guide des étapes du parcours](docs/etapes-parcours.md) décrit leur format, leur saisie et la migration à appliquer avant de déployer le frontend.
+
 L’onglet **Offres** permet aux mentors alumni de publier des stages, des bourses et des admissions universitaires ; les membres les parcourent et posent leurs questions à l’auteur par une demande d’échange liée à l’offre. Le [guide des offres](docs/offres.md) décrit les règles de visibilité et la migration à appliquer avant de déployer le frontend.
 
 ## Direction visuelle

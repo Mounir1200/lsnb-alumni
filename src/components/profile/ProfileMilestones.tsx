@@ -1,6 +1,21 @@
 import type { AlumniProfile } from "../../data/alumni";
+import type { CareerStep, CareerStepKind } from "../../lib/careerSteps";
 
-type Milestone = { key: string; label: string; title: string; detail?: string; tone?: "origin" | "now" };
+type Milestone = {
+  key: string;
+  label: string;
+  kind?: string;
+  title: string;
+  detail?: string;
+  tone?: "origin" | "now";
+};
+
+const kindLabels: Record<CareerStepKind, string> = { education: "Formation", work: "Expérience" };
+
+function formatPeriod({ startYear, endYear }: CareerStep) {
+  if (endYear === null) return `Depuis ${startYear}`;
+  return endYear === startYear ? String(startYear) : `${startYear} – ${endYear}`;
+}
 
 function describeMilestones(profile: AlumniProfile): Milestone[] {
   const isStudent = profile.graduationYear > new Date().getFullYear();
@@ -11,8 +26,16 @@ function describeMilestones(profile: AlumniProfile): Milestone[] {
     detail: "LSNB · Bobo-Dioulasso",
     tone: "origin",
   }];
-  profile.education.forEach((education) => milestones.push({ key: education, label: "Puis", title: education }));
-  if (!isStudent) {
+  profile.careerSteps.forEach((step, index) => milestones.push({
+    key: `step-${index}`,
+    label: formatPeriod(step),
+    kind: kindLabels[step.kind],
+    title: step.title,
+    detail: [step.organization, step.location].filter(Boolean).join(" · ") || undefined,
+    tone: step.endYear === null ? "now" : undefined,
+  }));
+  // Without an ongoing step, today is described by the profile's role and place.
+  if (!isStudent && !profile.careerSteps.some((step) => step.endYear === null)) {
     milestones.push({
       key: "now",
       label: "Aujourd’hui",
@@ -24,7 +47,7 @@ function describeMilestones(profile: AlumniProfile): Milestone[] {
   return milestones;
 }
 
-/** The school, the known steps, then today: the same path as the hero globe. */
+/** The school, the member's steps, then today: the same path as the hero globe. */
 export function ProfileMilestones({ profile }: { profile: AlumniProfile }) {
   return (
     <section className="profile-milestones" aria-labelledby="profile-milestones-title">
@@ -32,7 +55,10 @@ export function ProfileMilestones({ profile }: { profile: AlumniProfile }) {
       <ol>
         {describeMilestones(profile).map((milestone) => (
           <li key={milestone.key} className={milestone.tone ? `is-${milestone.tone}` : undefined}>
-            <span className="profile-milestones__label">{milestone.label}</span>
+            <span className="profile-milestones__label">
+              {milestone.label}
+              {milestone.kind && <small>{milestone.kind}</small>}
+            </span>
             <div>
               <b>{milestone.title}</b>
               {milestone.detail && <p>{milestone.detail}</p>}

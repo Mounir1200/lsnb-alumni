@@ -13,6 +13,7 @@ import {
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { Button, ButtonLink } from "../components/ui/Button";
 import {
   deleteAvatar,
@@ -25,6 +26,7 @@ import {
   type EditableProfile,
   type ProfileGender,
 } from "../lib/profileRepository";
+import { normalizeCareerSteps, toCareerStepDrafts, type CareerStepDraft } from "../lib/careerSteps";
 import { normalizeProfileLink } from "../lib/profileLinks";
 
 type EditorForm = {
@@ -39,6 +41,7 @@ type EditorForm = {
   city: string;
   country: string;
   experience: string;
+  careerSteps: CareerStepDraft[];
   linkedinUrl: string;
   portfolioUrl: string;
   offersMentoring: boolean;
@@ -67,6 +70,7 @@ function toEditorForm(profile: EditableProfile): EditorForm {
     city: profile.city,
     country: profile.country,
     experience: profile.experience,
+    careerSteps: toCareerStepDrafts(profile.careerSteps),
     linkedinUrl: profile.linkedinUrl ?? "",
     portfolioUrl: profile.portfolioUrl ?? "",
     offersMentoring: profile.offersMentoring,
@@ -197,6 +201,7 @@ export function EditProfilePage() {
         city: form.city,
         country: form.country,
         experience: form.experience,
+        careerSteps: normalizeCareerSteps(form.careerSteps),
         linkedinUrl: normalizeProfileLink(form.linkedinUrl, "linkedin") ?? undefined,
         portfolioUrl: normalizeProfileLink(form.portfolioUrl, "portfolio") ?? undefined,
         offersMentoring: form.memberRole === "alumni" && form.offersMentoring,
@@ -433,15 +438,23 @@ export function EditProfilePage() {
             </div>
 
             <label className="field-group">
-              <span>Parcours et expériences</span>
+              <span>Votre parcours en quelques phrases</span>
               <textarea
                 rows={7}
                 value={form.experience}
                 onChange={(event) => updateField("experience", event.target.value)}
-                placeholder="Études, transitions, activité actuelle et repères que vous pouvez partager."
+                placeholder="Études, transitions, activité actuelle et ce que vous pouvez partager."
+                aria-describedby="edit-story-help"
                 required
               />
+              <small id="edit-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small>
             </label>
+
+            <CareerStepsEditor
+              steps={form.careerSteps}
+              onChange={(careerSteps) => updateField("careerSteps", careerSteps)}
+              disabled={status.kind === "loading"}
+            />
 
             <div className="form-row">
               <label className="field-group">

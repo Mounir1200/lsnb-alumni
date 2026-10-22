@@ -2,8 +2,10 @@ import { LoaderCircle, LogOut, UserRound } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { Button } from "../components/ui/Button";
 import { getPostAuthPath } from "../lib/auth";
+import { normalizeCareerSteps, type CareerStepDraft } from "../lib/careerSteps";
 import { completeMemberProfile, loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { supabase } from "../lib/supabase";
@@ -18,6 +20,7 @@ export function CompleteProfilePage() {
   const [reload, setReload] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [careerSteps, setCareerSteps] = useState<CareerStepDraft[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -38,12 +41,12 @@ export function CompleteProfilePage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!role || busy || profile?.id !== user?.id) return;
+    if (!role || busy || !user || profile?.id !== user.id) return;
     const data = new FormData(event.currentTarget);
     setBusy(true);
     setError(null);
     try {
-      await completeMemberProfile({
+      await completeMemberProfile(user.id, {
         firstName: String(data.get("firstName") ?? ""), lastName: String(data.get("lastName") ?? ""),
         memberRole: role, graduationYear: Number(data.get("graduationYear")),
         specialty: String(data.get("specialty") ?? ""), city: String(data.get("city") ?? ""),
@@ -53,6 +56,7 @@ export function CompleteProfilePage() {
         termsAccepted: data.get("termsAccepted") === "on",
         linkedinUrl: normalizeProfileLink(String(data.get("linkedinUrl") ?? ""), "linkedin") ?? undefined,
         portfolioUrl: normalizeProfileLink(String(data.get("portfolioUrl") ?? ""), "portfolio") ?? undefined,
+        careerSteps: normalizeCareerSteps(careerSteps),
       });
       await refreshProfile();
       navigate(next, { replace: true });
@@ -106,7 +110,8 @@ export function CompleteProfilePage() {
                 <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" maxLength={150} required disabled={busy} /></label>
                 <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" maxLength={150} required disabled={busy} /></label>
               </div>
-              <label className="field-group"><span>Parcours et expériences</span><textarea name="experience" rows={5} maxLength={5000} placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager." required disabled={busy} /></label>
+              <label className="field-group"><span>Votre parcours en quelques phrases</span><textarea name="experience" rows={5} maxLength={5000} placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager." aria-describedby="complete-story-help" required disabled={busy} /><small id="complete-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small></label>
+              <CareerStepsEditor steps={careerSteps} onChange={setCareerSteps} disabled={busy} />
               <div className="form-row">
                 <label className="field-group">
                   <span>Profil LinkedIn (facultatif)</span>
