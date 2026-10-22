@@ -79,9 +79,12 @@ La photo choisie à l’inscription est conservée localement pendant sept jours
 
 ## Vérifications
 
+Le [hub d’administration et de modération](docs/administration.md) possède une application et un build séparés (`npm run dev:hub`, `npm run build:hub`). Il gère les promotions, rôles, suspensions réversibles, statistiques, journaux et maintenance du site. Sa migration et la ressource Render sont préparées localement ; voir le guide avant activation et attribution du premier administrateur.
+
 ```bash
 npm run typecheck
 npm run build
+npm run build:hub
 npm run typecheck:api
 npm run test:api
 npm run build:api
@@ -89,9 +92,10 @@ npm run build:api
 
 ## Déploiement Render
 
-Le fichier [`render.yaml`](render.yaml) décrit trois services depuis le même dépôt :
+Le fichier [`render.yaml`](render.yaml) décrit quatre services depuis le même dépôt :
 
 - `lsnb-alumni-web`, un site statique qui publie `dist` et réécrit les routes vers `index.html` ;
+- `lsnb-alumni-hub`, une application statique indépendante qui publie `dist-hub`, avec publication manuelle ;
 - `lsnb-alumni-api`, un service web Node.js construit depuis `api/`, avec `/health` comme contrôle de disponibilité.
 - `lsnb-alumni-highlights`, un job du lundi à 00 h UTC avec reprise à 00 h 20, qui sauvegarde deux portraits pour la semaine. Son activation implique le tarif des jobs planifiés Render.
 

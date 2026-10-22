@@ -61,6 +61,19 @@ export function PrivacyPage() {
         privées dans le texte de votre parcours : ce texte peut être transmis à OpenAI et repris
         dans un portrait public.
       </p>
+      <h2>Modération et activité du réseau</h2>
+      <p>
+        Les modérateurs consultent les membres de leur promotion et peuvent suspendre un accès
+        en indiquant un motif. Les administrateurs gèrent les accès et peuvent les rétablir.
+        Ces décisions sont enregistrées dans un journal réservé à l’équipe habilitée ; les
+        modérateurs n’y voient que les actions concernant leur promotion.
+      </p>
+      <p>
+        Pour comprendre l’utilisation du réseau, les visites des membres connectés sont comptées
+        par jour et par rubrique. Les statistiques ne collectent ni le texte des recherches,
+        ni le contenu des messages, ni les identifiants des profils consultés. Le tableau de bord
+        présente des nombres agrégés ; les modérateurs sont limités à leur promotion.
+      </p>
       <h2>Mode démonstration</h2>
       <p>
         Tant que Supabase n’est pas configuré, le formulaire ne crée aucun compte distant. Il

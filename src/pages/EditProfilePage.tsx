@@ -381,9 +381,11 @@ export function EditProfilePage() {
                   min="2017"
                   max="2040"
                   value={form.graduationYear}
-                  onChange={(event) => updateField("graduationYear", event.target.value)}
+                  readOnly
+                  aria-describedby="promotion-help"
                   required
                 />
+                <small id="promotion-help">Pour corriger votre promotion, contactez l’équipe d’administration.</small>
               </label>
               <label className="field-group">
                 <span>Domaine d’activité</span>
