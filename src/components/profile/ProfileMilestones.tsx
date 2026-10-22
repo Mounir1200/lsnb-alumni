@@ -1,63 +1,54 @@
 import type { AlumniProfile } from "../../data/alumni";
-import type { CareerStep, CareerStepKind } from "../../lib/careerSteps";
+import { isLsnbStep, isOngoingStep, type CareerStep } from "../../lib/careerSteps";
 
 type Milestone = {
   key: string;
   label: string;
-  kind?: string;
+  note?: string;
   title: string;
   detail?: string;
   tone?: "origin" | "now";
 };
-
-const kindLabels: Record<CareerStepKind, string> = { education: "Formation", work: "Expérience" };
 
 function formatPeriod({ startYear, endYear }: CareerStep) {
   if (endYear === null) return `Depuis ${startYear}`;
   return endYear === startYear ? String(startYear) : `${startYear} – ${endYear}`;
 }
 
-function describeMilestones(profile: AlumniProfile): Milestone[] {
-  const isStudent = profile.graduationYear > new Date().getFullYear();
-  const milestones: Milestone[] = [{
-    key: "lsnb",
-    label: String(profile.graduationYear),
-    title: isStudent ? "Baccalauréat scientifique (prévu)" : "Baccalauréat scientifique",
-    detail: "LSNB · Bobo-Dioulasso",
-    tone: "origin",
-  }];
-  profile.careerSteps.forEach((step, index) => milestones.push({
-    key: `step-${index}`,
+function toMilestone(step: CareerStep, index: number): Milestone {
+  const isOngoing = isOngoingStep(step);
+  return {
+    key: `${step.kind}-${index}`,
     label: formatPeriod(step),
-    kind: kindLabels[step.kind],
+    // "Depuis 2024" already says it; a closed period ending later needs the word.
+    note: isOngoing && step.endYear !== null ? "En cours" : undefined,
     title: step.title,
     detail: [step.organization, step.location].filter(Boolean).join(" · ") || undefined,
-    tone: step.endYear === null ? "now" : undefined,
-  }));
-  // Without an ongoing step, today is described by the profile's role and place.
-  if (!isStudent && !profile.careerSteps.some((step) => step.endYear === null)) {
-    milestones.push({
-      key: "now",
-      label: "Aujourd’hui",
-      title: profile.currentRole,
-      detail: [profile.organization, `${profile.city}, ${profile.country}`].filter(Boolean).join(" · "),
-      tone: "now",
-    });
-  }
-  return milestones;
+    tone: isLsnbStep(step) ? "origin" : isOngoing ? "now" : undefined,
+  };
 }
 
-/** The school, the member's steps, then today: the same path as the hero globe. */
-export function ProfileMilestones({ profile }: { profile: AlumniProfile }) {
+function lsnbBaccalaureate(profile: AlumniProfile): Milestone {
+  const isExpected = profile.graduationYear > new Date().getFullYear();
+  return {
+    key: "lsnb",
+    label: String(profile.graduationYear),
+    title: isExpected ? "Baccalauréat scientifique (prévu)" : "Baccalauréat scientifique",
+    detail: "LSNB · Bobo-Dioulasso",
+    tone: "origin",
+  };
+}
+
+function Timeline({ id, title, milestones }: { id: string; title: string; milestones: Milestone[] }) {
   return (
-    <section className="profile-milestones" aria-labelledby="profile-milestones-title">
-      <h2 id="profile-milestones-title" className="profile-section-title">Repères</h2>
+    <section className="profile-milestones" aria-labelledby={id}>
+      <h2 id={id} className="profile-section-title">{title}</h2>
       <ol>
-        {describeMilestones(profile).map((milestone) => (
+        {milestones.map((milestone) => (
           <li key={milestone.key} className={milestone.tone ? `is-${milestone.tone}` : undefined}>
             <span className="profile-milestones__label">
               {milestone.label}
-              {milestone.kind && <small>{milestone.kind}</small>}
+              {milestone.note && <small>{milestone.note}</small>}
             </span>
             <div>
               <b>{milestone.title}</b>
@@ -67,5 +58,22 @@ export function ProfileMilestones({ profile }: { profile: AlumniProfile }) {
         ))}
       </ol>
     </section>
+  );
+}
+
+/** Studies from the LSNB onwards, then work: each in time order, as on the hero globe. */
+export function ProfileMilestones({ profile }: { profile: AlumniProfile }) {
+  const studies = profile.careerSteps.filter((step) => step.kind === "education");
+  const jobs = profile.careerSteps.filter((step) => step.kind === "work");
+  const studyMilestones = studies.map(toMilestone);
+  const formation = studies.some(isLsnbStep) ? studyMilestones : [lsnbBaccalaureate(profile), ...studyMilestones];
+
+  return (
+    <>
+      <Timeline id="profile-formation-title" title="Formation" milestones={formation} />
+      {jobs.length > 0 && (
+        <Timeline id="profile-experience-title" title="Expériences professionnelles" milestones={jobs.map(toMilestone)} />
+      )}
+    </>
   );
 }
