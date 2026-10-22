@@ -20,7 +20,7 @@ Sur les fiches, les compteurs et listes « Mentors » / « Mentorés » concerne
 
 Comme aucun email n’annonce une demande, le lien « Mes relations » de la barre de navigation affiche discrètement le nombre de demandes reçues en attente (point sur le bouton du menu en mobile). Ce compteur est recalculé à chaque changement de page et après chaque réponse ou actualisation dans l’écran de gestion ; il disparaît à zéro et ne charge aucun message.
 
-Le réseau apparaît sous l’identité du profil, avant le parcours. Les onglets « Mentors » et « Mentorés » affichent leurs compteurs et se parcourent au clavier (flèches, Début, Fin). L’onglet Mentorés est ouvert lorsqu’il contient des personnes, sinon Mentors. Les fiches présentent le portrait, le nom, la spécialité et la promotion, sur trois, deux ou une colonne selon la largeur disponible. Les compteurs ne s’affichent qu’après chargement réussi. Dans l’espace personnel, les mentorats actifs utilisent des lignes plus légères ; l’action « Terminer le mentorat » reste visible et demande confirmation.
+Le réseau apparaît après le parcours et ses repères, pour que la fiche commence par l’histoire du membre. Les onglets « Mentors » et « Mentorés » affichent leurs compteurs et se parcourent au clavier (flèches, Début, Fin). L’onglet Mentorés est ouvert lorsqu’il contient des personnes, sinon Mentors. Les fiches présentent le portrait, le nom, la spécialité et la promotion, sur trois, deux ou une colonne selon la largeur disponible. Les compteurs ne s’affichent qu’après chargement réussi. Dans l’espace personnel, les mentorats actifs utilisent des lignes plus légères ; l’action « Terminer le mentorat » reste visible et demande confirmation.
 
 ## Confidentialité
 
