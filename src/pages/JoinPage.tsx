@@ -2,9 +2,11 @@ import { Camera, Check, LoaderCircle, LockKeyhole, Orbit, UserRound } from "luci
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
+import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { Button } from "../components/ui/Button";
 import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository";
+import { normalizeCareerSteps, toCareerStepRows, type CareerStepDraft } from "../lib/careerSteps";
 import { savePendingAvatar } from "../lib/pendingAvatarStore";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
@@ -23,6 +25,7 @@ export function JoinPage() {
   const [photoPreview, setPhotoPreview] = useState<string>();
   const [status, setStatus] = useState<SubmissionStatus>({ kind: "idle" });
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [careerSteps, setCareerSteps] = useState<CareerStepDraft[]>([]);
   const nextPath = getPostAuthPath(searchParams.get("next"));
   const loginPath = searchParams.has("next") ? `/connexion?next=${encodeURIComponent(nextPath)}` : "/connexion";
 
@@ -70,6 +73,8 @@ export function JoinPage() {
         contact_visible: data.get("contactVisible") === "on",
         linkedin_url: normalizeProfileLink(String(data.get("linkedinUrl") ?? ""), "linkedin"),
         portfolio_url: normalizeProfileLink(String(data.get("portfolioUrl") ?? ""), "portfolio"),
+        // Copied to the profile by the database once the account exists.
+        career_steps: toCareerStepRows(normalizeCareerSteps(careerSteps)),
       };
 
       if (!supabase || !isSupabaseConfigured) {
@@ -80,6 +85,7 @@ export function JoinPage() {
         });
         form.reset();
         setPhoto(null);
+        setCareerSteps([]);
         return;
       }
 
@@ -119,6 +125,7 @@ export function JoinPage() {
       });
       form.reset();
       setPhoto(null);
+      setCareerSteps([]);
       if (authData.session) navigate(searchParams.has("next") ? nextPath : "/espace?created=true", { replace: true });
     } catch (error) {
       setStatus({
@@ -216,14 +223,18 @@ export function JoinPage() {
             </div>
 
             <label className="field-group">
-              <span>Parcours et expériences</span>
+              <span>Votre parcours en quelques phrases</span>
               <textarea
                 name="experience"
                 rows={5}
                 placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager."
+                aria-describedby="join-story-help"
                 required
               />
+              <small id="join-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small>
             </label>
+
+            <CareerStepsEditor steps={careerSteps} onChange={setCareerSteps} disabled={status.kind === "loading"} />
 
             <div className="form-row">
               <label className="field-group">

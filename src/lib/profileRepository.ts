@@ -1,6 +1,7 @@
 import type { AlumniProfile } from "../data/alumni";
 import { alumniProfiles } from "../data/alumni";
 import { isSupabaseConfigured, supabase } from "./supabase";
+import { findCurrentJob, parseCareerSteps, toCareerStepRows, type CareerStep } from "./careerSteps";
 import { getSafeProfileLink, normalizeProfileLink } from "./profileLinks";
 
 export type ProfileGender = "male" | "female" | "unspecified";
@@ -23,6 +24,7 @@ type ProfileRow = {
   portfolio_url: string | null;
   offers_mentoring: boolean;
   mentoring_topics: string[] | null;
+  career_steps: unknown;
 };
 
 export type EditableProfile = {
@@ -42,6 +44,7 @@ export type EditableProfile = {
   portfolioUrl?: string;
   offersMentoring: boolean;
   mentoringTopics: string[];
+  careerSteps: CareerStep[];
   contactVisible: boolean;
 };
 
@@ -63,6 +66,8 @@ function avatarToneFromId(id: string) {
 function mapProfile(row: ProfileRow): AlumniProfile {
   const specialties = row.specialties?.filter(Boolean) ?? [];
   if (row.specialty && !specialties.includes(row.specialty)) specialties.unshift(row.specialty);
+  const careerSteps = parseCareerSteps(row.career_steps);
+  const currentJob = row.member_role === "alumni" ? findCurrentJob(careerSteps) : undefined;
 
   return {
     id: row.id,
@@ -72,13 +77,13 @@ function mapProfile(row: ProfileRow): AlumniProfile {
     currentRole:
       row.member_role === "student"
         ? "Élève au LSNB"
-        : row.specialty || row.domain || "Alumni du LSNB",
-    organization: row.member_role === "student" ? "Lycée Scientifique National" : "",
+        : currentJob?.title || row.specialty || row.domain || "Alumni du LSNB",
+    organization: row.member_role === "student" ? "Lycée Scientifique National" : currentJob?.organization ?? "",
     city: row.city || "Ville non renseignée",
     country: row.country || "Pays non renseigné",
     domain: row.domain || row.specialty || "Sciences",
     specialties: specialties.length ? specialties : ["Parcours scientifique"],
-    education: [],
+    careerSteps,
     experience: row.experience,
     offersMentoring: row.offers_mentoring,
     mentoringTopics: row.mentoring_topics?.filter(Boolean) ?? [],
@@ -99,7 +104,7 @@ export async function loadProfiles() {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics",
+      "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics, career_steps",
     )
     .eq("is_active", true)
     .order("last_name");
@@ -114,7 +119,7 @@ export async function loadProfile(id: string) {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics",
+      "id, first_name, last_name, member_role, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics, career_steps",
     )
     .eq("id", id)
     .eq("is_active", true)
@@ -133,7 +138,7 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
     supabase
       .from("profiles")
       .select(
-        "id, first_name, last_name, member_role, gender, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics",
+        "id, first_name, last_name, member_role, gender, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics, career_steps",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -166,6 +171,7 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
     portfolioUrl: row.portfolio_url ?? undefined,
     offersMentoring: row.offers_mentoring,
     mentoringTopics: row.mentoring_topics?.filter(Boolean) ?? [],
+    careerSteps: parseCareerSteps(row.career_steps),
     contactVisible: contactResult.data?.is_visible === true,
   };
 }
@@ -208,6 +214,7 @@ export async function updateEditableProfile(
       portfolio_url: portfolioUrl,
       offers_mentoring: offersMentoring,
       mentoring_topics: mentoringTopics,
+      career_steps: toCareerStepRows(profile.careerSteps),
     })
     .eq("id", id)
     .select("id")

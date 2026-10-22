@@ -139,10 +139,19 @@
 }
 
 .profile-milestones__label {
+  display: grid;
+  align-content: start;
+  gap: 2px;
   padding-top: 2px;
   color: var(--banco);
   font-size: 0.74rem;
   font-weight: 750;
+}
+
+.profile-milestones__label small {
+  color: #6b7884;
+  font-size: 0.66rem;
+  font-weight: 650;
 }
 
 .profile-milestones li.is-now .profile-milestones__label {

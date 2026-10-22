@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { toCareerStepRows, type CareerStep } from "./careerSteps";
 import { normalizeProfileLink } from "./profileLinks";
 
 export type OnboardingProfile = {
@@ -15,6 +16,7 @@ export type ProfileCompletion = {
   experience: string; gender: "male" | "female" | "unspecified";
   offersMentoring: boolean; contactVisible: boolean; termsAccepted: boolean;
   linkedinUrl?: string; portfolioUrl?: string;
+  careerSteps: CareerStep[];
 };
 
 export async function loadOnboardingProfile(userId: string): Promise<OnboardingProfile> {
@@ -25,7 +27,7 @@ export async function loadOnboardingProfile(userId: string): Promise<OnboardingP
   return data as OnboardingProfile;
 }
 
-export async function completeMemberProfile(profile: ProfileCompletion): Promise<void> {
+export async function completeMemberProfile(userId: string, profile: ProfileCompletion): Promise<void> {
   if (!supabase) throw new Error("Supabase n’est pas configuré.");
   const { error } = await supabase.rpc("complete_member_profile", {
     p_first_name: profile.firstName.trim(), p_last_name: profile.lastName.trim(),
@@ -38,4 +40,13 @@ export async function completeMemberProfile(profile: ProfileCompletion): Promise
     p_portfolio_url: normalizeProfileLink(profile.portfolioUrl, "portfolio"),
   });
   if (error) throw new Error("Le profil n’a pas pu être enregistré. Vérifiez les champs et réessayez.");
+
+  // The completion RPC is unchanged; steps are then saved on the member's own row.
+  // A retry is safe: the RPC ignores an already completed profile.
+  if (profile.careerSteps.length === 0) return;
+  const { error: stepsError } = await supabase.from("profiles")
+    .update({ career_steps: toCareerStepRows(profile.careerSteps) }).eq("id", userId);
+  if (stepsError) {
+    throw new Error("Votre profil est enregistré, mais pas les étapes de votre parcours. Réessayez pour les enregistrer.");
+  }
 }
