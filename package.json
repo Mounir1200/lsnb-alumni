@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:hub": "vite --config vite.hub.config.ts",
+    "build:hub": "tsc -b && vite build --config vite.hub.config.ts",
+    "preview:hub": "vite preview --config vite.hub.config.ts",
     "dev:api": "npm --prefix api run dev",
     "build": "tsc -b && vite build",
     "build:api": "npm --prefix api run build",

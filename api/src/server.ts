@@ -6,7 +6,7 @@ const config = loadConfig();
 const app = await buildApp({ config });
 
 async function shutdown(signal: NodeJS.Signals) {
-  app.log.info({ signal }, "Shutting down API");
+  app.operationsLog.record("info", "api.stopping");
   await app.close();
 }
 
@@ -15,7 +15,9 @@ process.once("SIGTERM", () => void shutdown("SIGTERM"));
 
 try {
   await app.listen({ host: config.host, port: config.port });
-} catch (error) {
-  app.log.error(error, "Unable to start API");
+  app.operationsLog.record("info", "api.listening");
+} catch {
+  app.operationsLog.record("error", "api.start_failed");
+  app.log.error("Unable to start API");
   process.exitCode = 1;
 }
