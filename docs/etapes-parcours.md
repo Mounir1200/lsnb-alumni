@@ -3,11 +3,13 @@
 Les membres décrivent leur trajectoire en deux parties complémentaires :
 
 - **« Votre parcours en quelques phrases »** (`experience`) : le récit libre, affiché dans « Son parcours » ;
-- **« Étapes clés du parcours »** (`career_steps`) : jusqu’à 12 étapes datées, affichées dans « Repères » après le bac au LSNB.
+- **« Étapes clés du parcours »** (`career_steps`) : jusqu’à 12 étapes datées, réparties entre **Formation** et **Expériences professionnelles**.
 
-Les étapes se saisissent à l’inscription par e-mail, à la complétion d’un compte Google et dans **Modifier mon profil**. Chaque étape indique son type (formation ou expérience), un intitulé, l’établissement ou l’organisation, le lieu, l’année de début et, si elle est terminée, l’année de fin. Une année de fin vide signifie « en cours ».
+Les étapes se saisissent à l’inscription par e-mail, à la complétion d’un compte Google et dans **Modifier mon profil**, dans deux groupes distincts : « Formation » (prépa, licence, école…) et « Expériences professionnelles » (stages, emplois, alternances). Chaque étape indique un intitulé, l’établissement ou l’organisation, le lieu, l’année de début et, si elle est terminée, l’année de fin. Une année de fin vide signifie « en cours ».
 
-Les repères sont classés par année. Une expérience en cours devient le rôle affiché sous le nom du membre et dans l’annuaire ; sans expérience en cours, la spécialité reste utilisée et « Aujourd’hui » reprend le rôle et le lieu du profil.
+Sur le profil, « Formation » commence par le bac au LSNB, puis suit l’ordre des années ; « Expériences professionnelles » n’apparaît que si le membre en a saisi. Une étape commencée dont l’année de fin n’est pas encore passée est marquée « En cours ». Si le membre a saisi lui-même son passage au LSNB (intitulé ou établissement mentionnant « LSNB » ou « Lycée Scientifique National »), cette étape remplace le bac ajouté automatiquement.
+
+Une expérience en cours devient le rôle affiché sous le nom du membre et dans l’annuaire. Sans expérience en cours, la « Spécialité principale » sert de rôle ; elle n’est pas répétée sous le nom quand elle est identique au domaine affiché juste au-dessus.
 
 ## Base de données
 

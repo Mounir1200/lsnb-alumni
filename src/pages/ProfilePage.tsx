@@ -22,6 +22,7 @@ import { Button, ButtonLink } from "../components/ui/Button";
 import { alumniProfiles, getAlumniProfile, type AlumniProfile } from "../data/alumni";
 import { loadProfile } from "../lib/profileRepository";
 import { getProfileCompletionPath } from "../lib/auth";
+import { normalizeSearchText } from "../lib/searchText";
 import { createConnectionRequest, getConnectionErrorMessage, loadActiveMentorships, loadProfileConnections, type ConnectionRequest, type Mentorship } from "../lib/mentorshipRepository";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { NotFoundPage } from "./NotFoundPage";
@@ -126,6 +127,9 @@ export function ProfilePage() {
         .filter((item) => item.id !== profile.id && item.domain === profile.domain)
         .slice(0, 2);
   const isOwnProfile = profile.isDemo === false && user?.id === profile.id;
+  // Without a current job the role falls back to the specialty, often the domain shown just above.
+  const repeatsDomain = normalizeSearchText(profile.currentRole) === normalizeSearchText(profile.domain);
+  const roleLine = [repeatsDomain ? "" : profile.currentRole, profile.organization].filter(Boolean).join(" · ");
   const currentConnections = connections?.scope === requestScope ? connections : undefined;
   const connectionsReady = currentConnections?.requests !== undefined && currentConnections.mentorships !== undefined;
   const requestKind = profile.offersMentoring ? "mentoring" : "contact";
@@ -199,10 +203,7 @@ export function ProfilePage() {
               <div>
                 <p className="profile-hero__domain">{profile.domain}</p>
                 <h1 id="profile-name">{profile.firstName} {profile.lastName}</h1>
-                <p className="profile-hero__role">
-                  {profile.currentRole}
-                  {profile.organization ? ` · ${profile.organization}` : ""}
-                </p>
+                {roleLine && <p className="profile-hero__role">{roleLine}</p>}
                 <ul className="profile-hero__facts" aria-label={`Repères de ${profile.firstName}`}>
                   <li><MapPin size={15} aria-hidden="true" /> {profile.city}, {profile.country}</li>
                   <li><GraduationCap size={15} aria-hidden="true" /> Promotion {profile.graduationYear}</li>

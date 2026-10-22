@@ -1,3 +1,5 @@
+import { normalizeSearchText } from "./searchText";
+
 export const CAREER_STEP_KINDS = ["education", "work"] as const;
 export type CareerStepKind = (typeof CAREER_STEP_KINDS)[number];
 
@@ -137,7 +139,19 @@ export function parseCareerSteps(value: unknown): CareerStep[] {
   })).sort(compareSteps);
 }
 
+/** Ongoing: started, and either open-ended or ending this year or later. */
+export function isOngoingStep(step: CareerStep, year = new Date().getFullYear()) {
+  return step.startYear <= year && (step.endYear === null || step.endYear >= year);
+}
+
 /** The ongoing job, used as the member's current role when there is one. */
-export function findCurrentJob(steps: CareerStep[]) {
-  return [...steps].reverse().find((step) => step.kind === "work" && step.endYear === null);
+export function findCurrentJob(steps: CareerStep[], year = new Date().getFullYear()) {
+  return [...steps].reverse().find((step) => step.kind === "work" && isOngoingStep(step, year));
+}
+
+const LSNB_PATTERN = /\b(lsnb|lycee scientifique national)\b/;
+
+/** Members may enter their own LSNB years; that step then replaces the automatic baccalaureate entry. */
+export function isLsnbStep(step: CareerStep) {
+  return step.kind === "education" && LSNB_PATTERN.test(normalizeSearchText(`${step.title} ${step.organization}`));
 }
