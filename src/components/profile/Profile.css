@@ -1,0 +1,227 @@
+/* Profile story, milestones and trajectory globe. Hero and layout rules live in styles.css. */
+
+.profile-main {
+  display: grid;
+  gap: 64px;
+  min-width: 0;
+}
+
+.profile-section-title {
+  margin: 0 0 24px;
+  padding-top: 18px;
+  color: var(--ink);
+  border-top: 1px solid var(--line);
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+
+/* Story: reading typography, whatever the length the member wrote. */
+
+.profile-story__text {
+  max-width: 68ch;
+  color: #2b4052;
+}
+
+.profile-story__text p {
+  margin: 0 0 1.15em;
+  font-size: 1.03rem;
+  line-height: 1.8;
+  overflow-wrap: break-word;
+}
+
+.profile-story__text p:last-child {
+  margin-bottom: 0;
+}
+
+.profile-story__text .profile-story__lede {
+  margin-bottom: 0.9em;
+  color: var(--ink);
+  font-family: "Bricolage Grotesque", "Arial Narrow", sans-serif;
+  font-size: clamp(1.3rem, 2vw, 1.65rem);
+  font-weight: 560;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+}
+
+.profile-story__text.is-collapsed {
+  max-height: 27rem;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+
+.profile-story__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-decoration-color: var(--banco);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+.profile-story__toggle svg {
+  transition: transform 180ms ease;
+}
+
+.profile-story__toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.profile-story__empty {
+  color: #596976;
+}
+
+/* Milestones: the school (banco), the steps, today (mango), as on the globe. */
+
+.profile-milestones ol {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.profile-milestones li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 18px;
+  padding: 0 0 28px 30px;
+}
+
+.profile-milestones li::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 4px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #b5c0c8;
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.profile-milestones li::after {
+  content: "";
+  position: absolute;
+  top: 22px;
+  bottom: 2px;
+  left: 9px;
+  width: 1px;
+  background: var(--line);
+}
+
+.profile-milestones li:last-child {
+  padding-bottom: 0;
+}
+
+.profile-milestones li:last-child::after {
+  display: none;
+}
+
+.profile-milestones li.is-origin::before {
+  border-color: var(--banco);
+  background: var(--banco);
+}
+
+.profile-milestones li.is-now::before {
+  border-color: var(--mango);
+  background: var(--mango);
+}
+
+.profile-milestones__label {
+  padding-top: 2px;
+  color: var(--banco);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.profile-milestones li.is-now .profile-milestones__label {
+  color: var(--mango);
+}
+
+.profile-milestones b {
+  color: var(--ink);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-milestones li p {
+  margin: 3px 0 0;
+  color: #5e6e7b;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+/* Trajectory globe in the hero. */
+
+.trajectory-globe {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.trajectory-globe__canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.trajectory-globe__canvas[data-unsupported="true"] {
+  display: none;
+}
+
+.trajectory-globe figcaption {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.trajectory-globe__route {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  color: var(--chalk);
+  font-size: 0.86rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.trajectory-globe__route svg {
+  color: var(--banco-light);
+}
+
+.trajectory-globe__note {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 620px) {
+  .profile-main {
+    gap: 48px;
+  }
+
+  .profile-milestones li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .trajectory-globe {
+    width: min(100%, 240px);
+    justify-self: center;
+  }
+}

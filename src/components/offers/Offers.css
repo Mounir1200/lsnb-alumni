@@ -611,6 +611,11 @@
   border: 1px solid var(--line);
 }
 
+/* The person row fills grid cells in the mentoring network; here it follows its content. */
+.offer-author .mentorship-person {
+  height: auto;
+}
+
 .offer-author > p {
   margin: 0 0 0 8px;
   color: var(--mango);

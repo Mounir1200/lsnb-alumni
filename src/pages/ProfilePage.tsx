@@ -1,11 +1,7 @@
 import {
   ArrowLeft,
-  ArrowUpRight,
-  BookOpen,
   Check,
   GraduationCap,
-  Globe,
-  Linkedin,
   LoaderCircle,
   MapPin,
   MessageCircle,
@@ -16,6 +12,11 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { ProfileMentorshipNetwork } from "../components/mentoring/ProfileMentorshipNetwork";
+import { ProfileAside } from "../components/profile/ProfileAside";
+import { ProfileMilestones } from "../components/profile/ProfileMilestones";
+import { ProfileStory } from "../components/profile/ProfileStory";
+import { ProfileTrajectory } from "../components/profile/ProfileTrajectory";
+import "../components/profile/Profile.css";
 import { Avatar } from "../components/ui/Avatar";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { alumniProfiles, getAlumniProfile, type AlumniProfile } from "../data/alumni";
@@ -187,64 +188,69 @@ export function ProfilePage() {
         </Link>
 
         <section className="profile-hero" aria-labelledby="profile-name">
-          <div className="profile-hero__identity">
-            <Avatar
-              initials={profile.initials}
-              avatarTone={profile.avatarTone}
-              photoUrl={profile.photoUrl}
-              label={`${profile.isDemo === false ? "Photo" : "Portrait fictif"} de ${profile.firstName} ${profile.lastName}`}
-            />
-            <div>
-              <p className="profile-hero__domain">{profile.domain}</p>
-              <h1 id="profile-name">{profile.firstName} {profile.lastName}</h1>
-              <p>
-                {profile.currentRole}
-                {profile.organization ? ` · ${profile.organization}` : ""}
-              </p>
-              <span><MapPin size={16} aria-hidden="true" /> {profile.city}, {profile.country}</span>
+          <div className="profile-hero__main">
+            <div className="profile-hero__identity">
+              <Avatar
+                initials={profile.initials}
+                avatarTone={profile.avatarTone}
+                photoUrl={profile.photoUrl}
+                label={`${profile.isDemo === false ? "Photo" : "Portrait fictif"} de ${profile.firstName} ${profile.lastName}`}
+              />
+              <div>
+                <p className="profile-hero__domain">{profile.domain}</p>
+                <h1 id="profile-name">{profile.firstName} {profile.lastName}</h1>
+                <p className="profile-hero__role">
+                  {profile.currentRole}
+                  {profile.organization ? ` · ${profile.organization}` : ""}
+                </p>
+                <ul className="profile-hero__facts" aria-label={`Repères de ${profile.firstName}`}>
+                  <li><MapPin size={15} aria-hidden="true" /> {profile.city}, {profile.country}</li>
+                  <li><GraduationCap size={15} aria-hidden="true" /> Promotion {profile.graduationYear}</li>
+                  {profile.offersMentoring && <li className="is-mentoring"><Orbit size={15} aria-hidden="true" /> Mentorat ouvert</li>}
+                </ul>
+              </div>
+            </div>
+
+            <div className="profile-hero__action">
+              {isOwnProfile ? (
+                <ButtonLink to="/espace/modifier" size="lg">
+                  <PencilLine size={18} aria-hidden="true" /> Modifier mon profil
+                </ButtonLink>
+              ) : profile.isDemo === false && !profileCompleted ? (
+                <ButtonLink to={getProfileCompletionPath(`/alumni/${profileId}`)} size="lg">Compléter mon profil</ButtonLink>
+              ) : (
+                <Button
+                  size="lg"
+                  onClick={handleRequestClick}
+                  disabled={(profile.isDemo !== false && requestSent) || requestUnavailable}
+                >
+                  {profile.isDemo === false && !connectionsReady && !currentConnections?.error ? (
+                    <><LoaderCircle size={18} className="spin" aria-hidden="true" /> Vérification des demandes…</>
+                  ) : relationshipExists ? (
+                    <><Check size={18} aria-hidden="true" /> {requestKind === "mentoring" ? "Mentorat en cours" : "Échange accepté"}</>
+                  ) : pendingRequest ? (
+                    <><Check size={18} aria-hidden="true" /> {pendingRequest.requesterId === user?.id ? "Demande en attente" : "Demande reçue"}</>
+                  ) : requestSent && profile.isDemo !== false ? (
+                    <><Check size={18} aria-hidden="true" /> Demande enregistrée</>
+                  ) : (
+                    <><MessageCircle size={18} aria-hidden="true" /> {requestKind === "mentoring" ? "Demander un mentorat" : "Demander un échange"}</>
+                  )}
+                </Button>
+              )}
+              {!isOwnProfile && requestSent && (
+                <span role="status">
+                  {profile.isDemo === false
+                    ? requestStatus.message ?? "Demande enregistrée."
+                    : "Mode démonstration : aucun message réel n’a été envoyé."}
+                </span>
+              )}
+              {!isOwnProfile && currentConnections?.error && <span role="alert">{currentConnections.error} <Button size="sm" variant="light" onClick={() => setConnectionsReload((value) => value + 1)}>Réessayer</Button></span>}
+              {!isOwnProfile && (pendingRequest || relationshipExists || requestSent) && profile.isDemo === false && <ButtonLink to="/espace/relations" size="sm" variant="light">Gérer mes relations et demandes</ButtonLink>}
+              {!isOwnProfile && connectionsReady && declinedRequest && !pendingRequest && !relationshipExists && !requestSent && <span>Votre précédente demande a été refusée. Vous pouvez formuler une nouvelle demande.</span>}
             </div>
           </div>
 
-          <div className="profile-hero__action">
-            {profile.offersMentoring && (
-              <p><Orbit size={17} aria-hidden="true" /> Mentorat ouvert</p>
-            )}
-            {isOwnProfile ? (
-              <ButtonLink to="/espace/modifier" size="lg">
-                <PencilLine size={18} aria-hidden="true" /> Modifier mon profil
-              </ButtonLink>
-            ) : profile.isDemo === false && !profileCompleted ? (
-              <ButtonLink to={getProfileCompletionPath(`/alumni/${profileId}`)} size="lg">Compléter mon profil</ButtonLink>
-            ) : (
-              <Button
-                size="lg"
-                onClick={handleRequestClick}
-                disabled={(profile.isDemo !== false && requestSent) || requestUnavailable}
-              >
-                {profile.isDemo === false && !connectionsReady && !currentConnections?.error ? (
-                  <><LoaderCircle size={18} className="spin" aria-hidden="true" /> Vérification des demandes…</>
-                ) : relationshipExists ? (
-                  <><Check size={18} aria-hidden="true" /> {requestKind === "mentoring" ? "Mentorat en cours" : "Échange accepté"}</>
-                ) : pendingRequest ? (
-                  <><Check size={18} aria-hidden="true" /> {pendingRequest.requesterId === user?.id ? "Demande en attente" : "Demande reçue"}</>
-                ) : requestSent && profile.isDemo !== false ? (
-                  <><Check size={18} aria-hidden="true" /> Demande enregistrée</>
-                ) : (
-                  <><MessageCircle size={18} aria-hidden="true" /> {requestKind === "mentoring" ? "Demander un mentorat" : "Demander un échange"}</>
-                )}
-              </Button>
-            )}
-            {!isOwnProfile && requestSent && (
-              <span role="status">
-                {profile.isDemo === false
-                  ? requestStatus.message ?? "Demande enregistrée."
-                  : "Mode démonstration : aucun message réel n’a été envoyé."}
-              </span>
-            )}
-            {!isOwnProfile && currentConnections?.error && <span role="alert">{currentConnections.error} <Button size="sm" variant="light" onClick={() => setConnectionsReload((value) => value + 1)}>Réessayer</Button></span>}
-            {!isOwnProfile && (pendingRequest || relationshipExists || requestSent) && profile.isDemo === false && <ButtonLink to="/espace/relations" size="sm" variant="light">Gérer mes relations et demandes</ButtonLink>}
-            {!isOwnProfile && connectionsReady && declinedRequest && !pendingRequest && !relationshipExists && !requestSent && <span>Votre précédente demande a été refusée. Vous pouvez formuler une nouvelle demande.</span>}
-          </div>
+          <ProfileTrajectory city={profile.city} country={profile.country} />
         </section>
 
         {requestOpen && !requestUnavailable && (
@@ -287,85 +293,15 @@ export function ProfilePage() {
           </form>
         )}
 
-        <ProfileMentorshipNetwork profileId={profile.id} firstName={profile.firstName} isDemo={profile.isDemo !== false} />
-
         <div className="profile-layout">
-          <article className="profile-story">
-            <p className="eyebrow eyebrow--dark">Son parcours</p>
-            <blockquote>“{profile.experience}”</blockquote>
-
-            <section>
-              <h2><GraduationCap aria-hidden="true" /> Formation</h2>
-              <ol>
-                <li>
-                  <span>{profile.graduationYear}</span>
-                  <div><b>Baccalauréat scientifique</b><p>LSNB · Bobo-Dioulasso</p></div>
-                </li>
-                {profile.education.map((education, index) => (
-                  <li key={education}>
-                    <span>0{index + 2}</span>
-                    <div><b>{education}</b></div>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          </article>
-
-          <aside className="profile-aside">
-            {(profile.linkedinUrl || profile.portfolioUrl) && (
-              <section className="profile-links" aria-label="Liens du profil">
-                <p>Retrouver {profile.firstName}</p>
-                {profile.linkedinUrl && (
-                  <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
-                    <Linkedin size={18} aria-hidden="true" />
-                    <span>Profil LinkedIn</span>
-                    <ArrowUpRight size={16} aria-hidden="true" />
-                    <span className="sr-only"> (nouvel onglet)</span>
-                  </a>
-                )}
-                {profile.portfolioUrl && (
-                  <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer">
-                    <Globe size={18} aria-hidden="true" />
-                    <span>Portfolio</span>
-                    <ArrowUpRight size={16} aria-hidden="true" />
-                    <span className="sr-only"> (nouvel onglet)</span>
-                  </a>
-                )}
-              </section>
-            )}
-            <section>
-              <p>Spécialités</p>
-              <div className="specialty-list">
-                {profile.specialties.map((specialty) => <span key={specialty}>{specialty}</span>)}
-              </div>
-            </section>
-
-            {profile.offersMentoring && (
-              <section className="profile-mentoring-card">
-                <Orbit aria-hidden="true" />
-                <h2>Ce que {profile.firstName} peut partager</h2>
-                {profile.mentoringTopics.length > 0 ? (
-                  <ul>
-                    {profile.mentoringTopics.map((topic) => <li key={topic}>{topic}</li>)}
-                  </ul>
-                ) : (
-                  <span>Les thèmes seront précisés lors de la demande.</span>
-                )}
-                {profile.availability && <p>{profile.availability}</p>}
-              </section>
-            )}
-
-            {profile.isDemo !== false && (
-              <section className="profile-demo-notice">
-                <BookOpen aria-hidden="true" />
-                <p>
-                  Ce profil est fictif et sert uniquement à tester l’interface. Il sera remplacé
-                  par les données vérifiées des membres.
-                </p>
-              </section>
-            )}
-          </aside>
+          <div className="profile-main">
+            <ProfileStory firstName={profile.firstName} story={profile.experience} />
+            <ProfileMilestones profile={profile} />
+          </div>
+          <ProfileAside profile={profile} />
         </div>
+
+        <ProfileMentorshipNetwork profileId={profile.id} firstName={profile.firstName} isDemo={profile.isDemo !== false} />
 
         {relatedProfiles.length > 0 && (
           <section className="profile-related">
@@ -379,10 +315,12 @@ export function ProfilePage() {
           </section>
         )}
 
-        <div className="profile-next-action">
-          <p>Vous avez aussi un parcours à partager&nbsp;?</p>
-          <ButtonLink to="/rejoindre" variant="outline">Créer mon profil</ButtonLink>
-        </div>
+        {!user && (
+          <div className="profile-next-action">
+            <p>Vous avez aussi un parcours à partager&nbsp;?</p>
+            <ButtonLink to="/rejoindre" variant="outline">Créer mon profil</ButtonLink>
+          </div>
+        )}
       </div>
     </div>
   );
