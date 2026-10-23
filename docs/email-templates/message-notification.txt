@@ -1,0 +1,16 @@
+LSNB ALUMNI
+
+Un message vous attend.
+
+Vous avez des messages non lus sur LSNB Alumni. Retrouvez votre conversation et répondez directement depuis le site.
+
+Ouvrir la conversation :
+{{ params.CONVERSATION_URL }}
+
+Le contenu des messages reste sur le site. Aucun extrait ni nom d’expéditeur n’est inclus dans cet e-mail.
+
+Vous recevez ce rappel parce que les alertes e-mail sont activées. Pour les désactiver, ouvrez les réglages de votre messagerie :
+{{ params.SETTINGS_URL }}
+
+LSNB Alumni
+Lycée Scientifique National de Bobo-Dioulasso

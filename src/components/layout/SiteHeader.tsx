@@ -4,6 +4,7 @@ import { Link, NavLink, useLocation, type Location } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { cn } from "../../lib/cn";
 import { usePendingRequests } from "../mentoring/PendingRequestsProvider";
+import { UnreadMessagesBadge, useMessaging } from "../messaging/MessagingProvider";
 import { BrandMark } from "../ui/BrandMark";
 import { ButtonLink } from "../ui/Button";
 
@@ -36,6 +37,12 @@ const relationsItem: NavigationItem = {
   label: "Mes relations",
   to: "/espace/relations",
   isCurrent: ({ pathname }) => pathname === "/espace/relations",
+};
+
+const messagesItem: NavigationItem = {
+  label: "Messages",
+  to: "/espace/messages",
+  isCurrent: ({ pathname }) => pathname === "/espace/messages" || pathname.startsWith("/espace/messages/"),
 };
 
 function HeaderLink({ item, badge }: { item: NavigationItem; badge?: ReactNode }) {
@@ -73,6 +80,7 @@ export function SiteHeader() {
   const location = useLocation();
   const { user, isLoading } = useAuth();
   const { count: pendingRequests } = usePendingRequests();
+  const { unread } = useMessaging();
   const relationsBadge = <PendingCount count={pendingRequests} />;
 
   // The key changes on every navigation, including a tap on the current page.
@@ -101,6 +109,7 @@ export function SiteHeader() {
           {!isLoading && user ? (
             <>
               <HeaderLink item={relationsItem} badge={relationsBadge} />
+              <HeaderLink item={messagesItem} badge={<UnreadMessagesBadge />} />
               <ButtonLink to="/espace" size="sm" variant="light">
                 Mon espace
               </ButtonLink>
@@ -122,13 +131,13 @@ export function SiteHeader() {
           className="site-header__menu-button"
           aria-label={menuOpen
             ? "Fermer le menu"
-            : `Ouvrir le menu${pendingRequests > 0 ? `, ${describePendingRequests(pendingRequests)}` : ""}`}
+            : `Ouvrir le menu${pendingRequests > 0 ? `, ${describePendingRequests(pendingRequests)}` : ""}${unread > 0 ? `, ${unread} messages non lus` : ""}`}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
           onClick={() => setMenuOpen((open) => !open)}
         >
           {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
-          {!menuOpen && pendingRequests > 0 && <span className="site-header__menu-dot" aria-hidden="true" />}
+          {!menuOpen && (pendingRequests > 0 || unread > 0) && <span className="site-header__menu-dot" aria-hidden="true" />}
         </button>
       </div>
 
@@ -139,6 +148,7 @@ export function SiteHeader() {
             {user ? (
               <>
                 <HeaderLink item={relationsItem} badge={relationsBadge} />
+                <HeaderLink item={messagesItem} badge={<UnreadMessagesBadge />} />
                 <ButtonLink to="/espace" variant="light" className="mt-2">
                   Mon espace
                 </ButtonLink>

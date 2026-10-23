@@ -96,8 +96,8 @@ function MemberOfferContact({ offer, author, userId }: { offer: Offer; author: M
     if (openContact?.status === "accepted") {
       return (
         <>
-          <p className="offer-contact__note">{author.firstName} a déjà accepté un échange avec vous. Consultez son profil pour retrouver les moyens de contact que ce membre a choisi de partager.</p>
-          <ButtonLink to={`/alumni/${author.id}`} variant="outline">Voir le profil de {author.firstName}</ButtonLink>
+          <p className="offer-contact__note">{author.firstName} a déjà accepté un échange avec vous. Poursuivez la discussion dans votre conversation privée.</p>
+          <ButtonLink to={`/espace/messages/${openContact.id}`} variant="outline">Ouvrir la conversation</ButtonLink>
         </>
       );
     }
@@ -130,6 +130,7 @@ function MemberOfferContact({ offer, author, userId }: { offer: Offer; author: M
               placeholder="Présentez-vous en une phrase, puis posez une question précise sur l’offre."
             />
             <small>20 à 1 200 caractères. Visible uniquement par vous et {author.firstName}, avec le lien vers cette offre.</small>
+            <small>Ce texte de présentation n’est pas chiffré de bout en bout. Partagez vos informations confidentielles dans la messagerie après acceptation.</small>
           </label>
           <div className="offer-contact__actions">
             <Button variant="outline" disabled={status.kind === "loading"} onClick={() => setIsFormOpen(false)}>Annuler</Button>

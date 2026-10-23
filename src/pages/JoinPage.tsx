@@ -121,7 +121,7 @@ export function JoinPage() {
         kind: "success",
         message: authData.session
           ? "Votre compte est créé. Bienvenue dans le réseau."
-          : `Compte créé. Consultez votre boîte mail pour confirmer votre adresse.${confirmationPhotoMessage}`,
+          : `Consultez votre boîte mail pour confirmer votre adresse et activer votre compte. Vérifiez aussi les courriers indésirables.${confirmationPhotoMessage}`,
       });
       form.reset();
       setPhoto(null);
@@ -308,7 +308,7 @@ export function JoinPage() {
               Créer mon compte
             </Button>
 
-            <p className="account-form__login">Déjà membre&nbsp;? <Link to={loginPath}>Se connecter</Link></p>
+            <p className="account-form__login">{status.kind === "success" && isSupabaseConfigured ? <>E-mail introuvable ou lien expiré&nbsp;? <Link to={loginPath}>Demander un nouveau lien depuis la connexion</Link></> : <>Déjà membre&nbsp;? <Link to={loginPath}>Se connecter</Link></>}</p>
           </form>
         </section>
       </div>

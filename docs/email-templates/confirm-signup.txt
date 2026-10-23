@@ -1,0 +1,15 @@
+LSNB ALUMNI
+
+Confirmez votre adresse.
+
+Votre demande d’inscription à LSNB Alumni a bien été reçue. Confirmez votre adresse e-mail pour activer votre compte et accéder à votre espace membre.
+
+Confirmer mon adresse :
+{{ .ConfirmationURL }}
+
+Ce lien est personnel et utilisable une seule fois. S’il a expiré, demandez un nouvel e-mail depuis la page de connexion du site.
+
+Vous n’êtes pas à l’origine de cette inscription ? Ignorez simplement cet e-mail.
+
+LSNB Alumni
+Lycée Scientifique National de Bobo-Dioulasso
