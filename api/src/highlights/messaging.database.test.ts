@@ -26,7 +26,7 @@ async function initialize(target: PGlite, includeMessaging = true) {
   for (const file of (await readdir(migrationsUrl)).filter(file => file.endsWith('.sql')).sort()) {
     // This suite verifies the foundational queue/authorization migration. The
     // subsequent E2E contract is exercised by messaging-e2e.database.test.ts.
-    if (file > '20261023213828_private_messaging.sql' || (!includeMessaging && file.includes('private_messaging'))) continue
+    if (file > '20261023221107_private_messaging.sql' || (!includeMessaging && file.includes('private_messaging'))) continue
     await target.exec(await readFile(new URL(file, migrationsUrl), 'utf8'))
   }
   await target.exec('grant select,insert,update on public.profiles,public.profile_contacts to authenticated')

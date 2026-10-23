@@ -34,7 +34,7 @@ Le planificateur GitHub peut retarder ou omettre une exécution ; les workflows 
 
 ## Configuration
 
-1. Appliquer dans l'ordre les migrations `20261023213828_private_messaging`, `20261023215859_end_to_end_messaging`, `20261023221000_messaging_identity_verification`. Vérifier RLS, droits des fonctions et publication Realtime.
+1. Appliquer dans l'ordre les migrations `20261023221107_private_messaging`, `20261023221132_end_to_end_messaging`, `20261023221136_messaging_identity_verification`. Vérifier RLS, droits des fonctions et publication Realtime.
 2. Render API : conserver `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `FRONTEND_ORIGINS`. Ajouter `BREVO_API_KEY`, `MESSAGING_FROM_EMAIL`, `MESSAGING_SITE_URL=https://lsnb-alumni-web.onrender.com`, `MESSAGING_EMAIL_ENABLED=true`. Ne jamais utiliser de préfixe `VITE_` pour un secret.
 3. GitHub Actions : secret `BREVO_API_KEY` seulement ; variables `MESSAGING_API_URL=https://lsnb-alumni-api.onrender.com` et `MESSAGING_EMAIL_ENABLED=true`. Le workflow refuse de tourner si le dépôt devient privé.
 4. Frontend : `VITE_API_URL=https://lsnb-alumni-api.onrender.com` avec les paramètres Supabase publics existants.
