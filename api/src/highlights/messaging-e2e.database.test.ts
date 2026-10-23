@@ -6,7 +6,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { generateMessagingIdentity, encryptMessage, decryptMessage, unlockMessagingIdentity } from '../../../src/lib/messagingCrypto.ts'
 
 const migrationsUrl=new URL('../../../supabase/migrations/',import.meta.url)
-const migrationName='20261023221000_messaging_identity_verification.sql'
+const migrationName='20261023221136_messaging_identity_verification.sql'
 let db:PGlite
 type Generated=Awaited<ReturnType<typeof generateMessagingIdentity>>
 let a:Generated,b:Generated,c:Generated,conversation:string
