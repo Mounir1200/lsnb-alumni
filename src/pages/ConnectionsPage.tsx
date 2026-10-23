@@ -32,7 +32,7 @@ const requestStatusLabels = { pending: "En attente", accepted: "Acceptée", decl
 
 export function ConnectionsPage() {
   const { user } = useAuth();
-  const { refresh: refreshPendingRequests } = usePendingRequests();
+  const { refresh: refreshPendingRequests, revision: requestsRevision } = usePendingRequests();
   const userId = user?.id;
   const [reload, setReload] = useState(0);
   const [state, setState] = useState<{ userId: string; requests?: ConnectionRequest[]; mentorships?: Mentorship[]; error?: string }>();
@@ -60,12 +60,12 @@ export function ConnectionsPage() {
   useEffect(() => {
     if (!userId) return;
     let active = true;
-    setState({ userId });
+    setState((previous) => previous?.userId === userId ? previous : { userId });
     void Promise.all([loadConnectionRequests(userId), loadActiveMentorships(userId)])
       .then(([requests, mentorships]) => { if (active) setState({ userId, requests, mentorships }); })
       .catch((error: unknown) => { if (active) setState({ userId, error: getConnectionErrorMessage(error) }); });
     return () => { active = false; };
-  }, [userId, reload]);
+  }, [userId, reload, requestsRevision]);
 
   // The header badge counts the same received requests as this list.
   const reloadConnections = () => {
@@ -147,8 +147,8 @@ export function ConnectionsPage() {
           <div className="connection-card__actions"><Button size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => void performAction(request.id, () => withdrawConnectionRequest(request.id), "Votre demande a été retirée.")}>Retirer ma demande</Button></div>
         )}
         {request.status === "accepted" && request.kind === "mentoring" && <p className="connection-card__note">{activeMentorship ? "Vous avez actuellement un mentorat en cours avec ce membre." : "Vous n’avez plus de mentorat en cours avec ce membre."}</p>}
-        {request.status === "accepted" && request.kind === "contact" && <p className="connection-card__note">Consultez son profil pour retrouver les moyens de contact que ce membre a choisi de partager.</p>}
-        {member && request.status === "accepted" && <div className="connection-card__actions"><ButtonLink size="sm" variant="outline" to={`/alumni/${member.id}`}>Voir le profil</ButtonLink></div>}
+        {request.status === "accepted" && request.kind === "contact" && <p className="connection-card__note">Votre conversation privée est ouverte. Vous pouvez poursuivre l’échange dans la messagerie.</p>}
+        {request.status === "accepted" && <div className="connection-card__actions"><ButtonLink size="sm" to={`/espace/messages/${request.id}`}>Ouvrir la conversation</ButtonLink>{member && <ButtonLink size="sm" variant="outline" to={`/alumni/${member.id}`}>Voir le profil</ButtonLink>}</div>}
       </li>
     );
   };

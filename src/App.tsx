@@ -22,6 +22,7 @@ import { PrivacyPage } from "./pages/PrivacyPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { CompleteProfilePage } from "./pages/CompleteProfilePage";
 import { ConnectionsPage } from "./pages/ConnectionsPage";
+import { MessagesPage } from "./pages/MessagesPage";
 
 function PostConfirmationRedirect() {
   const { lastEvent, user } = useAuth();
@@ -114,6 +115,8 @@ export function App() {
               }
             />
             <Route path="/confidentialite" element={<PrivacyPage />} />
+            <Route path="/espace/messages" element={<RequireAuth><MessagesPage /></RequireAuth>} />
+            <Route path="/espace/messages/:conversationId" element={<RequireAuth><MessagesPage /></RequireAuth>} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </RouteTransition>

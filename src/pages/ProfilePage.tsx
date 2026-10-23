@@ -139,6 +139,7 @@ export function ProfilePage() {
   ));
   const activeMentorship = currentConnections?.mentorships?.find((item) => item.mentorId === profile.id && item.menteeId === user?.id);
   const acceptedContact = requestKind === "contact" && relevantRequests.some((item) => item.status === "accepted");
+  const acceptedConversation = currentConnections?.requests?.find((item) => item.status === "accepted");
   const relationshipExists = requestKind === "mentoring" ? Boolean(activeMentorship) : acceptedContact;
   const declinedRequest = relevantRequests.find((item) => item.status === "declined" && item.requesterId === user?.id);
   const requestUnavailable = profile.isDemo === false && (!connectionsReady || Boolean(pendingRequest) || relationshipExists);
@@ -247,6 +248,7 @@ export function ProfilePage() {
               )}
               {!isOwnProfile && currentConnections?.error && <span role="alert">{currentConnections.error} <Button size="sm" variant="light" onClick={() => setConnectionsReload((value) => value + 1)}>Réessayer</Button></span>}
               {!isOwnProfile && (pendingRequest || relationshipExists || requestSent) && profile.isDemo === false && <ButtonLink to="/espace/relations" size="sm" variant="light">Gérer mes relations et demandes</ButtonLink>}
+              {!isOwnProfile && acceptedConversation && profile.isDemo === false && <ButtonLink to={`/espace/messages/${acceptedConversation.id}`} size="sm" variant="light">Ouvrir la conversation</ButtonLink>}
               {!isOwnProfile && connectionsReady && declinedRequest && !pendingRequest && !relationshipExists && !requestSent && <span>Votre précédente demande a été refusée. Vous pouvez formuler une nouvelle demande.</span>}
             </div>
           </div>
@@ -274,6 +276,7 @@ export function ProfilePage() {
                 required
               />
               <small>20 à 1 200 caractères. Ce message est visible uniquement par vous et son destinataire.</small>
+              <small>Ce texte de présentation n’est pas chiffré de bout en bout. Partagez vos informations confidentielles dans la messagerie après acceptation.</small>
             </label>
             {requestKind === "mentoring" && (
               <label className="form-check">

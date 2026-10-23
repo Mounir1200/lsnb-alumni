@@ -1,0 +1,54 @@
+name: Messaging email notifications
+
+on:
+  schedule:
+    - cron: '2-57/5 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: messaging-notifications
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    # Explicitly enabled after migration/configuration. Public standard runners are free.
+    # Fail closed if repository visibility changes rather than consuming paid minutes.
+    if: vars.MESSAGING_EMAIL_ENABLED == 'true' && github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Trigger eligible unread-message alerts
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { createHmac } from 'node:crypto';
+          try {
+            const key = process.env.BREVO_API_KEY?.trim();
+            const api = new URL(process.env.MESSAGING_API_URL ?? '');
+            if (!key || api.protocol !== 'https:' || api.username || api.password
+              || api.pathname !== '/' || api.search || api.hash) throw new Error();
+            const token = createHmac('sha256', key).update('lsnb-messaging-scheduler-v1').digest('hex');
+            const response = await fetch(new URL('/messaging/notifications/run', api), {
+              method: 'POST', headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+              body: '{}', redirect: 'error', signal: AbortSignal.timeout(180_000),
+            });
+            if (!response.ok) throw new Error();
+            const { claimed, delivered, failed } = await response.json();
+            if (![claimed, delivered, failed].every(value => Number.isInteger(value) && value >= 0 && value <= 5)
+              || claimed !== delivered + failed) throw new Error();
+            console.log(JSON.stringify({ event: 'messaging.notifications', claimed, delivered, failed }));
+            if (failed) process.exitCode = 1;
+          } catch {
+            console.error('Messaging notification trigger failed. Check the API configuration and availability.');
+            process.exitCode = 1;
+          }
+          NODE
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          MESSAGING_API_URL: ${{ vars.MESSAGING_API_URL }}
