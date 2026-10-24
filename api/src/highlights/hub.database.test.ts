@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile, readdir } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
 let db: PGlite
@@ -32,7 +33,7 @@ const complete = (id: string) => rpc(id, 'complete_member_profile', [
 
 describe('Administration hub PostgreSQL authorization and maintenance', { concurrency: false }, () => {
   before(async () => {
-    db = new PGlite()
+    db = new PGlite({ extensions: { pgcrypto } })
     await db.exec(`
       create role anon; create role authenticated; create role service_role bypassrls;
       grant usage on schema public to anon, authenticated, service_role;
