@@ -2,6 +2,10 @@
 
 Prototype du réseau des élèves et alumni du Lycée Scientifique National de Bobo-Dioulasso.
 
+[![Alumni LSNB en 21 secondes : trouver un parcours, écrire à un mentor, saisir une opportunité](docs/media/presentation-alumni-lsnb.jpg)](docs/media/presentation-alumni-lsnb.mp4)
+
+*Partir loin. Rester reliés.* Présentation du site en 21 secondes : cliquez sur l’image pour lire la vidéo. Les profils, messages et offres qui y apparaissent sont fictifs.
+
 ## Guide pour l'équipe de développement
 
 - [Guide de reprise : existant, démarrage, configuration et reste à faire](docs/guide-developpement.md)
