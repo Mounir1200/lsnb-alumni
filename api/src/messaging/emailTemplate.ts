@@ -5,17 +5,15 @@ const escapeHtml = (value: string) => value.replace(/[&<>"']/g,
 
 type EmailContent = {
   subject: string; preheader: string; label: string; title: string; introduction: string;
-  note: string; footer: string; text: string;
-} & ({ action: string; actionUrl: string; code?: never } | { code: string; action?: never; actionUrl?: never });
+  action: string; actionUrl: string; note: string; footer: string; text: string;
+};
 
 // Table layout and inline styles keep the action usable in restrictive mail clients.
 // No remote images, web fonts, pixels, scripts, or recipient-derived content.
 function renderEmail(content: EmailContent): BrandedEmail {
-  const link = escapeHtml(content.actionUrl ?? "");
-  const action = content.code
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td style="padding:20px 12px;background-color:#f3eee5;border:1px solid #eadac6;text-align:center;color:#0c2948;font-family:Courier New,Courier,monospace;font-size:32px;font-weight:700;letter-spacing:3px;line-height:42px;">${escapeHtml(content.code)}</td></tr></table>`
-    : `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td bgcolor="#0c2948" style="background-color:#0c2948;border:1px solid #0c2948;border-radius:4px;text-align:center;mso-padding-alt:16px 24px;">
-          <a href="${link}" target="_blank" rel="noreferrer" style="display:inline-block;padding:16px 24px;border-radius:4px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;line-height:20px;text-decoration:none;">${escapeHtml(content.action!)}</a>
+  const link = escapeHtml(content.actionUrl);
+  const action = `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td bgcolor="#0c2948" style="background-color:#0c2948;border:1px solid #0c2948;border-radius:4px;text-align:center;mso-padding-alt:16px 24px;">
+          <a href="${link}" target="_blank" rel="noreferrer" style="display:inline-block;padding:16px 24px;border-radius:4px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;line-height:20px;text-decoration:none;">${escapeHtml(content.action)}</a>
         </td></tr></table>`;
   const html = `<!doctype html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(content.subject)}</title></head>
@@ -30,17 +28,17 @@ function renderEmail(content: EmailContent): BrandedEmail {
           <td align="right" valign="bottom" style="color:#e7b77d;font-size:12px;line-height:18px;">Bobo-Dioulasso<br>Burkina Faso</td>
         </tr></table>
       </td></tr>
-      <tr><td style="padding:32px 28px 28px;background-color:#ffffff;border-right:1px solid #eadac6;border-left:1px solid #eadac6;${content.code ? "border-bottom:1px solid #eadac6;" : ""}">
+      <tr><td style="padding:32px 28px 28px;background-color:#ffffff;border-right:1px solid #eadac6;border-left:1px solid #eadac6;">
         <p style="margin:0 0 14px;color:#76502d;font-size:12px;font-weight:700;letter-spacing:1px;line-height:18px;text-transform:uppercase;">${escapeHtml(content.label)}</p>
         <h1 style="margin:0 0 20px;color:#0c2948;font-size:32px;font-weight:700;line-height:38px;letter-spacing:-0.7px;">${escapeHtml(content.title)}</h1>
         <p style="margin:0 0 26px;font-size:16px;line-height:26px;color:#425466;">${escapeHtml(content.introduction)}</p>
         ${action}
         <p style="margin:24px 0 0;font-size:14px;line-height:22px;color:#536371;">${escapeHtml(content.note)}</p>
       </td></tr>
-      ${content.actionUrl ? `<tr><td style="padding:22px 28px;background-color:#f3eee5;border:1px solid #eadac6;border-top:0;">
+      <tr><td style="padding:22px 28px;background-color:#f3eee5;border:1px solid #eadac6;border-top:0;">
         <p style="margin:0 0 8px;font-size:12px;line-height:19px;color:#536371;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :</p>
         <p style="margin:0;font-size:12px;line-height:19px;word-break:break-all;overflow-wrap:anywhere;"><a href="${link}" target="_blank" rel="noreferrer" style="color:#0c2948;text-decoration:underline;word-break:break-all;overflow-wrap:anywhere;">${link}</a></p>
-      </td></tr>` : ""}
+      </td></tr>
       <tr><td style="padding:22px 8px 0;text-align:center;">
         <p style="margin:0 0 10px;font-size:12px;line-height:19px;color:#536371;">${content.footer}</p>
         <p style="margin:0;font-size:12px;line-height:19px;color:#6c746f;">LSNB Alumni<br>Lycée Scientifique National de Bobo-Dioulasso</p>
@@ -75,19 +73,5 @@ export function renderMessageNotificationEmail(conversationUrl: string, settings
     note: "Le contenu des messages reste sur le site. Aucun extrait ni nom d’expéditeur n’est inclus dans cet e-mail.",
     footer: `Vous recevez ce rappel parce que les alertes e-mail sont activées.<br><a href="${escapeHtml(settingsUrl)}" target="_blank" rel="noreferrer" style="color:#0c2948;text-decoration:underline;">Gérer mes notifications</a> dans la messagerie.`,
     text: `LSNB ALUMNI\n\nUn message vous attend.\n\nVous avez des messages non lus sur LSNB Alumni. Retrouvez votre conversation et répondez directement depuis le site.\n\nOuvrir la conversation :\n${conversationUrl}\n\nLe contenu des messages reste sur le site. Aucun extrait ni nom d’expéditeur n’est inclus dans cet e-mail.\n\nVous recevez ce rappel parce que les alertes e-mail sont activées. Pour les désactiver, ouvrez les réglages de votre messagerie :\n${settingsUrl}\n\nLSNB Alumni\nLycée Scientifique National de Bobo-Dioulasso`,
-  });
-}
-
-export function buildMessagingActivationEmail(code: string): BrandedEmail {
-  if (!/^\d{8}$/.test(code)) throw new Error("Le code d’activation doit contenir exactement huit chiffres.");
-  return renderEmail({
-    subject: "Votre code d’activation de la messagerie LSNB",
-    preheader: "Saisissez ce code sur le site pour activer votre messagerie.",
-    label: "Votre messagerie", title: "Activez votre messagerie.",
-    introduction: "Pour confirmer votre adresse e-mail et activer votre messagerie LSNB Alumni, saisissez ce code dans la fenêtre d’activation ouverte sur le site.",
-    code,
-    note: "Ce code est valable 10 minutes et utilisable une seule fois. Ne le partagez avec personne, même avec une personne qui se présente comme membre de l’équipe LSNB.",
-    footer: "Si vous n’avez pas demandé cette activation, ne communiquez pas ce code.",
-    text: `LSNB ALUMNI\n\nActivez votre messagerie.\n\nPour confirmer votre adresse e-mail et activer votre messagerie LSNB Alumni, saisissez ce code dans la fenêtre d’activation ouverte sur le site.\n\n${code}\n\nCe code est valable 10 minutes et utilisable une seule fois. Ne le partagez avec personne, même avec une personne qui se présente comme membre de l’équipe LSNB.\n\nSi vous n’avez pas demandé cette activation, ne communiquez pas ce code.\n\nLSNB Alumni\nLycée Scientifique National de Bobo-Dioulasso`,
   });
 }

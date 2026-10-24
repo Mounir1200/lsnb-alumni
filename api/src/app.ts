@@ -9,8 +9,6 @@ import { loadConfig, type ApiConfig } from "./config.js";
 import { createHighlightStore } from "./highlights/store.js";
 import type { HighlightStore } from "./highlights/types.js";
 import { currentWeekStart } from "./highlights/week.js";
-import { createEnrollmentBackend, registerEnrollmentRoutes, type EnrollmentBackend } from "./messaging/enrollment.js";
-import { loadNotificationConfig } from "./messaging/notifications.js";
 import { configuredNotificationScheduler, registerNotificationSchedulerRoute, type NotificationScheduler } from "./messaging/scheduler.js";
 
 type BuildAppOptions = {
@@ -19,7 +17,6 @@ type BuildAppOptions = {
   highlightStore?: Pick<HighlightStore, "current">;
   now?: () => Date;
   adminBackend?: AdminBackend;
-  enrollmentBackend?: EnrollmentBackend;
   notificationScheduler?: NotificationScheduler;
 };
 
@@ -95,12 +92,6 @@ export async function buildApp(options: BuildAppOptions = {}) {
     : undefined);
   const adminBackend = options.adminBackend ?? (config.highlightStorage ? createAdminBackend(config.highlightStorage) : undefined);
   await registerAdminRoutes(app, adminBackend, now);
-  let enrollmentBackend = options.enrollmentBackend;
-  if (!enrollmentBackend) {
-    try { enrollmentBackend = createEnrollmentBackend(loadNotificationConfig()); }
-    catch { /* Unconfigured deployments fail closed on enrollment routes. */ }
-  }
-  await registerEnrollmentRoutes(app, enrollmentBackend);
   let notificationScheduler = options.notificationScheduler;
   if (!notificationScheduler) {
     try { notificationScheduler = configuredNotificationScheduler(); }

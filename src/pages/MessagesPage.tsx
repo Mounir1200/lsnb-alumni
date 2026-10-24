@@ -1,24 +1,37 @@
-import { ArrowLeft, Check, CheckCheck, LoaderCircle, LockKeyhole, MessageCircle, RefreshCw, Send } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, LoaderCircle, LogIn, MessageCircle, MonitorSmartphone, RefreshCw, Send } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { MessagingNavigation } from "../components/messaging/MessagingNavigation";
-import { useMessaging } from "../components/messaging/MessagingProvider";
-import { MessagingVault } from "../components/messaging/MessagingVault";
+import { useMessaging, type MessagingAccess } from "../components/messaging/MessagingProvider";
 import { Avatar } from "../components/ui/Avatar";
 import { Button, ButtonLink } from "../components/ui/Button";
 import {
-  getMessagingError, loadConversations, loadEmailNotifications, loadMessagePage, loadMessagesSince, loadPeerMessagingKey,
-  markConversationRead, prepareMessage, saveEmailNotifications, sendMessage, type Conversation, type ConversationMessage,
-  type MessagingSession, type PreparedEncryptedMessage, type PeerMessagingKey,
+  getMessagingError, loadConversations, loadDevices, loadEmailNotifications, loadMessagePage, loadMessagesSince,
+  markConversationRead, revokeDevice, saveEmailNotifications, sendMessage,
+  type Conversation, type ConversationMessage, type MessagingDeviceSummary,
 } from "../lib/messagingRepository";
+import { supabase } from "../lib/supabase";
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 const formatTime = (value: string) => new Date(value).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 const peerOf = (conversation: Conversation, userId: string) => conversation.request.requesterId === userId
   ? conversation.request.recipient : conversation.request.requester;
 
+// Checked in order: Edge and Opera also announce Chrome, Chrome announces Safari, iPhones announce Mac OS X.
+const BROWSERS = [["Edg/", "Edge"], ["OPR/", "Opera"], ["Firefox/", "Firefox"], ["FxiOS/", "Firefox"], ["CriOS/", "Chrome"],
+  ["Chrome/", "Chrome"], ["Safari/", "Safari"]] as const;
+const SYSTEMS = [["iPhone", "iPhone"], ["iPad", "iPad"], ["Android", "Android"], ["Windows", "Windows"], ["Mac OS X", "Mac"],
+  ["Linux", "Linux"]] as const;
+
+function describeDevice(userAgent: string) {
+  const browser = BROWSERS.find(([token]) => userAgent.includes(token))?.[1] ?? "Navigateur";
+  const system = SYSTEMS.find(([token]) => userAgent.includes(token))?.[1];
+  return system ? `${browser} sur ${system}` : browser;
+}
+
 function EmailPreference() {
+  const { reportError } = useMessaging();
   const [enabled, setEnabled] = useState<boolean>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -29,9 +42,9 @@ function EmailPreference() {
     let active = true;
     setError(undefined);
     void loadEmailNotifications().then((value) => { if (active) setEnabled(value); })
-      .catch(() => { if (active) setError("Impossible de charger la préférence e-mail."); });
+      .catch((cause: unknown) => { reportError(cause); if (active) setError("Impossible de charger la préférence e-mail."); });
     return () => { active = false; };
-  }, [reload]);
+  }, [reload, reportError]);
   const toggle = async () => {
     if (busy || enabled === undefined) return;
     setBusy(true);
@@ -39,7 +52,7 @@ function EmailPreference() {
     try {
       await saveEmailNotifications(!enabled);
       if (mounted.current) setEnabled(!enabled);
-    } catch { if (mounted.current) setError("La préférence n’a pas pu être enregistrée. Réessayez."); }
+    } catch (cause) { reportError(cause); if (mounted.current) setError("La préférence n’a pas pu être enregistrée. Réessayez."); }
     finally { if (mounted.current) setBusy(false); }
   };
   return <div className="messages-email">
@@ -51,9 +64,51 @@ function EmailPreference() {
   </div>;
 }
 
-function ConversationThread({ conversation, session }: { conversation: Conversation; session: MessagingSession }) {
-  const userId = session.userId;
-  const { revision, refresh, connected } = useMessaging();
+function MessagingDevices() {
+  const { reportError } = useMessaging();
+  const [devices, setDevices] = useState<MessagingDeviceSummary[]>();
+  const [busy, setBusy] = useState<string>();
+  const [error, setError] = useState<string>();
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    let active = true;
+    void loadDevices().then((result) => { if (active) { setDevices(result); setError(undefined); } })
+      .catch((cause: unknown) => { reportError(cause); if (active) setError("Impossible d’afficher vos appareils."); });
+    return () => { active = false; };
+  }, [reload, reportError]);
+  const remove = async (sessionId: string) => {
+    setBusy(sessionId);
+    try { await revokeDevice(sessionId); setReload((value) => value + 1); }
+    catch (cause) { reportError(cause); setError(getMessagingError(cause)); }
+    finally { setBusy(undefined); }
+  };
+  const signOutOthers = async () => {
+    setBusy("others");
+    // Ends the other sign-ins of this account; their messaging stops with them.
+    const { error: signOutError } = await supabase?.auth.signOut({ scope: "others" }) ?? { error: null };
+    if (signOutError) setError("Les autres appareils n’ont pas pu être déconnectés. Réessayez.");
+    setBusy(undefined);
+    setReload((value) => value + 1);
+  };
+  const others = devices?.filter((device) => !device.isCurrent) ?? [];
+  return <section className="messages-devices" aria-labelledby="messages-devices-title">
+    <h2 id="messages-devices-title"><MonitorSmartphone size={18} aria-hidden="true" /> Appareils connectés</h2>
+    <p>Vos messages s’ouvrent sur les appareils où vous vous êtes connecté. Retirez ceux que vous n’utilisez plus.</p>
+    {devices === undefined && !error && <p role="status">Chargement…</p>}
+    {devices && <ul>{devices.map((device) => <li key={device.sessionId}>
+      <span><strong>{describeDevice(device.userAgent)}{device.isCurrent && " · cet appareil"}</strong>
+        <small>Connecté le {formatDate(device.createdAt)} · dernière activité le {formatDate(device.lastUsedAt)}</small></span>
+      {!device.isCurrent && <Button variant="outline" size="sm" disabled={Boolean(busy)} onClick={() => void remove(device.sessionId)}>
+        {busy === device.sessionId ? "Retrait…" : "Retirer"}</Button>}
+    </li>)}</ul>}
+    {others.length > 0 && <button className="text-link text-link--dark" disabled={Boolean(busy)} onClick={() => void signOutOthers()}>
+      Déconnecter tous mes autres appareils</button>}
+    {error && <p role="alert" className="messages-error">{error} <button className="text-link text-link--dark" onClick={() => setReload((value) => value + 1)}>Réessayer</button></p>}
+  </section>;
+}
+
+function ConversationThread({ conversation, userId }: { conversation: Conversation; userId: string }) {
+  const { revision, refresh, connected, reportError } = useMessaging();
   const [messages, setMessages] = useState<ConversationMessage[]>();
   const [error, setError] = useState<string>();
   const [sendError, setSendError] = useState<string>();
@@ -63,32 +118,29 @@ function ConversationThread({ conversation, session }: { conversation: Conversat
   const [hasOlder, setHasOlder] = useState(true);
   const [atBottom, setAtBottom] = useState(true);
   const [focusVersion, setFocusVersion] = useState(0);
-  const [peerKey, setPeerKey] = useState<PeerMessagingKey | null>();
   const mounted = useRef(true);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
   const list = useRef<HTMLDivElement>(null);
   const followLatest = useRef(true);
   const nonce = useRef<string | null>(null);
-  const prepared = useRef<PreparedEncryptedMessage | null>(null);
   const markedRead = useRef(new Set<string>());
   const peer = peerOf(conversation, userId);
   const peerName = peer ? `${peer.firstName} ${peer.lastName}` : "Membre indisponible";
   const { id: conversationId } = conversation;
 
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; prepared.current = null; nonce.current = null; messagesRef.current = undefined; }; }, []);
-  useEffect(() => {
-    let active = true;
-    void loadPeerMessagingKey(conversationId).then((key) => { if (active && session.identity) setPeerKey(key); })
-      .catch((cause: unknown) => { if (active && session.identity) setError(getMessagingError(cause)); });
-    return () => { active = false; };
-  }, [conversationId, revision, session]);
+  const fail = useCallback((cause: unknown, show: (message: string) => void) => {
+    reportError(cause);
+    if (mounted.current) show(getMessagingError(cause));
+  }, [reportError]);
+
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; nonce.current = null; messagesRef.current = undefined; }; }, []);
   useEffect(() => {
     let active = true;
     const existing = messagesRef.current;
-    const operation = existing?.length ? loadMessagesSince(session, conversationId, existing[0]!.sequence - 1) : loadMessagePage(session, conversationId);
+    const operation = existing?.length ? loadMessagesSince(conversationId, existing[0]!.sequence - 1) : loadMessagePage(conversationId);
     void operation.then((result) => {
-      if (!active || !session.identity) return;
+      if (!active) return;
       setMessages((previous) => {
         const merged = new Map((previous ?? []).map((message) => [message.id, message]));
         for (const message of result) merged.set(message.id, message);
@@ -96,9 +148,9 @@ function ConversationThread({ conversation, session }: { conversation: Conversat
       });
       if (!existing && result.length === 0) setHasOlder(false);
       setError(undefined);
-    }).catch((cause: unknown) => { if (active) setError(getMessagingError(cause)); });
+    }).catch((cause: unknown) => { if (active) fail(cause, setError); });
     return () => { active = false; };
-  }, [conversationId, revision, session]);
+  }, [conversationId, revision, fail]);
 
   const measureBottom = useCallback(() => {
     const element = list.current;
@@ -128,17 +180,17 @@ function ConversationThread({ conversation, session }: { conversation: Conversat
     const element = list.current;
     if (!messages?.length || !element || !atBottom || document.visibilityState !== "visible" || !document.hasFocus()
       || element.scrollHeight - element.scrollTop - element.clientHeight >= 60) return;
-    const unreadIncoming = messages.filter((message) => message.decrypted && message.recipientId === userId && !message.readAt && !markedRead.current.has(message.id));
+    const unreadIncoming = messages.filter((message) => message.recipientId === userId && !message.readAt && !markedRead.current.has(message.id));
     if (!unreadIncoming.length) return;
     const ids = new Set(unreadIncoming.map((message) => message.id));
     for (const id of ids) markedRead.current.add(id);
-    void markConversationRead(session, conversationId, unreadIncoming).then(() => {
-      if (!mounted.current || !session.identity) return;
+    void markConversationRead(userId, conversationId, unreadIncoming).then(() => {
+      if (!mounted.current) return;
       setMessages((previous) => previous?.map((message) => ids.has(message.id)
         ? { ...message, readAt: new Date().toISOString() } : message));
       refresh();
-    }).catch(() => { for (const id of ids) markedRead.current.delete(id); });
-  }, [messages, conversationId, userId, atBottom, focusVersion, refresh, session]);
+    }).catch((cause: unknown) => { reportError(cause); for (const id of ids) markedRead.current.delete(id); });
+  }, [messages, conversationId, userId, atBottom, focusVersion, refresh, reportError]);
 
   const older = async () => {
     const first = messages?.[0];
@@ -148,11 +200,11 @@ function ConversationThread({ conversation, session }: { conversation: Conversat
     const previousTop = list.current?.scrollTop ?? 0;
     followLatest.current = false;
     try {
-      const result = await loadMessagePage(session, conversationId, first.sequence);
-      if (!mounted.current || !session.identity) return;
+      const result = await loadMessagePage(conversationId, first.sequence);
+      if (!mounted.current) return;
       if (!result.length) setHasOlder(false);
       setMessages((previous) => {
-        const merged = new Map([...(result ?? []), ...(previous ?? [])].map((message) => [message.id, message]));
+        const merged = new Map([...result, ...(previous ?? [])].map((message) => [message.id, message]));
         return [...merged.values()].sort((a, b) => a.sequence - b.sequence);
       });
       requestAnimationFrame(() => {
@@ -161,29 +213,26 @@ function ConversationThread({ conversation, session }: { conversation: Conversat
           measureBottom();
         }
       });
-    } catch (cause) { if (mounted.current) setError(getMessagingError(cause)); }
+    } catch (cause) { fail(cause, setError); }
     finally { if (mounted.current) setLoadingOlder(false); }
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (sending || !draft.trim() || !peer || !peerKey || !session.identity) return;
+    if (sending || !draft.trim() || !peer) return;
     setSending(true);
     setSendError(undefined);
     // Keep this key after an uncertain response: a retry must not create a second message.
     nonce.current ??= crypto.randomUUID();
     try {
-      prepared.current ??= await prepareMessage(session, conversationId, draft, nonce.current);
-      if (!mounted.current || !session.identity) return;
-      const message = await sendMessage(session, prepared.current);
-      if (!mounted.current || !session.identity) return;
+      const message = await sendMessage(conversationId, draft, nonce.current);
+      if (!mounted.current) return;
       followLatest.current = true;
       setMessages((previous) => [...new Map([...(previous ?? []), message].map((item) => [item.id, item])).values()].sort((a, b) => a.sequence - b.sequence));
       setDraft("");
       nonce.current = null;
-      prepared.current = null;
       refresh();
-    } catch (cause) { if (mounted.current) setSendError(getMessagingError(cause)); }
+    } catch (cause) { fail(cause, setSendError); }
     finally { if (mounted.current) setSending(false); }
   };
 
@@ -192,7 +241,7 @@ function ConversationThread({ conversation, session }: { conversation: Conversat
       <Link to="/espace/messages" className="message-thread__back" aria-label="Retour aux conversations"><ArrowLeft size={20} aria-hidden="true" /></Link>
       {peer && <Avatar initials={peer.initials} avatarTone={peer.avatarTone} photoUrl={peer.photoUrl} label={`Photo de ${peerName}`} />}
       <div><h2>{peer ? <Link to={`/alumni/${peer.id}`}>{peerName}</Link> : peerName}</h2>
-        <p>Chiffré de bout en bout · {conversation.request.kind === "mentoring" ? "Mentorat" : "Échange privé"}</p>
+        <p>{conversation.request.kind === "mentoring" ? "Mentorat" : "Échange privé"}</p>
       </div>
       <span className="message-thread__connection" title={connected ? "Réception en temps réel" : "Actualisation régulière en cours"}>{connected ? "En direct" : "Synchronisation"}</span>
     </header>
@@ -209,7 +258,7 @@ function ConversationThread({ conversation, session }: { conversation: Conversat
             return <div key={message.id}>
               {newDay && <p className="message-day">{new Date(message.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>}
               <article className={`message-bubble${own ? " message-bubble--own" : ""}`} aria-label={`Message de ${own ? "vous" : peerName}`}>
-                <p>{message.decrypted ? message.body : "Ce message ne peut pas être déchiffré avec votre clé. Son contenu n’est pas affiché."}</p>
+                <p>{message.body}</p>
                 <footer><time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>{own && <span aria-label={message.readAt ? "Lu" : "Envoyé"} title={message.readAt ? "Lu" : "Envoyé"}>{message.readAt ? <CheckCheck size={14} aria-hidden="true" /> : <Check size={14} aria-hidden="true" />}</span>}</footer>
               </article>
             </div>;
@@ -217,37 +266,35 @@ function ConversationThread({ conversation, session }: { conversation: Conversat
         </>}
     </div>
     {!atBottom && <button className="message-thread__latest" onClick={() => { followLatest.current = true; if (list.current) list.current.scrollTop = list.current.scrollHeight; setAtBottom(true); }}>Revenir aux derniers messages ↓</button>}
-    {peerKey === null && <p className="messages-encryption-note" role="status">{peer?.firstName ?? "Votre destinataire"} doit activer sa messagerie chiffrée avant que vous puissiez échanger ici.</p>}
     <form className="message-composer" onSubmit={(event) => void submit(event)}>
       <label htmlFor="message-draft">Votre message à {peer?.firstName ?? "ce membre"}</label>
-      <textarea id="message-draft" name="message" rows={3} maxLength={4000} value={draft} disabled={sending || !peer || !peerKey}
-        onChange={(event) => { setDraft(event.target.value); nonce.current = null; prepared.current = null; setSendError(undefined); }}
+      <textarea id="message-draft" name="message" rows={3} maxLength={4000} value={draft} disabled={sending || !peer}
+        onChange={(event) => { setDraft(event.target.value); nonce.current = null; setSendError(undefined); }}
         placeholder={peer ? "Écrivez votre message…" : "Ce membre n’est plus disponible."} required />
       {sendError && <p role="alert" className="messages-error">{sendError}</p>}
-      <div className="message-composer__footer"><small>{draft.length}/4 000 · Chiffré sur cet appareil</small><Button type="submit" size="sm" disabled={sending || !draft.trim() || !peer || !peerKey || messages === undefined}>{sending ? <LoaderCircle className="spin" size={17} aria-hidden="true" /> : <Send size={17} aria-hidden="true" />} {sending ? "Envoi…" : sendError ? "Réessayer l’envoi" : "Envoyer"}</Button></div>
+      <div className="message-composer__footer"><small>{draft.length}/4 000</small><Button type="submit" size="sm" disabled={sending || !draft.trim() || !peer || messages === undefined}>{sending ? <LoaderCircle className="spin" size={17} aria-hidden="true" /> : <Send size={17} aria-hidden="true" />} {sending ? "Envoi…" : sendError ? "Réessayer l’envoi" : "Envoyer"}</Button></div>
     </form>
   </section>;
 }
 
-export function MessagesWorkspace({ session, lock }: { session: MessagingSession; lock: () => void }) {
-  const userId = session.userId;
+function MessagesWorkspace({ userId }: { userId: string }) {
   const { conversationId } = useParams();
-  const { revision, refresh } = useMessaging();
+  const { revision, refresh, reportError } = useMessaging();
   const [conversations, setConversations] = useState<Conversation[]>();
   const [error, setError] = useState<string>();
   useEffect(() => {
     let active = true;
-    void loadConversations(userId).then((result) => { if (active && session.identity) { setConversations(result); setError(undefined); } })
-      .catch((cause: unknown) => { if (active) setError(getMessagingError(cause)); });
+    void loadConversations(userId).then((result) => { if (active) { setConversations(result); setError(undefined); } })
+      .catch((cause: unknown) => { reportError(cause); if (active) setError(getMessagingError(cause)); });
     return () => { active = false; };
-  }, [userId, revision, session]);
+  }, [userId, revision, reportError]);
   const selected = conversations?.find((conversation) => conversation.id === conversationId);
   return <div className="messages-page page-shell">
     <MessagingNavigation />
-    <header className="messages-heading"><div><p className="eyebrow eyebrow--dark">Chiffrement de bout en bout</p><h1>Mes messages</h1><p>Vos conversations sont déchiffrées uniquement dans ce navigateur déverrouillé.</p></div>
-      <div className="messages-heading__actions"><Button variant="outline" size="sm" onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Actualiser</Button><Button variant="outline" size="sm" onClick={lock}><LockKeyhole size={16} aria-hidden="true" /> Verrouiller</Button></div>
+    <header className="messages-heading"><div><p className="eyebrow eyebrow--dark">Messagerie privée</p><h1>Mes messages</h1><p>Échangez avec les membres qui ont accepté votre demande.</p></div>
+      <div className="messages-heading__actions"><Button variant="outline" size="sm" onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Actualiser</Button></div>
     </header>
-    <p className="messages-encryption-note">Les présentations initiales des demandes restent accessibles dans <Link to="/espace/relations">Mes relations</Link>. Ces textes historiques ne font pas partie de la messagerie chiffrée.</p>
+    <p className="messages-encryption-note">Les présentations initiales des demandes restent accessibles dans <Link to="/espace/relations">Mes relations</Link>.</p>
     {error && <p className="messages-error" role="alert">{error} <button onClick={refresh} className="text-link text-link--dark">Réessayer</button></p>}
     <div className={`messages-workspace${conversationId ? " messages-workspace--selected" : ""}`}>
       <aside className="messages-inbox" aria-label="Vos conversations">
@@ -264,14 +311,49 @@ export function MessagesWorkspace({ session, lock }: { session: MessagingSession
               </Link></li>;
             })}</ul>}
       </aside>
-      {selected ? <ConversationThread key={`${userId}:${selected.id}`} conversation={selected} session={session} />
+      {selected ? <ConversationThread key={`${userId}:${selected.id}`} conversation={selected} userId={userId} />
         : <section className="messages-placeholder"><MessageCircle size={44} strokeWidth={1.3} aria-hidden="true" /><h2>{conversationId ? conversations ? "Conversation indisponible" : "Ouverture de votre échange…" : "La conversation continue ici."}</h2><p>{conversationId ? "Seules les personnes d’une demande acceptée peuvent accéder à cet échange." : "Choisissez une conversation pour lire les messages et répondre."}</p>{conversationId && <ButtonLink to="/espace/messages" variant="outline">Toutes mes conversations</ButtonLink>}</section>}
     </div>
-    <EmailPreference />
+    <div className="messages-settings">
+      <EmailPreference />
+      <MessagingDevices />
+    </div>
+  </div>;
+}
+
+function MessagingAccessNotice({ access }: { access: Exclude<MessagingAccess, "ready"> }) {
+  const { retryAccess } = useMessaging();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [busy, setBusy] = useState(false);
+  const reconnect = async () => {
+    setBusy(true);
+    // "local" ends only this browser's sign-in; the member's other devices stay connected.
+    await supabase?.auth.signOut({ scope: "local" });
+    navigate(`/connexion?next=${encodeURIComponent(location.pathname)}`);
+  };
+  return <div className="messages-page page-shell"><MessagingNavigation />
+    <section className="messages-access" aria-labelledby="messages-access-title">
+      <MessageCircle size={34} strokeWidth={1.4} aria-hidden="true" />
+      {access === "checking" ? <>
+        <h1 id="messages-access-title">Ouverture de votre messagerie…</h1>
+        <p role="status"><LoaderCircle size={20} className="spin" aria-hidden="true" /> Un instant.</p>
+      </> : access === "reconnect" ? <>
+        <h1 id="messages-access-title">Reconnectez-vous pour lire vos messages ici.</h1>
+        <p>Pour protéger vos échanges, la messagerie s’ouvre sur les appareils où vous vous êtes connecté récemment. Une nouvelle connexion suffit : il n’y a rien d’autre à faire.</p>
+        <Button disabled={busy} onClick={() => void reconnect()}><LogIn size={18} aria-hidden="true" /> Me reconnecter</Button>
+      </> : <>
+        <h1 id="messages-access-title">La messagerie ne répond pas pour le moment.</h1>
+        <p>Vérifiez votre connexion internet, puis réessayez.</p>
+        <Button variant="outline" onClick={retryAccess}><RefreshCw size={18} aria-hidden="true" /> Réessayer</Button>
+      </>}
+    </section>
   </div>;
 }
 
 export function MessagesPage() {
   const { user } = useAuth();
-  return user ? <MessagingVault key={user.id} userId={user.id}>{(session, lock) => <MessagesWorkspace key={user.id} session={session} lock={lock} />}</MessagingVault> : null;
+  const { access } = useMessaging();
+  if (!user) return null;
+  return access === "ready" ? <MessagesWorkspace key={user.id} userId={user.id} /> : <MessagingAccessNotice access={access} />;
 }

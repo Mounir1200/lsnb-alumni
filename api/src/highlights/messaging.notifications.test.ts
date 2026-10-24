@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildMessagingActivationEmail, renderConfirmationEmail, renderMessageNotificationEmail } from "../messaging/emailTemplate.js";
+import { renderConfirmationEmail, renderMessageNotificationEmail } from "../messaging/emailTemplate.js";
 import { CONFIRMATION_RESEND_SUCCESS, getLoginError, resendSignupConfirmation } from "../../../src/lib/emailConfirmation.ts";
 import { createNotificationSender, createNotificationStore, deliverNotifications, loadNotificationConfig, NotificationError,
   type NotificationJob, type NotificationStore } from "../messaging/notifications.js";
@@ -105,19 +105,6 @@ test("email links are escaped so a malformed URL cannot inject HTML", () => {
   const email = renderMessageNotificationEmail('https://network.example.test/?a="<unsafe>&b=2', 'https://network.example.test/?q="unsafe');
   assert.doesNotMatch(email.html, /<unsafe>/);
   assert.match(email.html, /&quot;&lt;unsafe&gt;&amp;b=2/);
-});
-
-test("messaging activation exposes only an eight-digit one-time code and no clickable or remote asset", () => {
-  const email = buildMessagingActivationEmail("01234567");
-  assert.match(email.html, /01234567/);
-  assert.match(email.text, /\n01234567\n/);
-  assert.match(email.text, /10 minutes/);
-  assert.match(email.text, /utilisable une seule fois/);
-  assert.match(email.text, /Si vous n’avez pas demandé cette activation, ne communiquez pas ce code\./);
-  assert.doesNotMatch(email.html, /href=|src=|<img|<script|<link|<iframe/i);
-  for (const invalid of ["1234567", "123456789", "1234 5678", "1234abcd", '<script>', ""]) {
-    assert.throws(() => buildMessagingActivationEmail(invalid), /huit chiffres/);
-  }
 });
 
 test("confirmation resend normalizes the address, preserves the callback and rejects invalid addresses locally", async () => {

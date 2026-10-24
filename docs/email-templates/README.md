@@ -20,16 +20,10 @@ L’envoi applicatif construit directement `subject`, `htmlContent` et `textCont
 
 `message-notification.html` et `.txt` sont fournis pour inspection ou configuration manuelle. Leurs variables sont `{{ params.CONVERSATION_URL }}` et `{{ params.SETTINGS_URL }}`. Aucune identité d’expéditeur, aucun texte de conversation et aucun compteur précis n’apparaissent dans le mail.
 
-## Code d’activation de la messagerie
-
-L’application appelle `buildMessagingActivationEmail(code)` avec un code de **huit chiffres**. Le renderer valide le format et préserve les zéros initiaux. Le backend est responsable de la génération, de la durée de validité de dix minutes, de l’usage unique, du plafond d’essais et du destinataire authentifié.
-
-`messaging-activation.html` et `.txt` sont les modèles de référence ; la variable Brevo est `{{ params.ACTIVATION_CODE }}`. Le message contient le code, sans lien d’activation, avec la consigne : « Si vous n’avez pas demandé cette activation, ne communiquez pas ce code. »
-
 ## Suivi, liens et vérification
 
 Le contenu généré n’intègre aucun suivi. La configuration du fournisseur doit être vérifiée séparément : une option de suivi Brevo peut réécrire les liens ou ajouter un pixel au moment de l’envoi. Supabase recommande de désactiver le suivi des liens pour les e-mails d’authentification. Ne pas annoncer que le suivi fournisseur est désactivé sans l’avoir vérifié dans le compte.
 
-Les contrôles locaux portent sur le rendu de navigateur, les versions texte, l’échappement des URL, le code d’activation et l’absence de ressources distantes. Ils ne constituent pas un essai de délivrabilité ni une validation visuelle dans tous les clients e-mail. Aucun e-mail réel n’est nécessaire pour ces contrôles.
+Les contrôles locaux portent sur le rendu de navigateur, les versions texte, l’échappement des URL et l’absence de ressources distantes. Ils ne constituent pas un essai de délivrabilité ni une validation visuelle dans tous les clients e-mail. Aucun e-mail réel n’est nécessaire pour ces contrôles.
 
 Sources : [variables des modèles Supabase](https://supabase.com/docs/guides/auth/auth-email-templates), [configuration SMTP Supabase](https://supabase.com/docs/guides/auth/auth-smtp).

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile, readdir } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 
 const migrationName = '20261021183651_mentorship_requests_and_network.sql'
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
@@ -59,7 +60,7 @@ const relations = (actor: string | null, role = 'authenticated') => asUser(actor
 const end = (actor: string, id: string) => asUser(actor, () => db.query<Mentorship>("update public.mentorships set ended_at = '2099-01-01' where id = $1 returning *", [id]))
 
 describe('Mentoring requests, consent and member network', { concurrency: false }, () => {
-  before(async () => { db = new PGlite(); await initialize(db) })
+  before(async () => { db = new PGlite({ extensions: { pgcrypto } }); await initialize(db) })
   beforeEach(async () => { await db.exec('truncate public.weekly_highlights, auth.users cascade') })
   after(async () => { await db?.close() })
 
@@ -304,7 +305,7 @@ describe('Mentoring requests, consent and member network', { concurrency: false 
   })
 
   it('does not silently convert historical accepted requests without verified consent', async () => {
-    const legacy = new PGlite()
+    const legacy = new PGlite({ extensions: { pgcrypto } })
     try {
       await initialize(legacy, false)
       const junior = await seed({}, legacy); const mentor = await seed({ mentor: true }, legacy)
