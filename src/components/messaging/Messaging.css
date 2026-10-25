@@ -70,23 +70,19 @@
 .messages-heading__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .messages-encryption-note { margin: 0; padding: 13px 17px; color: #435a6e; background: #f0eee8; border: 1px solid #ded7cc; font-size: .73rem; line-height: 1.6; }
 .messages-encryption-note a { text-decoration: underline; text-underline-offset: 3px; }
-.message-vault { max-width: 680px; margin: 36px auto; padding: 34px 38px; border: 1px solid #d8d1c6; border-top: 3px solid #c27d38; border-radius: 6px; background: #fffdf8; color: #0c2948; }
-.message-vault > svg { color: #a3672f; margin-bottom: 18px; }
-.message-vault h1 { margin: 10px 0 18px; font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1.15; letter-spacing: -.035em; }
-.message-vault h2 { margin: 25px 0 12px; font-size: 1.1rem; }
-.message-vault p { font-size: .86rem; line-height: 1.7; color: #536371; }
-.message-vault form { display: flex; flex-direction: column; align-items: stretch; gap: 10px; margin-top: 24px; }
-.message-vault form > label { font-size: .8rem; font-weight: 650; }
-.message-vault input:not([type=checkbox]), .message-vault textarea { width: 100%; padding: 12px 13px; min-height: 46px; border: 1px solid #a8afb5; border-radius: 4px; color: #0c2948; background: #fff; font-size: .92rem; }
-.message-vault .message-vault__secret { font-family: ui-monospace, monospace; font-size: .85rem; line-height: 1.6; resize: none; overflow-wrap: anywhere; }
-.message-vault .message-vault__saved { display: flex; align-items: start; gap: 10px; margin: 15px 0; font-size: .78rem; font-weight: 400; line-height: 1.6; }
-.message-vault__saved input { width: 18px; height: 18px; flex-shrink: 0; margin-top: 4px; accent-color: #0c2948; }
-.message-vault__actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.message-vault form > .button { margin-top: 10px; }
-.message-vault .message-vault__warning { margin: 25px 0; padding: 16px 18px; background: #f4e9d8; border-left: 3px solid #b67534; }
-.message-vault__warning p { margin: 7px 0 0; color: #62482c; }
-.message-vault .message-vault__notice { margin-top: 20px; padding: 12px 15px; background: #eef2e9; color: #31523c; }
-.message-vault .message-vault__footnote { font-size: .7rem; margin-top: 24px; padding-top: 18px; border-top: 1px solid #ded7cc; }
+.messages-access { max-width: 640px; margin: 36px auto; padding: 34px 38px; border: 1px solid #d8d1c6; border-top: 3px solid #c27d38; border-radius: 6px; background: #fffdf8; color: #0c2948; }
+.messages-access > svg { color: #a3672f; margin-bottom: 16px; }
+.messages-access h1 { margin: 0 0 16px; font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.15; letter-spacing: -.035em; }
+.messages-access p { display: flex; align-items: center; gap: 8px; margin: 0 0 24px; font-size: .88rem; line-height: 1.7; color: #536371; }
+.messages-settings { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; margin-top: 22px; }
+.messages-settings .messages-email { margin-top: 0; }
+.messages-devices { padding: 16px 0; color: #0c2948; }
+.messages-devices h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: .9rem; }
+.messages-devices > p { margin: 0 0 12px; font-size: .72rem; color: #536371; }
+.messages-devices ul { margin: 0 0 12px; padding: 0; list-style: none; border-top: 1px solid #ded7cc; }
+.messages-devices li { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid #ded7cc; }
+.messages-devices li strong { display: block; font-size: .8rem; }
+.messages-devices li small { display: block; margin-top: 3px; font-size: .68rem; color: #65717b; }
 .messages-page :is(a,button,input,textarea,[tabindex]):focus-visible { outline: 3px solid #a3672f; outline-offset: 3px; }
 .message-notification :is(a,button):focus-visible { outline: 3px solid #e7b77d; outline-offset: 3px; }
 @media (max-width: 900px) {
@@ -98,7 +94,8 @@
   .message-thread__history { padding-inline: 15px; }
 }
 @media (max-width: 700px) {
-  .message-vault { padding: 25px 20px; margin: 24px 0; }
+  .messages-access { padding: 25px 20px; margin: 24px 0; }
+  .messages-settings { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .messages-heading__actions { align-items: stretch; flex-direction: column; }
   .messages-heading__actions .button { font-size: .65rem; padding-inline: 10px; }
   .messages-heading { align-items: start; gap: 12px; }

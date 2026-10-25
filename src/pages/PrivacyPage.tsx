@@ -37,27 +37,22 @@ export function PrivacyPage() {
         Après acceptation d’une demande, les deux personnes peuvent poursuivre leur échange
         dans la messagerie. Le texte des messages et leur état de lecture sont réservés aux
         participants. Les autres membres, administrateurs et modérateurs n’y accèdent pas
-        depuis le site. Les nouveaux messages de cette messagerie sont chiffrés de bout en bout
-        sur l’appareil de l’expéditeur et déchiffrés sur celui du destinataire après déverrouillage.
-        La base conserve leur contenu chiffré, les identifiants des participants, les dates et
-        l’état de lecture. Les textes de présentation des demandes, accessibles dans Mes
-        relations, restent distincts et ne sont pas chiffrés de bout en bout.
+        depuis le site. Les messages sont chiffrés dans notre base de données avec une clé
+        conservée à part, dans le coffre à secrets de notre hébergeur de base de données
+        (Supabase). Ce n’est pas un chiffrement de bout en bout : les personnes qui administrent
+        techniquement ce service pourraient y accéder. La base conserve le contenu chiffré, les
+        identifiants des participants, les dates et l’état de lecture. Les textes de présentation
+        des demandes, accessibles dans Mes relations, restent distincts.
       </p>
       <p>
-        La première activation exige un code envoyé à l’adresse e-mail du compte, en plus de
-        la session connectée. Votre clé de récupération est créée sur votre appareil et ne
-        quitte pas celui-ci pour être envoyée au service. Le serveur conserve la clé publique
-        et une copie de la clé privée chiffrée avec cette clé de récupération. Vous devez
-        conserver la clé de récupération : sa perte rend l’historique chiffré irrécupérable.
-        Le site ne propose aucune réinitialisation permettant de lire ces anciens messages.
-      </p>
-      <p>
-        Les clés déverrouillées et les textes ne sont pas enregistrés dans le stockage persistant
-        du navigateur par la messagerie. Le rechargement, le changement de compte, le bouton
-        Verrouiller, cinq minutes d’inactivité ou une minute dans un onglet masqué verrouillent
-        cet espace. Un jeton de session volé seul ne permet pas de déchiffrer les messages.
-        Cette protection ne couvre pas un appareil compromis ou du code malveillant exécuté
-        dans un navigateur où la messagerie est déjà déverrouillée.
+        Vous n’avez aucune clé ni aucun code à conserver. La messagerie s’ouvre sur les appareils
+        où vous vous êtes connecté : à chaque connexion, votre navigateur reçoit automatiquement
+        une clé d’appareil que le site peut utiliser mais pas recopier, et chaque lecture ou envoi
+        de message doit être signé avec elle. Un jeton de connexion copié seul ne permet donc ni de
+        lire vos messages ni d’ajouter un appareil. Se déconnecter, ou retirer un appareil depuis
+        Mes messages, lui retire immédiatement l’accès. Cette protection ne couvre pas un appareil
+        déjà compromis, ni une personne qui obtiendrait vos identifiants de connexion ou l’accès à
+        votre boîte e-mail.
       </p>
       <p>
         Un signal récent d’activité permet d’éviter les rappels e-mail lorsque vous utilisez

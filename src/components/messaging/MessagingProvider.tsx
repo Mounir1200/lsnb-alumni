@@ -1,13 +1,56 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { MessageCircle, X } from "lucide-react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useAuth } from "../../auth/AuthProvider";
-import { countUnreadMessages, recordMessagingPresence } from "../../lib/messagingRepository";
+import {
+  countUnreadMessages, DeviceAccessError, messagingDevice, needsReconnect, recordMessagingPresence, type DeviceAccessProblem,
+} from "../../lib/messagingRepository";
 import { supabase } from "../../lib/supabase";
 import "./Messaging.css";
 
-type MessagingContextValue = { unread: number; revision: number; connected: boolean; refresh: () => void };
+export type MessagingAccess = "checking" | "ready" | DeviceAccessProblem;
+type MessagingContextValue = {
+  unread: number; revision: number; connected: boolean; refresh: () => void;
+  access: MessagingAccess; retryAccess: () => void; reportError: (error: unknown) => void;
+};
+type MessageSignal = { conversation_id?: unknown; recipient_id?: unknown; change?: unknown };
 export const MessagingContext = createContext<MessagingContextValue | undefined>(undefined);
+
+const REFRESH_INTERVAL_MS = 30000;
+const PRESENCE_INTERVAL_MS = 25000;
+const IDLE_AFTER_MS = 120000;
+
+/** Gives this browser its messaging key right after sign-in, while the sign-in is still recent. */
+function useMessagingAccess(userId: string | undefined) {
+  const [state, setState] = useState<{ userId: string; access: MessagingAccess }>();
+  const [attempt, setAttempt] = useState(0);
+  const previousUser = useRef(userId);
+
+  useEffect(() => {
+    // Signing out or switching accounts leaves no usable key behind in this browser.
+    if (previousUser.current && previousUser.current !== userId) void messagingDevice.forget();
+    previousUser.current = userId;
+    if (!userId) return;
+    let active = true;
+    setState({ userId, access: "checking" });
+    void messagingDevice.ensureDevice()
+      .then(() => { if (active) setState({ userId, access: "ready" }); })
+      .catch((error: unknown) => {
+        if (active) setState({ userId, access: error instanceof DeviceAccessError ? error.problem : "unavailable" });
+      });
+    return () => { active = false; };
+  }, [userId, attempt]);
+
+  const retryAccess = useCallback(() => setAttempt((value) => value + 1), []);
+  const reportError = useCallback((error: unknown) => {
+    if (!userId || !needsReconnect(error)) return;
+    void messagingDevice.forget();
+    setState({ userId, access: "reconnect" });
+  }, [userId]);
+  const access: MessagingAccess = userId && state?.userId === userId ? state.access : "checking";
+  return { access, retryAccess, reportError };
+}
 
 export function MessagingProvider({ children }: { children: ReactNode }) {
   const { user, profileCompleted } = useAuth();
@@ -15,6 +58,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   const path = useRef(location.pathname);
   path.current = location.pathname;
   const userId = user?.id;
+  const { access, retryAccess, reportError } = useMessagingAccess(userId);
   const [state, setState] = useState<{
     userId: string; unread: number; revision: number; connected: boolean; toast?: string;
   }>();
@@ -27,7 +71,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!userId || !profileCompleted || !supabase) {
+    if (!userId || !profileCompleted || !supabase || access !== "ready") {
       refreshRef.current = () => undefined;
       return;
     }
@@ -37,24 +81,26 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     let lastActivity = Date.now();
     let lastHeartbeat = 0;
     let heartbeatBusy = false;
+    let channel: RealtimeChannel | undefined;
     setState({ userId, unread: 0, revision: 0, connected: false });
 
     const refreshData = () => {
       if (!active) return;
       setState((previous) => previous?.userId === userId ? { ...previous, revision: previous.revision + 1 } : previous);
       const request = ++countRequest;
-      void countUnreadMessages(userId).then((unread) => {
+      void countUnreadMessages().then((unread) => {
         if (active && request === countRequest) setState((previous) => previous?.userId === userId ? { ...previous, unread } : previous);
-      }).catch(() => undefined);
+      }).catch(reportError);
     };
 
     const heartbeat = () => {
       const now = Date.now();
       if (!active || heartbeatBusy || document.visibilityState !== "visible" || !document.hasFocus()
-        || now - lastActivity > 120000 || now - lastHeartbeat < 25000) return;
+        || now - lastActivity > IDLE_AFTER_MS || now - lastHeartbeat < PRESENCE_INTERVAL_MS) return;
       heartbeatBusy = true;
       lastHeartbeat = now;
-      void recordMessagingPresence().catch(() => { lastHeartbeat = 0; }).finally(() => { heartbeatBusy = false; });
+      void recordMessagingPresence().catch((error: unknown) => { lastHeartbeat = 0; reportError(error); })
+        .finally(() => { heartbeatBusy = false; });
     };
     const activity = () => { lastActivity = Date.now(); heartbeat(); };
     const foreground = () => {
@@ -64,23 +110,25 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
         heartbeat();
       }
     };
-    const changed = (payload: { eventType: string; new: Record<string, unknown> }) => {
+    // Signals name the conversation only; the text is then fetched through the signed calls.
+    const signalled = (signal: MessageSignal) => {
       if (!active) return;
       refreshData();
-      const message = payload.new;
-      if (payload.eventType === "INSERT" && message.recipient_id === userId && typeof message.conversation_id === "string"
-        && path.current !== `/espace/messages/${message.conversation_id}`) {
-        setState((previous) => previous?.userId === userId ? { ...previous, toast: String(message.conversation_id) } : previous);
+      if (signal.change === "insert" && signal.recipient_id === userId && typeof signal.conversation_id === "string"
+        && path.current !== `/espace/messages/${signal.conversation_id}`) {
+        setState((previous) => previous?.userId === userId ? { ...previous, toast: String(signal.conversation_id) } : previous);
       }
     };
-    const channel = client.channel(`messages:${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_messages", filter: `recipient_id=eq.${userId}` }, changed)
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_messages", filter: `sender_id=eq.${userId}` }, changed)
-      .subscribe((status) => {
-        if (!active) return;
-        setState((previous) => previous?.userId === userId ? { ...previous, connected: status === "SUBSCRIBED" } : previous);
-        if (status === "SUBSCRIBED") refreshData();
-      });
+    void client.realtime.setAuth().catch(() => undefined).then(() => {
+      if (!active) return;
+      channel = client.channel(`messaging:${userId}`, { config: { private: true } })
+        .on("broadcast", { event: "message" }, ({ payload }) => signalled(payload as MessageSignal))
+        .subscribe((status) => {
+          if (!active) return;
+          setState((previous) => previous?.userId === userId ? { ...previous, connected: status === "SUBSCRIBED" } : previous);
+          if (status === "SUBSCRIBED") refreshData();
+        });
+    });
 
     refreshRef.current = refreshData;
     refreshData();
@@ -88,7 +136,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") refreshData();
       heartbeat();
-    }, 30000);
+    }, REFRESH_INTERVAL_MS);
     window.addEventListener("focus", foreground);
     window.addEventListener("online", foreground);
     document.addEventListener("visibilitychange", foreground);
@@ -106,13 +154,14 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("pointerdown", activity);
       window.removeEventListener("keydown", activity);
       window.removeEventListener("scroll", activity);
-      void client.removeChannel(channel);
+      if (channel) void client.removeChannel(channel);
     };
-  }, [userId, profileCompleted]);
+  }, [userId, profileCompleted, access, reportError]);
 
-  const current = userId && state?.userId === userId ? state : undefined;
+  const current = userId && state?.userId === userId && access === "ready" ? state : undefined;
   const value = useMemo(() => ({ unread: current?.unread ?? 0, revision: current?.revision ?? 0,
-    connected: current?.connected ?? false, refresh }), [current?.unread, current?.revision, current?.connected, refresh]);
+    connected: current?.connected ?? false, refresh, access, retryAccess, reportError }),
+  [current?.unread, current?.revision, current?.connected, refresh, access, retryAccess, reportError]);
   const dismiss = () => setState((previous) => previous && ({ ...previous, toast: undefined }));
 
   return <MessagingContext.Provider value={value}>

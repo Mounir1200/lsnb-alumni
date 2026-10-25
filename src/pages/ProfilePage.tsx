@@ -276,7 +276,7 @@ export function ProfilePage() {
                 required
               />
               <small>20 à 1 200 caractères. Ce message est visible uniquement par vous et son destinataire.</small>
-              <small>Ce texte de présentation n’est pas chiffré de bout en bout. Partagez vos informations confidentielles dans la messagerie après acceptation.</small>
+              <small>Ce texte de présentation n’est pas chiffré comme les messages. Partagez vos informations confidentielles dans la messagerie après acceptation.</small>
             </label>
             {requestKind === "mentoring" && (
               <label className="form-check">

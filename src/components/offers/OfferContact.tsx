@@ -130,7 +130,7 @@ function MemberOfferContact({ offer, author, userId }: { offer: Offer; author: M
               placeholder="Présentez-vous en une phrase, puis posez une question précise sur l’offre."
             />
             <small>20 à 1 200 caractères. Visible uniquement par vous et {author.firstName}, avec le lien vers cette offre.</small>
-            <small>Ce texte de présentation n’est pas chiffré de bout en bout. Partagez vos informations confidentielles dans la messagerie après acceptation.</small>
+            <small>Ce texte de présentation n’est pas chiffré comme les messages. Partagez vos informations confidentielles dans la messagerie après acceptation.</small>
           </label>
           <div className="offer-contact__actions">
             <Button variant="outline" disabled={status.kind === "loading"} onClick={() => setIsFormOpen(false)}>Annuler</Button>
