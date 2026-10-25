@@ -29,6 +29,8 @@ Le membre ne gère aucune clé : il se connecte, ouvre Messages, lit et répond.
 
 Le 24 octobre 2026, la messagerie de bout en bout avec clé `LSNB1` a été retirée : la production ne contenait aucun message, une seule identité de test et un code e-mail en attente, supprimés par la migration `20261024191932_device_bound_messaging`. La migration refuse de s'exécuter s'il existe déjà des messages.
 
+La migration `20261025153330_messaging_enrollment_fairness`, appliquée en production le 25 octobre 2026, visait cet ancien format : sur le schéma par appareils, elle s'arrête sans rien modifier. Elle reste dans le dépôt pour que l'historique des migrations corresponde à celui de Supabase.
+
 ## E-mails et coûts
 
 Brevo envoie les confirmations Supabase par SMTP et les alertes de messages par API transactionnelle. L'expéditeur de démarrage est `LSNB Alumni <mounirdabire47@gmail.com>`. Les modèles reprennent le bleu profond et les teintes banco du site, avec HTML en tableaux, styles intégrés et version texte pour les e-mails API. Le modèle de confirmation versionné est dans `docs/email-templates/confirm-signup.html` ; il utilise le lien personnel `{{ .ConfirmationURL }}` fourni par Supabase.

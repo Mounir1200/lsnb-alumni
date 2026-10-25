@@ -1,23 +1,29 @@
-import { AlertTriangle, LoaderCircle } from "lucide-react";
+import { AlertTriangle, LoaderCircle, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getPostAuthPath, getProfileCompletionPath } from "../lib/auth";
 import { resolveCallbackUser } from "../lib/authCallback";
 import { uploadPendingAvatar } from "../lib/avatarRepository";
 import { loadOnboardingProfile } from "../lib/onboardingRepository";
-import { supabase } from "../lib/supabase";
+import { createLinkAuth, supabase } from "../lib/supabase";
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();
   const returnUrl = useRef(new URL(window.location.href));
   const task = useRef<Promise<string> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<{ email: string; choose: (accept: boolean) => void } | null>(null);
 
   useEffect(() => {
     let active = true;
     task.current ??= (async () => {
       if (!supabase) throw new Error("La connexion n’est pas configurée sur ce site.");
-      const user = await resolveCallbackUser(supabase.auth, returnUrl.current, () => new URL(window.location.href));
+      const user = await resolveCallbackUser(supabase.auth, returnUrl.current, () => new URL(window.location.href), {
+        createAuth: createLinkAuth,
+        confirmAccount: (account) => new Promise<boolean>((resolve) => {
+          setConfirmation({ email: account.email!, choose: (accept) => { setConfirmation(null); resolve(accept); } });
+        }),
+      });
       const profile = await loadOnboardingProfile(user.id);
       const next = returnUrl.current.searchParams.get("next");
       if (!profile.profile_completed) return getProfileCompletionPath(next);
@@ -36,10 +42,15 @@ export function AuthCallbackPage() {
   const next = getPostAuthPath(returnUrl.current.searchParams.get("next"));
   return (
     <div className="auth-state-page" role={error ? "alert" : "status"}>
-      {error ? <AlertTriangle aria-hidden="true" /> : <LoaderCircle className="spin" aria-hidden="true" />}
+      {error ? <AlertTriangle aria-hidden="true" /> : confirmation ? <UserRound aria-hidden="true" /> : <LoaderCircle className="spin" aria-hidden="true" />}
       <p className="eyebrow">Connexion au réseau</p>
-      <h1>{error ? "La connexion n’a pas abouti." : "Un dernier passage."}</h1>
-      <p>{error ?? "Ouverture de votre session…"}</p>
+      <h1>{error ? "La connexion n’a pas abouti." : confirmation ? "Est-ce bien votre compte ?" : "Un dernier passage."}</h1>
+      <p>{error ?? (confirmation ? "Ce lien ouvre le compte ci-dessous. Continuez uniquement si cette adresse vous appartient." : "Ouverture de votre session…")}</p>
+      {confirmation && <>
+        <p><strong>{confirmation.email}</strong></p>
+        <button className="button button--primary button--md" onClick={() => confirmation.choose(true)}>Oui, ouvrir mon compte</button>
+        <button className="button button--secondary button--md" onClick={() => confirmation.choose(false)}>Annuler</button>
+      </>}
       {error && <Link className="button button--primary button--md" to={`/connexion?${new URLSearchParams({ next })}`}>Revenir à la connexion</Link>}
     </div>
   );

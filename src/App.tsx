@@ -1,11 +1,10 @@
 import { useEffect, useRef } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
-import { useAuth } from "./auth/AuthProvider";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { SiteFooter } from "./components/layout/SiteFooter";
 import { SiteHeader } from "./components/layout/SiteHeader";
 import { RouteTransition } from "./components/motion/RouteTransition";
-import { uploadPendingAvatar } from "./lib/avatarRepository";
+import { legacyCallbackPath } from "./lib/authCallback";
 import { DirectoryPage } from "./pages/DirectoryPage";
 import { EditProfilePage } from "./pages/EditProfilePage";
 import { HighlightsPage } from "./pages/HighlightsPage";
@@ -25,30 +24,13 @@ import { ConnectionsPage } from "./pages/ConnectionsPage";
 import { MessagesPage } from "./pages/MessagesPage";
 
 function PostConfirmationRedirect() {
-  const { lastEvent, user } = useAuth();
   const navigate = useNavigate();
-  const isLegacyReturn = useRef(window.location.pathname === "/" &&
-    /(?:[?#&])(access_token|code|token_hash)=/.test(window.location.search + window.location.hash));
+  const legacyReturn = useRef(new URL(window.location.href));
 
   useEffect(() => {
-    if (isLegacyReturn.current && lastEvent === "SIGNED_IN" && user && window.location.pathname === "/") {
-      let active = true;
-      void uploadPendingAvatar(user)
-        .then((photoUrl) => {
-          if (active) {
-            navigate(`/espace?confirmed=true${photoUrl ? "&photo=uploaded" : ""}`, {
-              replace: true,
-            });
-          }
-        })
-        .catch(() => {
-          if (active) navigate("/espace?confirmed=true&photo=retry", { replace: true });
-        });
-      return () => {
-        active = false;
-      };
-    }
-  }, [lastEvent, navigate, user]);
+    const path = legacyCallbackPath(legacyReturn.current, new URL(window.location.href));
+    if (path) navigate(path, { replace: true });
+  }, [navigate]);
 
   return null;
 }

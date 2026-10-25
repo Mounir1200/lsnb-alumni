@@ -6,7 +6,7 @@ import { Button } from "../components/ui/Button";
 import { BrandMark } from "../components/ui/BrandMark";
 import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { CONFIRMATION_RESEND_SUCCESS, getLoginError, resendSignupConfirmation } from "../lib/emailConfirmation";
-import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { createEmailSignupAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type LoginStatus = { kind: "idle" | "loading" | "success" | "error"; message?: string };
 
@@ -57,7 +57,7 @@ export function LoginPage() {
 
     setStatus({ kind: "loading", message: "Envoi d’un nouveau lien…" });
     try {
-      await resendSignupConfirmation(supabase.auth, email, getAuthCallbackUrl(searchParams.has("next") ? nextPath : null));
+      await resendSignupConfirmation(createEmailSignupAuth(), email, getAuthCallbackUrl(searchParams.has("next") ? nextPath : null));
       setResendCooldown(60);
       setStatus({ kind: "success", message: CONFIRMATION_RESEND_SUCCESS });
     } catch (error) {

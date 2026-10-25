@@ -2,6 +2,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const CONFIRMATION_RESEND_SUCCESS = "Si cette adresse correspond à un compte en attente de confirmation, un nouveau lien a été envoyé. Vérifiez aussi les courriers indésirables.";
 
+export async function registerEmailAccount(
+  auth: Pick<SupabaseClient["auth"], "setSession">,
+  signupAuth: Pick<SupabaseClient["auth"], "signUp">,
+  credentials: Parameters<SupabaseClient["auth"]["signUp"]>[0],
+) {
+  const result = await signupAuth.signUp(credentials);
+  if (result.error || !result.data.session) return { ...result, signInRequired: false };
+  // This session follows the member's own submitted signup, never a URL.
+  const { access_token, refresh_token } = result.data.session;
+  const installed = await auth.setSession({ access_token, refresh_token });
+  // The account exists either way: ask for a sign-in rather than letting the member sign up twice.
+  if (installed.error) return { ...result, data: { ...result.data, session: null }, signInRequired: true };
+  return { ...result, signInRequired: false };
+}
+
 export function getLoginError(error: unknown) {
   const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
   if (code === "email_not_confirmed") return "Confirmez d’abord votre adresse e-mail. Vous pouvez demander un nouveau lien ci-dessous.";

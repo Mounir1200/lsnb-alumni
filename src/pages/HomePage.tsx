@@ -44,7 +44,8 @@ export function HomePage() {
 
   useEffect(() => {
     if (!location.hash) return;
-    const target = document.querySelector(location.hash);
+    // Auth returns put tokens in the fragment; querySelector would throw on them.
+    const target = document.getElementById(location.hash.slice(1));
     window.setTimeout(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }, [location.hash]);
 

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { spawnSync } from "node:child_process";
 import { BOBO_DIOULASSO, findPlace, isNearSchool } from "../../../src/data/places.ts";
 import { toStoryBlocks } from "../../../src/lib/profileStory.ts";
 
@@ -25,6 +26,21 @@ test("long opening sentences and abbreviations are never cut into a lede", () =>
   const abbreviation = `J’ai rencontré M. Ouédraogo en terminale. ${longSentence}`;
   assert.equal(toStoryBlocks(abbreviation).lede, undefined);
   assert.deepEqual(toStoryBlocks("   \n  "), { paragraphs: [] });
+});
+
+test("paragraph splitting preserves CRLF, Unicode boundary whitespace and interior spaces", () => {
+  assert.deepEqual(toStoryBlocks("\u00a0Bonjour. \r\n\t\r\n Deux   mots.\u00a0\n"), {
+    lede: "Bonjour.", paragraphs: ["Deux   mots."],
+  });
+});
+
+test("long interior whitespace without a newline cannot stall the parser", () => {
+  const moduleUrl = new URL("../../../src/lib/profileStory.ts", import.meta.url).href;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e",
+    `import { toStoryBlocks } from ${JSON.stringify(moduleUrl)}; const text = 'A' + ' '.repeat(200000) + 'B'; if(toStoryBlocks(text).paragraphs[0] !== text) process.exit(1);`],
+    { timeout: 5000, encoding: "utf8" });
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test("places are found by city first, then country, ignoring accents, case and hyphens", () => {
