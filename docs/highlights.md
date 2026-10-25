@@ -18,7 +18,7 @@ Une édition existante ne change jamais de duo. Si un compte sélectionné est s
 
 ## Textes et fidélité aux profils
 
-Le job appelle `gpt-5-nano` via l’API Chat Completions d’OpenAI une fois pour chaque profil, avec `reasoning_effort: "low"`, un plafond `max_completion_tokens: 6000` et un délai de 45 secondes. Ce plafond comprend le texte final, les citations internes et les tokens de raisonnement facturés ; il ne correspond donc pas à 6 000 tokens d’article. La requête demande une seule réponse (`n: 1`, `stream: false`), au format JSON strict. `OPENAI_MODEL` permet de fixer une autre version compatible avec ces paramètres. Voir les [sorties structurées](https://developers.openai.com/api/docs/guides/structured-outputs) et le [fonctionnement des modèles de raisonnement](https://developers.openai.com/api/docs/guides/reasoning).
+Le job appelle `gpt-6-luna` via l’API Chat Completions d’OpenAI une fois pour chaque profil, avec `reasoning_effort: "low"`, un plafond `max_completion_tokens: 6000` et un délai de 45 secondes. Ce plafond comprend le texte final, les citations internes et les tokens de raisonnement facturés ; il ne correspond donc pas à 6 000 tokens d’article. La requête demande une seule réponse (`n: 1`, `stream: false`), au format JSON strict. `OPENAI_MODEL` permet de fixer une autre version compatible avec ces paramètres. Voir les [sorties structurées](https://developers.openai.com/api/docs/guides/structured-outputs) et le [fonctionnement des modèles de raisonnement](https://developers.openai.com/api/docs/guides/reasoning).
 
 La requête utilise `store: false` pour ne pas conserver la réponse comme complétion stockée chez OpenAI. Cela ne constitue pas une garantie de rétention nulle par le fournisseur. Pour les profils des membres, conserver le réglage OpenAI **Share inputs and outputs with OpenAI** sur **Disabled** : activer ce partage autorise une utilisation des données pour améliorer et entraîner les modèles, selon les [conditions de partage OpenAI](https://help.openai.com/en/articles/10306912). Ce réglage se fait dans le projet ou l’organisation OpenAI ; `store: false` ne le remplace pas.
 
@@ -57,7 +57,7 @@ Le Blueprint Render prépare un job séparé, indépendant de la veille de l’A
 ## Remplacer les textes de secours de la semaine courante
 
 1. Appliquer [la migration de réparation](../supabase/migrations/202609050003_highlight_fallback_repair.sql), puis [la migration de reprise après échec](../supabase/migrations/202609050004_highlight_repair_retries.sql) dans Supabase **avant de déployer cette version de l’API**. Si la migration 003 est déjà appliquée, exécuter uniquement la nouvelle 004. Elles conservent les articles, leurs instantanés et les tentatives existantes.
-2. Déployer le code sur l’API, le frontend et le job Render. Vérifier que `OPENAI_API_KEY` et `OPENAI_MODEL=gpt-5-nano` sont correctement configurés sur le job.
+2. Déployer le code sur l’API, le frontend et le job Render. Vérifier que `OPENAI_API_KEY` et `OPENAI_MODEL=gpt-6-luna` sont correctement configurés sur le job.
 3. Lancer explicitement, depuis `api/` après compilation :
 
    ```sh
@@ -89,7 +89,7 @@ Les logs `highlight_repair_skipped` indiquent `cooldown` si le délai n’est pa
 
 | Diagnostic dans les logs | Signification et vérification |
 |---|---|
-| `code: provider`, `reason: http_error`, `status: 401` ou `403` | OpenAI refuse l’accès : vérifier la clé, sa date d’expiration et ses autorisations sur le job. |
+| `code: provider`, `reason: http_error`, `status: 401` ou `403` | OpenAI refuse l’accès : vérifier la clé, sa date d’expiration et ses autorisations sur le job, puis la liste des modèles autorisés du projet OpenAI (*Project settings → Limits → Model usage*) : un modèle absent de cette liste renvoie un 403. |
 | `status: 429` | OpenAI refuse la requête : vérifier le solde API, les limites du projet et de l’organisation ainsi que la [page d’état](https://status.openai.com/). Un 429 seul ne prouve pas un quota épuisé. |
 | `status: 400` ou `404` | Vérifier le modèle choisi et la configuration de la requête. |
 | `code: timeout` | Aucun article reçu dans les 45 secondes. |
@@ -107,18 +107,18 @@ Render facture ses jobs planifiés avec un minimum annoncé de **1 USD par mois 
 
 ## Passage à OpenAI
 
-1. Ajouter la clé complète comme secret `OPENAI_API_KEY` sur le cron Render `lsnb-alumni-highlights`, puis définir `OPENAI_MODEL=gpt-5-nano`. Le frontend et le service API de lecture n’ont pas besoin de cette clé. Conserver le partage des entrées et sorties désactivé dans les réglages OpenAI pour ce projet.
+1. Ajouter la clé complète comme secret `OPENAI_API_KEY` sur le cron Render `lsnb-alumni-highlights`, puis définir `OPENAI_MODEL=gpt-6-luna`, après avoir autorisé ce modèle dans le projet OpenAI. Le frontend et le service API de lecture n’ont pas besoin de cette clé. Conserver le partage des entrées et sorties désactivé dans les réglages OpenAI pour ce projet.
 2. Appliquer la [migration des accords](../supabase/migrations/202609150001_highlight_snapshot_gender.sql) avant le prochain tirage, puis déployer cette version du code sur le cron, l’API et le frontend. Cette migration permet de conserver le genre déclaré dans les nouveaux instantanés ; le remplacement du fournisseur, à lui seul, ne nécessite pas de changement SQL.
 3. Vérifier les variables et le déploiement du cron, puis retirer ses anciennes variables `MISTRAL_API_KEY` et `MISTRAL_MODEL`. Le nouveau code n’utilise pas Mistral et ne revient pas automatiquement à cet ancien fournisseur.
 4. Au prochain lancement, consulter les logs. Une édition déjà publiée reste intacte et ne permet pas de vérifier un nouvel appel. Pour remplacer un article de secours éligible, utiliser explicitement la procédure de réparation ci-dessus ; ne jamais supprimer une édition pour forcer un essai. Contrôler aussi l’usage dans le projet OpenAI.
 
-Le modèle par défaut est l’alias `gpt-5-nano`. OpenAI annonce le retrait du snapshot `gpt-5-nano-2025-08-07` le **11 décembre 2026** ; revoir le modèle configuré avant cette date et vérifier sa compatibilité avant tout remplacement. Consulter la [fiche du modèle](https://developers.openai.com/api/docs/models/gpt-5-nano) et les [annonces de retrait](https://developers.openai.com/api/docs/deprecations).
+Le Blueprint définit `OPENAI_MODEL=gpt-6-luna`, validé en production le 25 octobre 2026 : deux portraits générés et acceptés par la validation, sans changer les paramètres de la requête. Le projet OpenAI n’accepte que les modèles de sa liste (*Project settings → Limits → Model usage*) ; autoriser un modèle avant de l’indiquer dans `OPENAI_MODEL`, sinon chaque appel reçoit un 403 et l’édition retombe sur les articles de secours. Sans variable, le code utilise encore `gpt-5-nano`, dont le snapshot `gpt-5-nano-2025-08-07` est retiré le **11 décembre 2026**. Consulter la [fiche du modèle](https://developers.openai.com/api/docs/models/gpt-6-luna) et les [annonces de retrait](https://developers.openai.com/api/docs/deprecations).
 
 ## Activation
 
 1. Appliquer les migrations du dépôt dans l’ordre dans l’environnement Supabase visé, jusqu’à [la migration des accords](../supabase/migrations/202609150001_highlight_snapshot_gender.sql). Elles conservent les profils et les articles existants ; le genre reste non renseigné jusqu’à sa déclaration par le membre.
 2. Configurer `SUPABASE_URL` et `SUPABASE_SECRET_KEY` sur l’API. Utiliser une clé serveur `sb_secret_…` ou une ancienne clé `service_role`, jamais une clé publique.
-3. Configurer ces mêmes variables ainsi que `OPENAI_API_KEY` et `OPENAI_MODEL=gpt-5-nano` sur le job Render `lsnb-alumni-highlights`. Le modèle par défaut est déjà défini dans le Blueprint.
+3. Configurer ces mêmes variables ainsi que `OPENAI_API_KEY` et `OPENAI_MODEL=gpt-6-luna` sur le job Render `lsnb-alumni-highlights`. Le modèle par défaut est déjà défini dans le Blueprint.
 4. Configurer `VITE_API_URL` sur le site statique avec l’URL de l’API, et autoriser l’origine du site dans `FRONTEND_ORIGINS` sur l’API. Reconstruire le frontend après modification de ses variables.
 5. Déployer l’API et le frontend, puis activer le job décrit dans `render.yaml`. On peut déclencher une première exécution manuelle depuis Render en cours de semaine ; les suivantes réutilisent cette édition jusqu’au lundi suivant.
 6. Vérifier `GET /api/v1/highlights/current` sans authentification, puis la rubrique sur l’accueil. Avec moins de deux alumni actifs, `highlight` vaut `null`.
