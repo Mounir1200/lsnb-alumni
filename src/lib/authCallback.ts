@@ -2,7 +2,7 @@ import type { EmailOtpType, Session, SupabaseClient, User } from "@supabase/supa
 
 type CallbackAuth = Pick<SupabaseClient["auth"], "initialize" | "getSession" | "setSession">;
 type LinkConfirmation = {
-  createAuth: () => Pick<SupabaseClient["auth"], "verifyOtp" | "setSession">;
+  createAuth: () => Pick<SupabaseClient["auth"], "verifyOtp" | "setSession" | "signOut">;
   confirmAccount: (user: User) => Promise<boolean>;
 };
 const emailTypes = new Set<EmailOtpType>(["signup", "invite", "magiclink", "recovery", "email_change", "email"]);
@@ -18,6 +18,15 @@ export function hasAuthCallback(url: URL) {
   return ["access_token", "refresh_token", "code", "token_hash"].some((key) => params.has(key));
 }
 
+// Older links return to "/" instead of /auth/callback. Once the SDK has exchanged a
+// PKCE code it strips it from the address; resending it would read as a failed exchange.
+export function legacyCallbackPath(landing: URL, current: URL): string | null {
+  if (landing.pathname !== "/" || !hasAuthCallback(landing)) return null;
+  const target = new URL(landing);
+  if (target.searchParams.has("code") && !current.searchParams.has("code")) target.searchParams.delete("code");
+  return `/auth/callback${target.search}${target.hash}`;
+}
+
 export function callbackError(url: URL): string | null {
   const hash = new URLSearchParams(url.hash.slice(1));
   const error = url.searchParams.get("error") ?? hash.get("error");
@@ -25,6 +34,14 @@ export function callbackError(url: URL): string | null {
   if (!error && !description) return null;
   if (error === "access_denied") return "La connexion a été annulée ou refusée. Vous pouvez réessayer.";
   return "La connexion n’a pas abouti. Réessayez depuis la page de connexion.";
+}
+
+async function installConfirmedSession(auth: CallbackAuth, candidate: Session | null, confirmAccount: LinkConfirmation["confirmAccount"]): Promise<User> {
+  if (!candidate?.user.email) throw new Error("Ce lien ne permet pas de vérifier l’adresse du compte.");
+  if (!await confirmAccount(candidate.user)) throw new Error("La connexion à ce compte a été annulée.");
+  const installed = await auth.setSession({ access_token: candidate.access_token, refresh_token: candidate.refresh_token });
+  if (installed.error || installed.data.user?.id !== candidate.user.id) throw new Error("La session n’a pas pu être ouverte. Réessayez de vous connecter.");
+  return installed.data.user;
 }
 
 // Capture provider errors before the SDK cleans the return URL. Supabase handles
@@ -48,12 +65,13 @@ export async function resolveCallbackUser(auth: CallbackAuth, url: URL, currentU
       ? await isolatedAuth.verifyOtp({ token_hash: tokenHash, type: type! })
       : await isolatedAuth.setSession({ access_token: params.get("access_token")!, refresh_token: params.get("refresh_token")! });
     if (result.error) throw new Error("Ce lien de confirmation a expiré ou a déjà été utilisé.");
-    session = result.data.session;
-    if (!session?.user.email) throw new Error("Ce lien ne permet pas de vérifier l’adresse du compte.");
-    if (!await confirmation.confirmAccount(session.user)) throw new Error("La connexion à ce compte a été annulée.");
-    const installed = await auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
-    if (installed.error || installed.data.user?.id !== session.user.id) throw new Error("La session n’a pas pu être ouverte. Réessayez de vous connecter.");
-    return installed.data.user;
+    try {
+      return await installConfirmedSession(auth, result.data.session, confirmation.confirmAccount);
+    } catch (cause) {
+      // The link opened a session of its own: revoke it so a declined link leaves nothing usable.
+      await isolatedAuth.signOut({ scope: "local" }).catch(() => undefined);
+      throw cause;
+    }
   } else {
     const initialized = await auth.initialize();
     if (initialized.error) throw new Error("Ce lien de connexion a expiré ou n’est plus valide. Recommencez la connexion.");

@@ -8,13 +8,13 @@ export async function registerEmailAccount(
   credentials: Parameters<SupabaseClient["auth"]["signUp"]>[0],
 ) {
   const result = await signupAuth.signUp(credentials);
-  if (!result.error && result.data.session) {
-    // This session follows the member's own submitted signup, never a URL.
-    const { access_token, refresh_token } = result.data.session;
-    const installed = await auth.setSession({ access_token, refresh_token });
-    if (installed.error) throw new Error("Le compte est créé, mais la connexion n’a pas abouti. Connectez-vous avec votre adresse e-mail.");
-  }
-  return result;
+  if (result.error || !result.data.session) return { ...result, signInRequired: false };
+  // This session follows the member's own submitted signup, never a URL.
+  const { access_token, refresh_token } = result.data.session;
+  const installed = await auth.setSession({ access_token, refresh_token });
+  // The account exists either way: ask for a sign-in rather than letting the member sign up twice.
+  if (installed.error) return { ...result, data: { ...result.data, session: null }, signInRequired: true };
+  return { ...result, signInRequired: false };
 }
 
 export function getLoginError(error: unknown) {

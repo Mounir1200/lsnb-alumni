@@ -4,7 +4,7 @@ import { RequireAuth } from "./components/auth/RequireAuth";
 import { SiteFooter } from "./components/layout/SiteFooter";
 import { SiteHeader } from "./components/layout/SiteHeader";
 import { RouteTransition } from "./components/motion/RouteTransition";
-import { hasAuthCallback } from "./lib/authCallback";
+import { legacyCallbackPath } from "./lib/authCallback";
 import { DirectoryPage } from "./pages/DirectoryPage";
 import { EditProfilePage } from "./pages/EditProfilePage";
 import { HighlightsPage } from "./pages/HighlightsPage";
@@ -28,10 +28,8 @@ function PostConfirmationRedirect() {
   const legacyReturn = useRef(new URL(window.location.href));
 
   useEffect(() => {
-    const url = legacyReturn.current;
-    if (url.pathname === "/" && hasAuthCallback(url)) {
-      navigate(`/auth/callback${url.search}${url.hash}`, { replace: true });
-    }
+    const path = legacyCallbackPath(legacyReturn.current, new URL(window.location.href));
+    if (path) navigate(path, { replace: true });
   }, [navigate]);
 
   return null;

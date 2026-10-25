@@ -92,7 +92,7 @@ export function JoinPage() {
 
       const email = String(data.get("email") ?? "").trim();
       const password = String(data.get("password") ?? "");
-      const { data: authData, error: authError } = await registerEmailAccount(supabase.auth, createEmailSignupAuth(), {
+      const { data: authData, error: authError, signInRequired } = await registerEmailAccount(supabase.auth, createEmailSignupAuth(), {
         email,
         password,
         options: {
@@ -111,18 +111,21 @@ export function JoinPage() {
         }
       }
 
-      let confirmationPhotoMessage = "";
-      if (photo) {
-        confirmationPhotoMessage = photoQueued
-          ? " La photo sera ajoutée automatiquement si vous ouvrez le lien dans ce navigateur."
-          : " Vous pourrez ajouter votre photo depuis votre espace membre après confirmation.";
+      let photoMessage = "";
+      if (photo && photoQueued) {
+        photoMessage = signInRequired
+          ? " La photo sera ajoutée quand vous ouvrirez votre espace membre dans ce navigateur."
+          : " La photo sera ajoutée automatiquement si vous ouvrez le lien dans ce navigateur.";
+      } else if (photo) {
+        photoMessage = " Vous pourrez ajouter votre photo depuis votre espace membre après confirmation.";
       }
+      const nextStep = signInRequired
+        ? "Votre compte est créé, mais la connexion automatique n’a pas abouti. Connectez-vous avec votre adresse e-mail et votre mot de passe."
+        : "Consultez votre boîte mail pour confirmer votre adresse et activer votre compte. Vérifiez aussi les courriers indésirables.";
 
       setStatus({
         kind: "success",
-        message: authData.session
-          ? "Votre compte est créé. Bienvenue dans le réseau."
-          : `Consultez votre boîte mail pour confirmer votre adresse et activer votre compte. Vérifiez aussi les courriers indésirables.${confirmationPhotoMessage}`,
+        message: authData.session ? "Votre compte est créé. Bienvenue dans le réseau." : `${nextStep}${photoMessage}`,
       });
       form.reset();
       setPhoto(null);
