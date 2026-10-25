@@ -9,7 +9,8 @@ import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository"
 import { normalizeCareerSteps, toCareerStepRows, type CareerStepDraft } from "../lib/careerSteps";
 import { savePendingAvatar } from "../lib/pendingAvatarStore";
 import { normalizeProfileLink } from "../lib/profileLinks";
-import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { registerEmailAccount } from "../lib/emailConfirmation";
+import { createEmailSignupAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type SubmissionStatus = {
   kind: "idle" | "loading" | "success" | "error";
@@ -91,7 +92,7 @@ export function JoinPage() {
 
       const email = String(data.get("email") ?? "").trim();
       const password = String(data.get("password") ?? "");
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await registerEmailAccount(supabase.auth, createEmailSignupAuth(), {
         email,
         password,
         options: {

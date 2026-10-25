@@ -34,6 +34,10 @@ Le planificateur GitHub peut retarder ou omettre une exécution ; les workflows 
 
 ## Configuration
 
+La migration `20261025153330_messaging_enrollment_fairness` refuse les demandes de code lorsqu’une identité est déjà enregistrée et limite chaque membre à trois demandes sur 24 heures glissantes. Le verrou commun et le plafond de 60 codes par jour UTC restent actifs. Appliquer cette migration après celles de la messagerie pour activer ces protections en base.
+
+Sur un déploiement ayant déjà reçu `device_bound_messaging`, l’ancien mécanisme de codes et ses tables ont été supprimés : cette migration se termine sans les recréer. Elle a été exécutée sur le projet Supabase LSNB Alumni le 25 octobre 2026, sous la version `20261025153330` ; la garde a conservé la messagerie par appareils et ses permissions.
+
 1. Appliquer dans l'ordre les migrations `20261023221107_private_messaging`, `20261023221132_end_to_end_messaging`, `20261023221136_messaging_identity_verification`. Vérifier RLS, droits des fonctions et publication Realtime.
 2. Render API : conserver `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `FRONTEND_ORIGINS`. Ajouter `BREVO_API_KEY`, `MESSAGING_FROM_EMAIL`, `MESSAGING_SITE_URL=https://lsnb-alumni-web.onrender.com`, `MESSAGING_EMAIL_ENABLED=true`. Ne jamais utiliser de préfixe `VITE_` pour un secret.
 3. GitHub Actions : secret `BREVO_API_KEY` seulement ; variables `MESSAGING_API_URL=https://lsnb-alumni-api.onrender.com` et `MESSAGING_EMAIL_ENABLED=true`. Le workflow refuse de tourner si le dépôt devient privé.

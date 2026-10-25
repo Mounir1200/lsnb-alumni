@@ -3,6 +3,7 @@ import test from "node:test";
 import { getSafeNextPath, getPostAuthPath, getProfileCompletionPath } from "../../../src/lib/auth.ts";
 import { callbackError, resolveCallbackUser } from "../../../src/lib/authCallback.ts";
 import { beginGoogleOAuth } from "../../../src/lib/googleOAuth.ts";
+import { registerEmailAccount } from "../../../src/lib/emailConfirmation.ts";
 
 test("return paths keep local queries and fragments while rejecting external redirect bypasses", () => {
   assert.equal(getSafeNextPath("/alumni/member?mentor=true#contact"), "/alumni/member?mentor=true#contact");
@@ -25,7 +26,7 @@ function authFixture() {
   const auth = {
     initialize: async () => { calls.push("initialize"); return { error: initializationError }; },
     getSession: async () => { calls.push("getSession"); return { data: { session }, error: null }; },
-    verifyOtp: async () => { calls.push("verifyOtp"); return { data: { session: { user } }, error: null }; },
+    setSession: async () => { calls.push("setSession"); return { data: { session: { user }, user }, error: null }; },
   } as unknown as Parameters<typeof resolveCallbackUser>[0];
   return { auth, calls, user, withoutSession: () => { session = null; }, invalidInitialization: () => { initializationError = new Error("raw provider detail"); } };
 }
@@ -42,7 +43,7 @@ test("provider refusal beats an existing session and never displays raw error te
 test("SDK initialization failures cannot turn into success with an old session", async () => {
   const fixture = authFixture();
   fixture.invalidInitialization();
-  await assert.rejects(resolveCallbackUser(fixture.auth, new URL("https://site.test/auth/callback#access_token=bad")), /n’est plus valide/);
+  await assert.rejects(resolveCallbackUser(fixture.auth, new URL("https://site.test/auth/callback?code=bad")), /n’est plus valide/);
   assert.deepEqual(fixture.calls, ["initialize"]);
 });
 
@@ -52,11 +53,15 @@ test("restored OAuth sessions are reused with no second code exchange", async ()
   assert.deepEqual(fixture.calls, ["initialize", "getSession"]);
 });
 
-test("email token-hash confirmations keep working", async () => {
+test("email links require explicit confirmation before the shared session changes", async () => {
   const fixture = authFixture();
   fixture.withoutSession();
-  assert.deepEqual(await resolveCallbackUser(fixture.auth, new URL("https://site.test/auth/callback?token_hash=email-token&type=signup")), fixture.user);
-  assert.deepEqual(fixture.calls, ["initialize", "verifyOtp"]);
+  const user = await resolveCallbackUser(fixture.auth, new URL("https://site.test/auth/callback?token_hash=email-token&type=signup"), undefined, {
+    createAuth: () => ({ verifyOtp: async () => ({ data: { session: { user: fixture.user, access_token: "access", refresh_token: "refresh" } }, error: null }) }) as any,
+    confirmAccount: async (account) => { assert.equal(account.email, fixture.user.email); assert.deepEqual(fixture.calls, []); return true; },
+  });
+  assert.deepEqual(user, fixture.user);
+  assert.deepEqual(fixture.calls, ["setSession"]);
 });
 
 test("missing sessions and unsupported OTP types do not invent successful login", async () => {
@@ -72,10 +77,32 @@ test("unconsumed codes cannot silently reuse an unrelated existing account", asy
   assert.deepEqual(fixture.calls, ["initialize"]);
 });
 
-test("email confirmation is verified even when another user already has a session", async () => {
+test("unconfirmed email and legacy token links cannot replace an existing account", async () => {
   const fixture = authFixture();
-  await resolveCallbackUser(fixture.auth, new URL("https://site.test/auth/callback?token_hash=new-account&type=signup"));
-  assert.deepEqual(fixture.calls, ["initialize", "verifyOtp"]);
+  for (const suffix of ["?token_hash=new-account&type=signup", "#access_token=other&refresh_token=other", "?%61ccess_token=other&refresh_token=other", "?access_token=a#refresh_token=b"]) {
+    await assert.rejects(resolveCallbackUser(fixture.auth, new URL(`https://site.test/auth/callback${suffix}`)), /n’est pas valide/);
+  }
+  assert.deepEqual(fixture.calls, []);
+});
+
+test("declining a verified account leaves the shared session untouched", async () => {
+  const fixture = authFixture();
+  await assert.rejects(resolveCallbackUser(fixture.auth, new URL("https://site.test/auth/callback?token_hash=other&type=email"), undefined, {
+    createAuth: () => ({ verifyOtp: async () => ({ data: { session: { user: fixture.user } }, error: null }) }) as any,
+    confirmAccount: async () => false,
+  }), /annulée/);
+  assert.deepEqual(fixture.calls, []);
+});
+
+test("legacy tokens are verified in isolation before account confirmation", async () => {
+  const fixture = authFixture();
+  const candidate = { user: fixture.user, access_token: "access", refresh_token: "refresh" };
+  const result = await resolveCallbackUser(fixture.auth, new URL("https://site.test/auth/callback#access_token=access&refresh_token=refresh"), undefined, {
+    createAuth: () => ({ setSession: async (tokens: unknown) => { assert.deepEqual(tokens, { access_token: "access", refresh_token: "refresh" }); return { data: { session: candidate }, error: null }; } }) as any,
+    confirmAccount: async () => { assert.deepEqual(fixture.calls, []); return true; },
+  });
+  assert.deepEqual(result, fixture.user);
+  assert.deepEqual(fixture.calls, ["setSession"]);
 });
 
 test("Google OAuth requests only identity scopes with the app callback and account chooser", async () => {
@@ -85,6 +112,19 @@ test("Google OAuth requests only identity scopes with the app callback and accou
   assert.deepEqual(input, { provider: "google", options: {
     redirectTo: "https://site.test/auth/callback?next=%2Fannuaire", scopes: "openid email profile", queryParams: { prompt: "select_account" },
   } });
+});
+
+test("email registration preserves both confirmation-required and autoconfirmed signup behavior", async () => {
+  for(const immediateSession of [false,true]) {
+    const fixture=authFixture();
+    const session=immediateSession?{user:fixture.user,access_token:"access",refresh_token:"refresh"}:null;
+    const credentials={email:fixture.user.email,password:"submitted-password"};
+    const result=await registerEmailAccount(fixture.auth,{signUp:async(input:unknown)=>{
+      assert.deepEqual(input,credentials);return {data:{user:fixture.user,session},error:null};
+    }} as any,credentials);
+    assert.deepEqual(result.data.session,session);
+    assert.deepEqual(fixture.calls,immediateSession?["setSession"]:[]);
+  }
 });
 
 test("OAuth error responses and thrown network errors restore a safe user-facing failure", async () => {

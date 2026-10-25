@@ -16,7 +16,7 @@ function characterCount(value: string) {
  * The words themselves are never changed.
  */
 export function toStoryBlocks(story: string): StoryBlocks {
-  const paragraphs = story.split(/\s*\n\s*/).map((paragraph) => paragraph.trim()).filter(Boolean);
+  const paragraphs = story.split("\n").map((paragraph) => paragraph.trim()).filter(Boolean);
   const [first, ...rest] = paragraphs;
   if (!first) return { paragraphs: [] };
   if (characterCount(first) <= LEDE_MAX_CHARACTERS) return { lede: first, paragraphs: rest };

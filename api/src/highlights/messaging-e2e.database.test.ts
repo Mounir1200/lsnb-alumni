@@ -6,7 +6,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { generateMessagingIdentity, encryptMessage, decryptMessage, unlockMessagingIdentity } from '../../../src/lib/messagingCrypto.ts'
 
 const migrationsUrl=new URL('../../../supabase/migrations/',import.meta.url)
-const migrationName='20261023221136_messaging_identity_verification.sql'
+const migrationName='20261025153330_messaging_enrollment_fairness.sql'
 let db:PGlite
 type Generated=Awaited<ReturnType<typeof generateMessagingIdentity>>
 let a:Generated,b:Generated,c:Generated,conversation:string
@@ -221,5 +221,51 @@ describe('Encrypted messaging database boundary and immutable identities',{concu
     await assert.rejects(beginEnrollment(),/Please wait/)
     await db.exec("update private.messaging_identity_challenges set created_at=date_trunc('day',clock_timestamp() at time zone 'UTC') at time zone 'UTC'-interval '1 day'")
     assert.ok(await beginEnrollment())
+  })
+
+  it('does not allocate mail budget for an already enrolled member',async()=>{
+    await enroll(a)
+    await assert.rejects(beginEnrollment(),(error:any)=>error.code==='23505')
+    assert.equal((await db.query('select * from private.messaging_identity_challenges')).rows.length,0)
+    assert.ok(await beginEnrollment(bid(),randomUUID(),codeHash,'Fatou@example.test'))
+  })
+
+  it('bounds one member across hours and UTC midnight while admitting another member',async()=>{
+    await db.query(`insert into private.messaging_identity_challenges(id,user_id,email,code_hash,created_at)
+      select gen_random_uuid(),$1,'Awa@example.test',$2,
+        date_trunc('day',clock_timestamp() at time zone 'UTC') at time zone 'UTC'-interval '1 second'
+      from generate_series(1,3)`,[aid(),codeHash])
+    await assert.rejects(beginEnrollment(),(error:any)=>error.code==='54000')
+    assert.ok(await beginEnrollment(bid(),randomUUID(),codeHash,'Fatou@example.test'))
+    await db.query("update private.messaging_identity_challenges set created_at=clock_timestamp()-interval '24 hours 1 second' where user_id=$1",[aid()])
+    assert.ok(await beginEnrollment())
+  })
+
+  it('allows three spaced attempts but a fourth cannot consume another member slot',async()=>{
+    for(let i=0;i<3;i++) {
+      await beginEnrollment()
+      await db.query("update private.messaging_identity_challenges set created_at=clock_timestamp()-interval '2 hours' where user_id=$1",[aid()])
+    }
+    await assert.rejects(beginEnrollment(),(error:any)=>error.code==='54000')
+    assert.equal((await db.query('select * from private.messaging_identity_challenges')).rows.length,3)
+    assert.ok(await beginEnrollment(bid(),randomUUID(),codeHash,'Fatou@example.test'))
+  })
+
+  it('does not recreate retired email enrollment on a device-bound deployment',async()=>{
+    const modern=new PGlite()
+    try {
+      await modern.exec(`create schema private;
+        create table private.messaging_devices(id uuid);
+        create table private.messaging_members(id uuid);
+        create function public.messaging_register_device() returns jsonb language sql as 'select ''{}''::jsonb';`)
+      const migration=await readFile(new URL(migrationName,migrationsUrl),'utf8')
+      await modern.exec(migration)
+      await modern.exec(migration)
+      const state=(await modern.query<{legacy:string|null;devices:string|null}>(`select
+        to_regprocedure('public.messaging_begin_identity_enrollment(uuid,uuid,text,text)')::text as legacy,
+        to_regprocedure('public.messaging_register_device()')::text as devices`)).rows[0]!
+      assert.equal(state.legacy,null)
+      assert.ok(state.devices)
+    } finally {await modern.close()}
   })
 })

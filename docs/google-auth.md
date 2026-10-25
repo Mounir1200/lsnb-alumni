@@ -4,6 +4,10 @@ Le bouton « Continuer avec Google » utilise Supabase Auth sur les pages de con
 
 Les fichiers du dépôt ne configurent pas les consoles Google et Supabase. Les étapes ci-dessous restent à effectuer par le responsable du projet.
 
+Le client partagé du site et du hub utilise PKCE : un retour Google doit retrouver le navigateur qui a lancé la connexion. Les liens e-mail `token_hash` et les anciens liens contenant des jetons sont vérifiés dans un client sans stockage persistant. Le site affiche ensuite l’adresse vérifiée et demande confirmation avant d’ouvrir la session, de charger le profil ou d’envoyer une photo en attente. Annuler conserve la session courante. Les anciens retours à la racine du site sont dirigés vers ce même écran. Voir [le flux PKCE Supabase](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
+
+L’inscription e-mail utilise un client séparé sans détection de session URL ni stockage persistant. Il conserve l’émission des liens `ConfirmationURL` sans vérificateur PKCE, pour permettre leur ouverture sur un autre appareil ; leur réception passe toujours par la confirmation explicite ci-dessus. Les connexions par mot de passe et les sessions restaurées restent inchangées.
+
 ## 1. Appliquer la migration
 
 Dans Supabase, ouvrir **SQL Editor**, créer une requête, copier tout le contenu de [`202609050002_google_auth_onboarding.sql`](../supabase/migrations/202609050002_google_auth_onboarding.sql), puis exécuter **Run**. Les migrations précédentes doivent déjà être appliquées.

@@ -46,6 +46,20 @@ test("database throttling and provider failures stay generic and never leak keys
   await assert.rejects(backend.start('token'),(e:unknown)=>e instanceof EnrollmentError&&e.status===429&&!e.message.includes('Sensitive'));
 });
 
+test("already enrolled and over-budget accounts never reach the email provider",async()=>{
+  for(const [code,status] of [['23505',409],['54000',429]] as const) {
+    const calls:string[]=[];
+    const backend=createEnrollmentBackend(config,async(input)=>{
+      const url=String(input);calls.push(url);
+      return url.endsWith('/auth/v1/user') ? Response.json(user)
+        : Response.json({code,message:'Private database detail'},{status:400});
+    });
+    await assert.rejects(backend.start('token'),(e:unknown)=>e instanceof EnrollmentError&&e.status===status);
+    assert.equal(calls.length,2);
+    assert.ok(calls.every(url=>url.startsWith(config.supabaseUrl)));
+  }
+});
+
 test("completion validates P256 public material and uses the authenticated user id and hashed OTP",async()=>{
   const identity=await generateMessagingIdentity(userId);
   const challengeId=randomUUID();
