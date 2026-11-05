@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { SITE_NAME } from "../../lib/site";
 import { BrandMark } from "../ui/BrandMark";
 
 export function SiteFooter() {
@@ -41,7 +42,7 @@ export function SiteFooter() {
       </div>
 
       <div className="page-shell site-footer__bottom">
-        <span>© {new Date().getFullYear()} LSNB Réseau — prototype indépendant</span>
+        <span>© {new Date().getFullYear()} {SITE_NAME}</span>
         <span>Bobo-Dioulasso · Burkina Faso</span>
       </div>
     </footer>

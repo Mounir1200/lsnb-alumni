@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
+import { SITE_NAME } from "../../lib/site";
 import { supabase } from "../../lib/supabase";
 import {
   activityRoute,
@@ -145,7 +146,7 @@ export function SiteAvailability({ children }: { children: ReactNode }) {
     return (
       <div className="availability-screen">
         <div>
-          <span className="maintenance-kicker">LSNB Réseau</span>
+          <span className="maintenance-kicker">{SITE_NAME}</span>
           <h1>Votre accès a été retiré.</h1>
           <p>
             L’équipe de modération a suspendu votre accès au réseau. Vous pouvez
@@ -161,7 +162,7 @@ export function SiteAvailability({ children }: { children: ReactNode }) {
     return (
       <div className="availability-screen">
         <div role="status">
-          <span className="maintenance-kicker">LSNB Réseau</span>
+          <span className="maintenance-kicker">{SITE_NAME}</span>
           <h1>
             {error
               ? "Le réseau est momentanément indisponible."

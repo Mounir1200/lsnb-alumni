@@ -1,6 +1,7 @@
 import { animate, stagger } from "animejs";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useAuth } from "../../auth/AuthProvider";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
 import { ButtonLink } from "../ui/Button";
 import { TrajectoryField } from "../visual/TrajectoryField";
@@ -9,6 +10,8 @@ import { HeroSearch } from "./HeroSearch";
 export function Hero() {
   const rootRef = useRef<HTMLElement>(null);
   const reducedMotion = useReducedMotion();
+  const { user, isLoading } = useAuth();
+  const isVisitor = !isLoading && !user;
 
   useEffect(() => {
     if (!rootRef.current || reducedMotion) return;
@@ -59,12 +62,25 @@ export function Hero() {
             de départ.
           </p>
           <div className="hero__actions" data-hero-enter>
-            <ButtonLink to="/annuaire" variant="light" size="lg">
-              Explorer l’annuaire <ArrowRight size={18} aria-hidden="true" />
-            </ButtonLink>
-            <ButtonLink to="/rejoindre?mentorat=true" variant="ghost" size="lg">
-              Proposer un mentorat <ArrowRight size={18} aria-hidden="true" />
-            </ButtonLink>
+            {isVisitor ? (
+              <>
+                <ButtonLink to="/rejoindre" variant="light" size="lg">
+                  Créer mon compte <ArrowRight size={18} aria-hidden="true" />
+                </ButtonLink>
+                <ButtonLink to="/annuaire" variant="ghost" size="lg">
+                  Explorer l’annuaire <ArrowRight size={18} aria-hidden="true" />
+                </ButtonLink>
+              </>
+            ) : (
+              <>
+                <ButtonLink to="/annuaire" variant="light" size="lg">
+                  Explorer l’annuaire <ArrowRight size={18} aria-hidden="true" />
+                </ButtonLink>
+                <ButtonLink to="/rejoindre?mentorat=true" variant="ghost" size="lg">
+                  Proposer un mentorat <ArrowRight size={18} aria-hidden="true" />
+                </ButtonLink>
+              </>
+            )}
           </div>
         </div>
 

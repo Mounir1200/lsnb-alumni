@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { Button } from "../components/ui/Button";
 import { getPostAuthPath } from "../lib/auth";
+import { SITE_NAME } from "../lib/site";
 import { normalizeCareerSteps, type CareerStepDraft } from "../lib/careerSteps";
 import { completeMemberProfile, loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
 import { normalizeProfileLink } from "../lib/profileLinks";
@@ -125,7 +126,7 @@ export function CompleteProfilePage() {
               <p id="complete-links-help" className="account-form__login">Ces liens facultatifs seront visibles par les membres du réseau sur votre profil. Utilisez HTTPS ; les adresses locales ou privées sont refusées. Vous pouvez laisser les deux champs vides et les ajouter plus tard.</p>
               {role === "alumni" && <label className="form-check form-check--mentor"><input name="offersMentoring" type="checkbox" disabled={busy} /><span><b>Je souhaite proposer du mentorat</b>Je pourrai accepter ou refuser les demandes.</span></label>}
               <label className="form-check"><input name="contactVisible" type="checkbox" disabled={busy} /><span><b>Rendre mon contact visible aux membres</b>Ce choix peut être modifié plus tard.</span></label>
-              <label className="form-consent"><input name="termsAccepted" type="checkbox" required disabled={busy} /><span>J’accepte que ces informations soient utilisées pour mon profil LSNB Réseau. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span></label>
+              <label className="form-consent"><input name="termsAccepted" type="checkbox" required disabled={busy} /><span>J’accepte que ces informations soient utilisées pour mon profil dans l’{SITE_NAME}. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span></label>
               {role === "alumni" && <p className="highlight-disclosure">Votre parcours peut figurer dans un Highlight public rédigé avec OpenAI à partir de votre profil. Les champs de contact ne sont pas transmis ; évitez les coordonnées privées dans le parcours. <Link to="/confidentialite#highlights">En savoir plus</Link></p>}
               {error && <div className="form-status form-status--error" role="alert">{error}</div>}
               <Button type="submit" size="lg" disabled={busy}>{busy && <LoaderCircle className="spin" aria-hidden="true" />} Enregistrer et continuer</Button>

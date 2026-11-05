@@ -9,6 +9,7 @@ import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository"
 import { normalizeCareerSteps, toCareerStepRows, type CareerStepDraft } from "../lib/careerSteps";
 import { savePendingAvatar } from "../lib/pendingAvatarStore";
 import { normalizeProfileLink } from "../lib/profileLinks";
+import { SITE_NAME } from "../lib/site";
 import { registerEmailAccount } from "../lib/emailConfirmation";
 import { createEmailSignupAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
 
@@ -287,7 +288,7 @@ export function JoinPage() {
 
             <label className="form-consent">
               <input type="checkbox" required />
-              <span>J’accepte que ces informations soient utilisées pour mon profil LSNB Réseau. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span>
+              <span>J’accepte que ces informations soient utilisées pour mon profil dans l’{SITE_NAME}. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span>
             </label>
 
             {role === "alumni" && (

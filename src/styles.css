@@ -308,6 +308,43 @@ textarea:focus-visible {
   color: var(--chalk);
 }
 
+.site-header__signout,
+.site-header__mobile-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  color: rgba(255, 253, 248, 0.78);
+  background: none;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.site-header__signout {
+  min-height: 40px;
+  padding: 0;
+  font-size: 0.82rem;
+}
+
+.site-header__mobile-signout {
+  padding: 13px 18px;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.site-header__signout:hover,
+.site-header__mobile-signout:hover {
+  color: var(--chalk);
+}
+
+.site-header__signout:disabled,
+.site-header__mobile-signout:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
 .site-header__link:hover {
   border-color: rgba(255, 253, 248, 0.42);
 }
@@ -4572,6 +4609,16 @@ a.connection-card__person:hover b {
 
   .site-header__login {
     display: none;
+  }
+
+  /* Icon only on narrower desktops; the label stays available to screen readers. */
+  .site-header__signout .site-header__signout-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .hero__copy {

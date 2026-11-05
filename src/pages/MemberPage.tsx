@@ -1,7 +1,8 @@
 import { ArrowUpRight, Camera, CheckCircle2, LoaderCircle, LogOut, Network, PencilLine, UserRound } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { useSignOut } from "../auth/useSignOut";
 import { Button, ButtonLink } from "../components/ui/Button";
 import {
   getAvatarValidationError,
@@ -23,9 +24,8 @@ type MemberIdentity = {
 
 export function MemberPage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { signOut: handleSignOut, isSigningOut } = useSignOut();
   const [searchParams] = useSearchParams();
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string>();
   const [identity, setIdentity] = useState<MemberIdentity>();
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>({ kind: "idle" });
@@ -117,13 +117,6 @@ export function MemberPage() {
         message: error instanceof Error ? error.message : "Impossible d’enregistrer cette photo.",
       });
     }
-  };
-
-  const handleSignOut = async () => {
-    if (!supabase) return;
-    setIsSigningOut(true);
-    await supabase.auth.signOut();
-    navigate("/", { replace: true });
   };
 
   return (

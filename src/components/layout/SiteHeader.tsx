@@ -1,7 +1,8 @@
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, type Location } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
+import { useSignOut } from "../../auth/useSignOut";
 import { cn } from "../../lib/cn";
 import { usePendingRequests } from "../mentoring/PendingRequestsProvider";
 import { UnreadMessagesBadge, useMessaging } from "../messaging/MessagingProvider";
@@ -59,6 +60,16 @@ function HeaderLink({ item, badge }: { item: NavigationItem; badge?: ReactNode }
   );
 }
 
+function SignOutButton({ className }: { className: string }) {
+  const { signOut, isSigningOut } = useSignOut();
+  return (
+    <button type="button" className={className} title="Se déconnecter" onClick={() => void signOut()} disabled={isSigningOut}>
+      <LogOut size={16} aria-hidden="true" />
+      <span className="site-header__signout-label">{isSigningOut ? "Déconnexion…" : "Se déconnecter"}</span>
+    </button>
+  );
+}
+
 function describePendingRequests(count: number) {
   return count > 1 ? `${count} demandes reçues en attente` : "1 demande reçue en attente";
 }
@@ -113,6 +124,7 @@ export function SiteHeader() {
               <ButtonLink to="/espace" size="sm" variant="light">
                 Mon espace
               </ButtonLink>
+              <SignOutButton className="site-header__signout" />
             </>
           ) : !isLoading ? (
             <>
@@ -152,6 +164,7 @@ export function SiteHeader() {
                 <ButtonLink to="/espace" variant="light" className="mt-2">
                   Mon espace
                 </ButtonLink>
+                <SignOutButton className="site-header__mobile-signout" />
               </>
             ) : (
               <>

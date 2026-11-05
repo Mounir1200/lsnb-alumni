@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { cn } from "../../lib/cn";
+import { SITE_NAME } from "../../lib/site";
 
 type BrandMarkProps = {
   className?: string;
@@ -21,7 +22,7 @@ export function BrandMark({
         compact && "brand-mark--compact",
         className,
       )}
-      aria-label="Alumni LSNB — Accueil"
+      aria-label={`${SITE_NAME} — Accueil`}
     >
       {variant === "stacked" ? (
         <img
@@ -48,7 +49,7 @@ export function BrandMark({
             draggable="false"
           />
           <span className="brand-mark__wordmark" aria-hidden="true">
-            <span>ALUMNI</span>
+            <span>ANNUAIRE</span>
             <span className="brand-mark__wordmark-accent">LSNB</span>
           </span>
         </>
