@@ -68,6 +68,19 @@ export function createCareerStepDraft(kind: CareerStepKind = "education"): Caree
   };
 }
 
+const DRAFT_TEXT_FIELDS = ["title", "organization", "location", "startYear", "startMonth", "endYear", "endMonth"] as const;
+
+/** Reads a form row saved outside the page (a draft); it gets a fresh row key. */
+export function parseCareerStepDraft(value: unknown): CareerStepDraft | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const row = value as Record<string, unknown>;
+  if (!CAREER_STEP_KINDS.includes(row.kind as CareerStepKind) || typeof row.ongoing !== "boolean") return undefined;
+  if (!DRAFT_TEXT_FIELDS.every((field) => typeof row[field] === "string")) return undefined;
+  const draft = createCareerStepDraft(row.kind as CareerStepKind);
+  for (const field of DRAFT_TEXT_FIELDS) draft[field] = row[field] as string;
+  return { ...draft, ongoing: row.ongoing };
+}
+
 const monthText = (month?: number) => (month === undefined ? "" : String(month));
 
 export function toCareerStepDrafts(steps: CareerStep[]): CareerStepDraft[] {

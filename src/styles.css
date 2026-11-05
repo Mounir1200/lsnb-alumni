@@ -3894,6 +3894,23 @@ a.connection-card__person:hover b {
   text-decoration: underline;
 }
 
+.profile-draft-notice {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-draft-notice > span {
+  flex: 1 1 260px;
+}
+
+.profile-draft-hint {
+  margin: -6px 0 0;
+  color: #6d7882;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
 .account-form__login {
   margin: 0;
   color: #6b7680;

@@ -26,28 +26,17 @@ import {
   type EditableProfile,
   type ProfileGender,
 } from "../lib/profileRepository";
-import { normalizeCareerSteps, toCareerStepDrafts, type CareerStepDraft } from "../lib/careerSteps";
+import { normalizeCareerSteps, toCareerStepDrafts } from "../lib/careerSteps";
+import {
+  clearProfileDraft,
+  hasSameDraftContent,
+  loadProfileDraft,
+  saveProfileDraft,
+  type EditorForm,
+} from "../lib/profileDraft";
 import { normalizeProfileLink } from "../lib/profileLinks";
 
-type EditorForm = {
-  firstName: string;
-  lastName: string;
-  memberRole: "alumni" | "student";
-  gender: ProfileGender;
-  graduationYear: string;
-  specialty: string;
-  domain: string;
-  specialties: string;
-  city: string;
-  country: string;
-  experience: string;
-  careerSteps: CareerStepDraft[];
-  linkedinUrl: string;
-  portfolioUrl: string;
-  offersMentoring: boolean;
-  mentoringTopics: string;
-  contactVisible: boolean;
-};
+const draftDateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
 type SaveStatus = {
   kind: "idle" | "loading" | "success" | "warning" | "error";
@@ -91,6 +80,9 @@ function parseList(value: string) {
 export function EditProfilePage() {
   const { user } = useAuth();
   const [form, setForm] = useState<EditorForm>();
+  // What the server holds: the draft is the difference between it and `form`.
+  const [savedForm, setSavedForm] = useState<EditorForm>();
+  const [restoredDraftAt, setRestoredDraftAt] = useState<Date>();
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string>();
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>();
@@ -109,7 +101,12 @@ export function EditProfilePage() {
     void loadEditableProfile(user.id)
       .then((profile) => {
         if (!active) return;
-        setForm(toEditorForm(profile));
+        const loaded = toEditorForm(profile);
+        const draft = loadProfileDraft(user.id);
+        const resumesDraft = draft !== undefined && !hasSameDraftContent(draft.form, loaded);
+        setSavedForm(loaded);
+        setForm(resumesDraft ? draft.form : loaded);
+        setRestoredDraftAt(resumesDraft ? draft.savedAt : undefined);
         setCurrentPhotoUrl(profile.photoUrl);
         setPhoto(null);
         setRemovePhoto(false);
@@ -129,6 +126,14 @@ export function EditProfilePage() {
     };
   }, [reloadKey, user?.id]);
 
+  // Every change is kept on this device until it is saved or discarded.
+  const hasUnsavedChanges = Boolean(form && savedForm && !hasSameDraftContent(form, savedForm));
+  useEffect(() => {
+    if (!user || !form || !savedForm) return;
+    if (hasUnsavedChanges) saveProfileDraft(user.id, form);
+    else clearProfileDraft(user.id);
+  }, [user?.id, form, savedForm, hasUnsavedChanges]);
+
   useEffect(() => {
     if (!photo) {
       setPhotoPreview(undefined);
@@ -143,6 +148,12 @@ export function EditProfilePage() {
 
   const updateField = <Key extends keyof EditorForm>(key: Key, value: EditorForm[Key]) => {
     setForm((current) => current ? { ...current, [key]: value } : current);
+    setStatus({ kind: "idle" });
+  };
+
+  const discardDraft = () => {
+    setForm(savedForm);
+    setRestoredDraftAt(undefined);
     setStatus({ kind: "idle" });
   };
 
@@ -209,6 +220,9 @@ export function EditProfilePage() {
         contactVisible: form.contactVisible,
         email: user.email ?? "",
       });
+      // The profile now holds these values: the draft effect clears what remains.
+      setSavedForm(form);
+      setRestoredDraftAt(undefined);
 
       let nextPhotoUrl = currentPhotoUrl;
       let photoWarning: string | undefined;
@@ -309,6 +323,17 @@ export function EditProfilePage() {
           </div>
 
           <form className="account-form" onSubmit={handleSubmit}>
+            {restoredDraftAt && (
+              <div className="form-status form-status--warning profile-draft-notice" role="status">
+                <span>
+                  Brouillon repris : vos modifications du {draftDateFormat.format(restoredDraftAt)} ne sont pas
+                  encore enregistrées dans l’annuaire.
+                </span>
+                <Button size="sm" variant="outline" onClick={discardDraft}>
+                  <Undo2 size={16} aria-hidden="true" /> Revenir au profil enregistré
+                </Button>
+              </div>
+            )}
             <fieldset className="role-picker">
               <legend>Mon statut dans le réseau</legend>
               <label className={form.memberRole === "alumni" ? "is-selected" : ""}>
@@ -592,6 +617,12 @@ export function EditProfilePage() {
                 {status.kind === "loading" ? "Enregistrement…" : "Enregistrer les modifications"}
               </Button>
             </div>
+            {hasUnsavedChanges && status.kind !== "loading" && (
+              <p className="profile-draft-hint">
+                Vos modifications sont gardées en brouillon sur cet appareil jusqu’à leur enregistrement.
+                La photo, elle, doit être choisie à nouveau.
+              </p>
+            )}
 
             {form.memberRole === "alumni" && (
               <p className="highlight-disclosure">
