@@ -99,6 +99,15 @@ export function SiteHeader() {
     setMenuOpen(false);
   }, [location.key]);
 
+  // The header stays on screen; once the reader leaves the top it compacts.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 12);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setMenuOpen(false);
@@ -108,7 +117,7 @@ export function SiteHeader() {
   }, []);
 
   return (
-    <header className="site-header">
+    <header className="site-header" data-scrolled={scrolled ? "true" : undefined}>
       <div className="site-header__inner page-shell">
         <BrandMark />
 
