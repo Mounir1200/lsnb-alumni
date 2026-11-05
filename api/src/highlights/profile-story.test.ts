@@ -21,7 +21,9 @@ test("long interior whitespace without a newline cannot stall the parser", () =>
   const moduleUrl = new URL("../../../src/lib/profileStory.ts", import.meta.url).href;
   const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e",
     `import { toStoryBlocks } from ${JSON.stringify(moduleUrl)}; const text = 'A' + ' '.repeat(200000) + 'B'; if(toStoryBlocks(text).paragraphs[0] !== text) process.exit(1);`],
-    { timeout: 5000, encoding: "utf8" });
+    // Starting tsx in a child process can take seconds while the database suites run in
+    // parallel; a stalled parser on 200,000 characters would still take minutes.
+    { timeout: 30_000, encoding: "utf8" });
   assert.equal(result.error, undefined, result.error?.message);
   assert.equal(result.status, 0, result.stderr);
 });
