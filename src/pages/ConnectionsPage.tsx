@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { Avatar } from "../components/ui/Avatar";
+import { MemberConnectionRow } from "../components/mentoring/MemberConnectionRow";
 import { MentorshipPerson } from "../components/mentoring/MentorshipPerson";
 import { usePendingRequests } from "../components/mentoring/PendingRequestsProvider";
 import { Button, ButtonLink } from "../components/ui/Button";
@@ -185,27 +186,18 @@ export function ConnectionsPage() {
   };
 
   // Shares the confirmation state with mentorships: ids are unique across both lists.
-  const renderConnection = (connection: MemberConnection) => {
-    const member = connection.peer;
-    const name = member ? ` avec ${member.firstName} ${member.lastName}` : " avec ce profil indisponible";
-    return (
-      <li className="mentorship-row" key={connection.id}>
-        {member ? <MentorshipPerson member={member} /> : <p className="mentorship-row__unavailable">Profil indisponible</p>}
-        <div className="mentorship-row__details">
-          <time dateTime={connection.createdAt}>En relation depuis le {new Date(connection.createdAt).toLocaleDateString("fr-FR")}</time>
-          <ButtonLink size="sm" variant="outline" to={`/espace/messages/${connection.requestId}`}>Écrire</ButtonLink>
-          <button ref={(element) => { endButtons.current[connection.id] = element; }} type="button" className="button button--ghost button--sm" disabled={Boolean(busy)} aria-expanded={endingId === connection.id} aria-controls={`remove-connection-${connection.id}`} aria-label={`Retirer la relation${name}`} onClick={() => setEndingId(endingId === connection.id ? null : connection.id)}>Retirer</button>
-        </div>
-        <div className="connection-confirm" id={`remove-connection-${connection.id}`} hidden={endingId !== connection.id}>
-          <p>Retirer cette relation ? Elle disparaît pour vous deux ; vos messages restent dans la messagerie.</p>
-          <div className="connection-card__actions">
-            <Button size="sm" disabled={Boolean(busy)} onClick={() => void performAction(connection.id, () => removeMemberConnection(connection.id), "La relation a été retirée.")}>Confirmer le retrait</Button>
-            <Button size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => { setEndingId(null); endButtons.current[connection.id]?.focus(); }}>Garder la relation</Button>
-          </div>
-        </div>
-      </li>
-    );
-  };
+  const renderConnection = (connection: MemberConnection) => (
+    <MemberConnectionRow
+      key={connection.id}
+      connection={connection}
+      busy={Boolean(busy)}
+      confirming={endingId === connection.id}
+      toggleRef={(element) => { endButtons.current[connection.id] = element; }}
+      onToggle={() => setEndingId(endingId === connection.id ? null : connection.id)}
+      onRemove={() => void performAction(connection.id, () => removeMemberConnection(connection.id), "La relation a été retirée.")}
+      onKeep={() => { setEndingId(null); endButtons.current[connection.id]?.focus(); }}
+    />
+  );
 
   return (
     <div className="connections-page page-shell">

@@ -86,6 +86,11 @@ export function loadProfileDraft(userId: string, storage = browserStorage()): Pr
   });
 }
 
+/** The draft worth resuming over the saved profile: only one that still holds changes. */
+export function resumableDraft(draft: ProfileDraft | undefined, saved: EditorForm) {
+  return draft && !hasSameDraftContent(draft.form, saved) ? draft : undefined;
+}
+
 export function clearProfileDraft(userId: string, storage = browserStorage()) {
   attempt(() => storage?.removeItem(KEY_PREFIX + userId));
 }

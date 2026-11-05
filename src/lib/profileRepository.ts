@@ -3,7 +3,7 @@ import { alumniProfiles } from "../data/alumni";
 import { isSupabaseConfigured, supabase } from "./supabase";
 import { parseCareerSteps, toCareerStepRows, type CareerStep } from "./careerSteps";
 import { mapProfile, type ProfileGender, type ProfileRow } from "./profileMapping";
-import { mapPublicProfile, type PublicProfileRow } from "./publicProfiles";
+import { fetchPublicProfiles } from "./publicProfiles";
 import { normalizeProfileLink } from "./profileLinks";
 
 export type { ProfileGender } from "./profileMapping";
@@ -61,9 +61,7 @@ export async function loadPublicProfiles() {
   if (!supabase || !isSupabaseConfigured) {
     return { profiles: alumniProfiles, source: "demo" as const };
   }
-  const { data, error } = await supabase.rpc("public_directory_profiles");
-  if (error) throw error;
-  return { profiles: (data as PublicProfileRow[]).map(mapPublicProfile), source: "public" as const };
+  return { profiles: await fetchPublicProfiles(supabase), source: "public" as const };
 }
 
 export async function loadProfile(id: string) {

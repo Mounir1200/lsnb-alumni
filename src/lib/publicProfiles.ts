@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AlumniProfile } from "../data/alumni";
 import { mapProfile, type ProfileRow } from "./profileMapping";
 
@@ -10,4 +11,11 @@ export function mapPublicProfile(row: PublicProfileRow): AlumniProfile {
   return mapProfile({
     ...row, experience: "", linkedin_url: null, portfolio_url: null, mentoring_topics: [], career_steps: [],
   });
+}
+
+/** The visitors' directory, read through the one function open to them. */
+export async function fetchPublicProfiles(client: Pick<SupabaseClient, "rpc">): Promise<AlumniProfile[]> {
+  const { data, error } = await client.rpc("public_directory_profiles");
+  if (error) throw error;
+  return (data as PublicProfileRow[]).map(mapPublicProfile);
 }

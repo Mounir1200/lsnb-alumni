@@ -6,6 +6,7 @@ import {
   clearProfileDrafts,
   hasSameDraftContent,
   loadProfileDraft,
+  resumableDraft,
   saveProfileDraft,
   type EditorForm,
 } from "../../../src/lib/profileDraft.ts";
@@ -59,6 +60,14 @@ test("restored career steps get fresh row keys so new rows never collide", () =>
   assert.notEqual(restored.key, original.careerSteps[0]!.key);
   assert.notEqual(restored.key, createCareerStepDraft().key);
   assert.equal(restored.title, "Data scientist");
+});
+
+test("only a draft that still differs from the saved profile is resumed", () => {
+  const saved = form();
+  const changed = { savedAt: new Date("2026-11-05T18:42:00Z"), form: form({ city: "Lyon" }) };
+  assert.equal(resumableDraft(changed, saved), changed);
+  assert.equal(resumableDraft({ ...changed, form: form() }, saved), undefined);
+  assert.equal(resumableDraft(undefined, saved), undefined);
 });
 
 test("comparing drafts ignores row keys but not content", () => {

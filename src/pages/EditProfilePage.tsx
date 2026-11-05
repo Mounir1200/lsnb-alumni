@@ -14,6 +14,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { DraftHint, DraftResumeNotice, PublicListingField, useProfileDraftAutosave } from "../components/profile/ProfileDraft";
 import { Button, ButtonLink } from "../components/ui/Button";
 import {
   deleteAvatar,
@@ -27,16 +28,8 @@ import {
   type ProfileGender,
 } from "../lib/profileRepository";
 import { normalizeCareerSteps, toCareerStepDrafts } from "../lib/careerSteps";
-import {
-  clearProfileDraft,
-  hasSameDraftContent,
-  loadProfileDraft,
-  saveProfileDraft,
-  type EditorForm,
-} from "../lib/profileDraft";
+import { loadProfileDraft, resumableDraft, type EditorForm } from "../lib/profileDraft";
 import { normalizeProfileLink } from "../lib/profileLinks";
-
-const draftDateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
 type SaveStatus = {
   kind: "idle" | "loading" | "success" | "warning" | "error";
@@ -103,11 +96,10 @@ export function EditProfilePage() {
       .then((profile) => {
         if (!active) return;
         const loaded = toEditorForm(profile);
-        const draft = loadProfileDraft(user.id);
-        const resumesDraft = draft !== undefined && !hasSameDraftContent(draft.form, loaded);
+        const draft = resumableDraft(loadProfileDraft(user.id), loaded);
         setSavedForm(loaded);
-        setForm(resumesDraft ? draft.form : loaded);
-        setRestoredDraftAt(resumesDraft ? draft.savedAt : undefined);
+        setForm(draft?.form ?? loaded);
+        setRestoredDraftAt(draft?.savedAt);
         setCurrentPhotoUrl(profile.photoUrl);
         setPhoto(null);
         setRemovePhoto(false);
@@ -128,12 +120,7 @@ export function EditProfilePage() {
   }, [reloadKey, user?.id]);
 
   // Every change is kept on this device until it is saved or discarded.
-  const hasUnsavedChanges = Boolean(form && savedForm && !hasSameDraftContent(form, savedForm));
-  useEffect(() => {
-    if (!user || !form || !savedForm) return;
-    if (hasUnsavedChanges) saveProfileDraft(user.id, form);
-    else clearProfileDraft(user.id);
-  }, [user?.id, form, savedForm, hasUnsavedChanges]);
+  const hasUnsavedChanges = useProfileDraftAutosave(user?.id, form, savedForm);
 
   useEffect(() => {
     if (!photo) {
@@ -325,17 +312,7 @@ export function EditProfilePage() {
           </div>
 
           <form className="account-form" onSubmit={handleSubmit}>
-            {restoredDraftAt && (
-              <div className="form-status form-status--warning profile-draft-notice" role="status">
-                <span>
-                  Brouillon repris : vos modifications du {draftDateFormat.format(restoredDraftAt)} ne sont pas
-                  encore enregistrées dans l’annuaire.
-                </span>
-                <Button size="sm" variant="outline" onClick={discardDraft}>
-                  <Undo2 size={16} aria-hidden="true" /> Revenir au profil enregistré
-                </Button>
-              </div>
-            )}
+            {restoredDraftAt && <DraftResumeNotice savedAt={restoredDraftAt} onDiscard={discardDraft} />}
             <fieldset className="role-picker">
               <legend>Mon statut dans le réseau</legend>
               <label className={form.memberRole === "alumni" ? "is-selected" : ""}>
@@ -596,19 +573,7 @@ export function EditProfilePage() {
             </label>
 
             {form.memberRole === "alumni" && (
-              <label className="form-check">
-                <input
-                  type="checkbox"
-                  checked={form.listedPublicly}
-                  onChange={(event) => updateField("listedPublicly", event.target.checked)}
-                />
-                <Orbit aria-hidden="true" />
-                <span>
-                  <b>Apparaître dans l’annuaire public</b>
-                  Sans connexion, les visiteurs voient votre nom, votre photo, votre promotion, votre domaine,
-                  votre ville et votre pays. Votre fiche complète reste réservée aux membres connectés.
-                </span>
-              </label>
+              <PublicListingField checked={form.listedPublicly} onChange={(checked) => updateField("listedPublicly", checked)} />
             )}
 
             <label className="field-group">
@@ -635,12 +600,7 @@ export function EditProfilePage() {
                 {status.kind === "loading" ? "Enregistrement…" : "Enregistrer les modifications"}
               </Button>
             </div>
-            {hasUnsavedChanges && status.kind !== "loading" && (
-              <p className="profile-draft-hint">
-                Vos modifications sont gardées en brouillon sur cet appareil jusqu’à leur enregistrement.
-                La photo, elle, doit être choisie à nouveau.
-              </p>
-            )}
+            {hasUnsavedChanges && status.kind !== "loading" && <DraftHint />}
 
             {form.memberRole === "alumni" && (
               <p className="highlight-disclosure">
