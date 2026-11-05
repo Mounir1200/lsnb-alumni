@@ -253,7 +253,7 @@ export function ProfilePage() {
             </div>
           </div>
 
-          <ProfileTrajectory city={profile.city} country={profile.country} />
+          <ProfileTrajectory city={profile.city} country={profile.country} careerSteps={profile.careerSteps} />
         </section>
 
         {requestOpen && !requestUnavailable && (
