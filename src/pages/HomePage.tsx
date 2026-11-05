@@ -7,13 +7,14 @@ import {
   Microscope,
   Orbit,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Hero } from "../components/home/Hero";
 import { WeeklyHighlights } from "../components/home/WeeklyHighlights";
 import { Reveal } from "../components/motion/Reveal";
 import { ButtonLink } from "../components/ui/Button";
 import { SectionPathBackdrop } from "../components/visual/SectionPathBackdrop";
+import { pickHomePhotos, type HomePhoto } from "../data/homePhotos";
 
 const discoveryPaths = [
   {
@@ -39,8 +40,16 @@ const discoveryPaths = [
   },
 ];
 
+function PhotoCredit({ credit }: { credit: HomePhoto["credit"] }) {
+  return credit.href
+    ? <a href={credit.href} target="_blank" rel="noreferrer">{credit.label}</a>
+    : <>{credit.label}</>;
+}
+
 export function HomePage() {
   const location = useLocation();
+  // Drawn once per visit, so a photo never changes while it is being looked at.
+  const [photos] = useState(() => pickHomePhotos());
 
   useEffect(() => {
     if (!location.hash) return;
@@ -107,11 +116,13 @@ export function HomePage() {
         <div className="page-shell mentoring-section__grid">
           <Reveal className="mentoring-section__image-wrap">
             <img
-              src="/images/mentoring-lab.jpg"
-              alt="Illustration éditoriale de trois jeunes Burkinabè échangeant dans un laboratoire scolaire"
+              src={photos.mentoring.src}
+              alt={photos.mentoring.alt}
+              width={photos.mentoring.width}
+              height={photos.mentoring.height}
               className="mentoring-section__image"
             />
-            <p className="mentoring-section__image-note">Visuel original généré pour le projet</p>
+            <p className="mentoring-section__image-note"><PhotoCredit credit={photos.mentoring.credit} /></p>
           </Reveal>
 
           <Reveal className="mentoring-section__copy" delay={80}>
@@ -160,42 +171,32 @@ export function HomePage() {
           <div className="roots-section__gallery">
             <Reveal className="roots-photo roots-photo--school">
               <img
-                src="https://www.lobspaalga.com/wp-content/uploads/2023/07/IMG-20210921-WA0003-840x480-1-780x470.jpg"
-                alt="Entrée du Lycée Scientifique National de Bobo-Dioulasso"
+                src={photos.school.src}
+                alt={photos.school.alt}
+                width={photos.school.width}
+                height={photos.school.height}
                 loading="lazy"
               />
               <div>
                 <span>Le point de départ</span>
                 <p>Lycée Scientifique National de Bobo-Dioulasso</p>
-                <a
-                  href="https://www.lobspaalga.com/2023/07/02/lycee-scientifique-de-bobo-pas-de-frais-de-scolarite-pour-les-eleves/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Photo&nbsp;: L’Obs Paalga
-                </a>
+                <PhotoCredit credit={photos.school.credit} />
               </div>
             </Reveal>
 
             <Reveal className="roots-photo roots-photo--city" delay={90}>
               <img
-                src="/images/bobo-grand-mosque.jpg"
-                alt="Grande Mosquée de Bobo-Dioulasso, exemple d’architecture soudano-sahélienne"
+                src={photos.city.src}
+                alt={photos.city.alt}
                 loading="lazy"
                 decoding="async"
-                width="1280"
-                height="960"
+                width={photos.city.width}
+                height={photos.city.height}
               />
               <div>
                 <span>L’identité de Sya</span>
                 <p>Ocre du banco, indigo, vert manguier et lumière blanche.</p>
-                <a
-                  href="https://commons.wikimedia.org/wiki/File:BoboDioulasso-GrandMosqueN.JPG"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Photo&nbsp;: Semiliki · CC BY-SA 3.0
-                </a>
+                <PhotoCredit credit={photos.city.credit} />
               </div>
             </Reveal>
           </div>
