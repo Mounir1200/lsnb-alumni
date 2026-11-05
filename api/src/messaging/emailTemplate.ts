@@ -63,6 +63,49 @@ export function renderConfirmationEmail(confirmationUrl: string): BrandedEmail {
   });
 }
 
+export type RequestEmailEvent = "received" | "accepted";
+export type RequestEmailKind = "connection" | "mentoring";
+
+const requestEmailCopy: Record<RequestEmailEvent, Record<RequestEmailKind, { subject: string; title: string; introduction: string }>> = {
+  received: {
+    connection: {
+      subject: "Nouvelle demande de connexion sur l’annuaire du LSNB",
+      title: "Une demande de connexion vous attend.",
+      introduction: "Un membre de l’annuaire du LSNB souhaite vous ajouter à son réseau. Lisez sa demande et choisissez de l’accepter ou non depuis votre espace.",
+    },
+    mentoring: {
+      subject: "Nouvelle demande de mentorat sur l’annuaire du LSNB",
+      title: "Une demande de mentorat vous attend.",
+      introduction: "Un membre de l’annuaire du LSNB vous demande un mentorat. Lisez sa demande et choisissez de l’accepter ou non depuis votre espace.",
+    },
+  },
+  accepted: {
+    connection: {
+      subject: "Votre demande de connexion a été acceptée",
+      title: "Vous êtes maintenant en relation.",
+      introduction: "Votre demande de connexion a été acceptée. La conversation est ouverte : vous pouvez écrire à ce membre depuis la messagerie du site.",
+    },
+    mentoring: {
+      subject: "Votre demande de mentorat a été acceptée",
+      title: "Votre mentorat peut commencer.",
+      introduction: "Votre demande de mentorat a été acceptée. La conversation est ouverte : vous pouvez écrire à votre mentor depuis la messagerie du site.",
+    },
+  },
+};
+
+/** Requests follow the unread-message alerts: same preference, and no name or message leaves the site. */
+export function renderRequestNotificationEmail(event: RequestEmailEvent, kind: RequestEmailKind, actionUrl: string, settingsUrl: string): BrandedEmail {
+  const copy = requestEmailCopy[event][kind];
+  const action = event === "received" ? "Voir la demande" : "Ouvrir la conversation";
+  const note = "Par discrétion, cet e-mail ne contient ni nom ni message : tout reste sur le site.";
+  return renderEmail({
+    subject: copy.subject, preheader: copy.title, label: "Vos relations", title: copy.title,
+    introduction: copy.introduction, action, actionUrl, note,
+    footer: `Vous recevez cet e-mail parce que les alertes e-mail sont activées.<br><a href="${escapeHtml(settingsUrl)}" target="_blank" rel="noreferrer" style="color:#0c2948;text-decoration:underline;">Gérer mes notifications</a> dans la messagerie.`,
+    text: `LSNB ALUMNI\n\n${copy.title}\n\n${copy.introduction}\n\n${action} :\n${actionUrl}\n\n${note}\n\nVous recevez cet e-mail parce que les alertes e-mail sont activées. Pour les désactiver, ouvrez les réglages de votre messagerie :\n${settingsUrl}\n\nLSNB Alumni\nLycée Scientifique National de Bobo-Dioulasso`,
+  });
+}
+
 export function renderMessageNotificationEmail(conversationUrl: string, settingsUrl: string): BrandedEmail {
   return renderEmail({
     subject: "Un message vous attend sur LSNB Alumni",

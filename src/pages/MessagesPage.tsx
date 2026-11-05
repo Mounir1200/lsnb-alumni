@@ -59,7 +59,7 @@ function EmailPreference() {
     <label><input type="checkbox" checked={enabled ?? false} disabled={enabled === undefined || busy} onChange={() => void toggle()} />
       <span>Me prévenir par e-mail lorsque je suis absent</span>{busy && <LoaderCircle className="spin" size={16} aria-hidden="true" />}
     </label>
-    <p>Un rappel pour les messages non lus, sans leur contenu. Les rappels sont regroupés et peuvent arriver avec un délai.</p>
+    <p>Un rappel pour les messages non lus, sans leur contenu, et un e-mail quand vous recevez une demande de connexion ou de mentorat, ou quand la vôtre est acceptée. Les e-mails peuvent arriver avec un délai.</p>
     {error && <p role="alert">{error} {enabled === undefined && <button className="text-link text-link--dark" onClick={() => setReload((value) => value + 1)}>Réessayer</button>}</p>}
   </div>;
 }

@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import { createNotificationSender, createNotificationStore, deliverNotifications, loadNotificationConfig } from "./notifications.js";
+import { notificationChannel, runNotificationRound, type NotificationChannel, type NotificationConfig } from "../notifications/delivery.js";
+import { createRequestNotificationSender, createRequestNotificationStore } from "../requests/notifications.js";
+import { createNotificationSender, createNotificationStore, loadNotificationConfig } from "./notifications.js";
 
 type DeliveryCounts = { claimed: number; delivered: number; failed: number };
 export type NotificationScheduler = {
@@ -21,11 +23,18 @@ export function createNotificationScheduler(apiKey: string, run: () => Promise<D
   };
 }
 
+/** Unread-message alerts first, then request emails, within one round's capacity. */
+export function notificationChannels(config: NotificationConfig): NotificationChannel[] {
+  return [
+    notificationChannel(createNotificationStore(config), createNotificationSender(config)),
+    notificationChannel(createRequestNotificationStore(config), createRequestNotificationSender(config)),
+  ];
+}
+
 export function configuredNotificationScheduler(env: NodeJS.ProcessEnv = process.env): NotificationScheduler | undefined {
   if (env.MESSAGING_EMAIL_ENABLED !== "true") return undefined;
   const config = loadNotificationConfig(env);
-  return createNotificationScheduler(config.apiKey,
-    () => deliverNotifications(createNotificationStore(config), createNotificationSender(config)));
+  return createNotificationScheduler(config.apiKey, () => runNotificationRound(notificationChannels(config)));
 }
 
 export async function registerNotificationSchedulerRoute(app: FastifyInstance, backend?: NotificationScheduler) {
