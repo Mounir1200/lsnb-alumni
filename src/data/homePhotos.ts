@@ -43,7 +43,8 @@ export const homePhotos = {
 export type HomePhotoSlot = keyof typeof homePhotos;
 
 export function pickPhoto(pool: HomePhoto[], random: () => number = Math.random): HomePhoto {
-  return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))]!;
+  // Math.random() stays below 1, so the index never reaches the pool's length.
+  return pool[Math.floor(random() * pool.length)]!;
 }
 
 export function pickHomePhotos(random: () => number = Math.random): Record<HomePhotoSlot, HomePhoto> {

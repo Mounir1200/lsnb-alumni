@@ -33,3 +33,15 @@ test("a long path keeps its most recent places", () => {
 test("a member without any known place has no stop to draw", () => {
   assert.deepEqual(toTrajectoryStops([step("", 2020)], "Ville non renseignée", "Pays non renseigné"), []);
 });
+
+test("an unknown city still places a step in its known country", () => {
+  assert.deepEqual(names(toTrajectoryStops([step("Villeinconnue, Maroc", 2020)], "", "")), ["Maroc"]);
+});
+
+test("a detailed place keeps its city, whatever sits between city and country", () => {
+  assert.deepEqual(names(toTrajectoryStops([step("Paris, Île-de-France, France", 2020)], "", "")), ["Paris"]);
+});
+
+test("two different places in a row are both kept", () => {
+  assert.deepEqual(names(toTrajectoryStops([step("Lyon, France", 2019), step("Paris, France", 2021)], "", "")), ["Lyon", "Paris"]);
+});

@@ -9,11 +9,10 @@ export const MAX_TRAJECTORY_STOPS = 6;
 
 export const SCHOOL_STOP: TrajectoryStop = { name: "Bobo-Dioulasso", coordinates: BOBO_DIOULASSO };
 
-/** "Angers, France" gives a city and a country; a single word may be either. */
+/** "Angers, France": the first part names the city, the last the country; a single word may be either. */
 function splitLocation(location: string) {
   const parts = location.split(",").map((part) => part.trim()).filter(Boolean);
-  const country = parts.at(-1) ?? "";
-  return { city: parts.length > 1 ? parts.slice(0, -1).join(", ") : country, country };
+  return { city: parts[0] ?? "", country: parts.at(-1) ?? "" };
 }
 
 function toStop(city: string, country: string): TrajectoryStop | undefined {
@@ -23,10 +22,7 @@ function toStop(city: string, country: string): TrajectoryStop | undefined {
   return { name: place.precision === "city" ? city : country, coordinates: place.coordinates };
 }
 
-function isSamePlace(first: TrajectoryStop, second: TrajectoryStop) {
-  return first.coordinates.latitude === second.coordinates.latitude
-    && first.coordinates.longitude === second.coordinates.longitude;
-}
+const placeKey = ({ coordinates }: TrajectoryStop) => `${coordinates.latitude},${coordinates.longitude}`;
 
 /**
  * The places after the school, oldest first: each career step's location, then
@@ -37,7 +33,7 @@ export function toTrajectoryStops(careerSteps: CareerStep[], city: string, count
   const places = [...careerSteps.map((step) => splitLocation(step.location)), { city, country }];
   const stops = places.reduce<TrajectoryStop[]>((path, place) => {
     const stop = toStop(place.city, place.country);
-    return stop && !isSamePlace(stop, path.at(-1) ?? SCHOOL_STOP) ? [...path, stop] : path;
+    return stop && placeKey(stop) !== placeKey(path.at(-1) ?? SCHOOL_STOP) ? [...path, stop] : path;
   }, []);
   return stops.slice(-MAX_TRAJECTORY_STOPS);
 }
