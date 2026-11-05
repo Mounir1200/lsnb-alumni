@@ -4,10 +4,25 @@ export function PrivacyPage() {
       <p className="eyebrow eyebrow--dark">Confidentialité</p>
       <h1>Comprendre comment votre parcours est partagé.</h1>
       <p>
-        Ce prototype sépare les informations de profil des coordonnées personnelles. Dans la
-        configuration Supabase fournie, seuls les membres authentifiés peuvent parcourir les
-        profils complets et chaque personne garde le contrôle de la visibilité de son contact.
-        Les portraits Highlight, eux, sont visibles par tous sur l’accueil, sans connexion.
+        Ce prototype sépare les informations de profil des coordonnées personnelles. Seuls les
+        membres authentifiés peuvent consulter les profils complets et chaque personne garde le
+        contrôle de la visibilité de son contact. Les portraits Highlight, eux, sont visibles par
+        tous sur l’accueil, sans connexion.
+      </p>
+      <h2>Annuaire public</h2>
+      <p>
+        Sans connexion, les visiteurs voient la liste des anciens élèves : nom, photo, promotion,
+        spécialité, domaine, ville, pays et disponibilité pour le mentorat. Le parcours, les liens,
+        les relations et les coordonnées restent réservés aux membres connectés. Les élèves actuels
+        n’apparaissent jamais dans cette liste publique. Chaque ancien élève peut s’en retirer à tout
+        moment depuis « Modifier mon profil » ; sa fiche reste alors visible des seuls membres.
+      </p>
+      <h2>Connexions et e-mails</h2>
+      <p>
+        Les connexions entre membres ne sont visibles que par les deux personnes concernées. Quand
+        vous recevez une demande de connexion ou de mentorat, ou quand la vôtre est acceptée, un
+        e-mail vous prévient sans nom ni message ; vous pouvez désactiver ces e-mails dans les
+        réglages de la messagerie.
       </p>
       <h2>Données collectées</h2>
       <p>

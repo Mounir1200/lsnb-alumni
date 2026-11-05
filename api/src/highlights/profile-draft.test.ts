@@ -34,7 +34,7 @@ function form(changes: Partial<EditorForm> = {}): EditorForm {
     firstName: "Awa", lastName: "Traoré", memberRole: "alumni", gender: "female", graduationYear: "2019",
     specialty: "Data science", domain: "Numérique", specialties: "IA, statistiques", city: "Paris", country: "France",
     experience: "Mon parcours.", careerSteps: [{ ...createCareerStepDraft("work"), title: "Data scientist", startYear: "2023", ongoing: true }],
-    linkedinUrl: "", portfolioUrl: "", offersMentoring: true, mentoringTopics: "Orientation", contactVisible: false,
+    linkedinUrl: "", portfolioUrl: "", offersMentoring: true, mentoringTopics: "Orientation", contactVisible: false, listedPublicly: true,
     ...changes,
   };
 }

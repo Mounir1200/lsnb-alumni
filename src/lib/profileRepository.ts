@@ -1,31 +1,12 @@
 import type { AlumniProfile } from "../data/alumni";
 import { alumniProfiles } from "../data/alumni";
 import { isSupabaseConfigured, supabase } from "./supabase";
-import { findCurrentJob, parseCareerSteps, toCareerStepRows, type CareerStep } from "./careerSteps";
-import { getSafeProfileLink, normalizeProfileLink } from "./profileLinks";
+import { parseCareerSteps, toCareerStepRows, type CareerStep } from "./careerSteps";
+import { mapProfile, type ProfileGender, type ProfileRow } from "./profileMapping";
+import { mapPublicProfile, type PublicProfileRow } from "./publicProfiles";
+import { normalizeProfileLink } from "./profileLinks";
 
-export type ProfileGender = "male" | "female" | "unspecified";
-
-type ProfileRow = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  member_role: "alumni" | "student";
-  gender?: ProfileGender | null;
-  graduation_year: number | null;
-  specialty: string;
-  specialties: string[] | null;
-  domain: string | null;
-  city: string | null;
-  country: string | null;
-  experience: string;
-  photo_url: string | null;
-  linkedin_url: string | null;
-  portfolio_url: string | null;
-  offers_mentoring: boolean;
-  mentoring_topics: string[] | null;
-  career_steps: unknown;
-};
+export type { ProfileGender } from "./profileMapping";
 
 export type EditableProfile = {
   firstName: string;
@@ -46,6 +27,8 @@ export type EditableProfile = {
   mentoringTopics: string[];
   careerSteps: CareerStep[];
   contactVisible: boolean;
+  /** Alumni only: shown in the directory that visitors see without an account. */
+  listedPublicly: boolean;
 };
 
 export type EditableProfileUpdate = Omit<EditableProfile, "photoUrl"> & {
@@ -55,46 +38,6 @@ export type EditableProfileUpdate = Omit<EditableProfile, "photoUrl"> & {
 type UpdateProfileResult = {
   warning?: string;
 };
-
-const avatarTones: AlumniProfile["avatarTone"][] = ["ochre", "green", "blue", "sand"];
-
-function avatarToneFromId(id: string) {
-  const checksum = [...id].reduce((sum, character) => sum + character.charCodeAt(0), 0);
-  return avatarTones[checksum % avatarTones.length] ?? "sand";
-}
-
-function mapProfile(row: ProfileRow): AlumniProfile {
-  const specialties = row.specialties?.filter(Boolean) ?? [];
-  if (row.specialty && !specialties.includes(row.specialty)) specialties.unshift(row.specialty);
-  const careerSteps = parseCareerSteps(row.career_steps);
-  const currentJob = row.member_role === "alumni" ? findCurrentJob(careerSteps) : undefined;
-
-  return {
-    id: row.id,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    graduationYear: row.graduation_year ?? new Date().getFullYear(),
-    currentRole:
-      row.member_role === "student"
-        ? "Élève au LSNB"
-        : currentJob?.title || row.specialty || row.domain || "Alumni du LSNB",
-    organization: row.member_role === "student" ? "Lycée Scientifique National" : currentJob?.organization ?? "",
-    city: row.city || "Ville non renseignée",
-    country: row.country || "Pays non renseigné",
-    domain: row.domain || row.specialty || "Sciences",
-    specialties: specialties.length ? specialties : ["Parcours scientifique"],
-    careerSteps,
-    experience: row.experience,
-    offersMentoring: row.offers_mentoring,
-    mentoringTopics: row.mentoring_topics?.filter(Boolean) ?? [],
-    initials: `${row.first_name[0] ?? ""}${row.last_name[0] ?? ""}`.toUpperCase(),
-    avatarTone: avatarToneFromId(row.id),
-    photoUrl: row.photo_url ?? undefined,
-    linkedinUrl: getSafeProfileLink(row.linkedin_url, "linkedin"),
-    portfolioUrl: getSafeProfileLink(row.portfolio_url, "portfolio"),
-    isDemo: false,
-  };
-}
 
 export async function loadProfiles() {
   if (!supabase || !isSupabaseConfigured) {
@@ -111,6 +54,16 @@ export async function loadProfiles() {
 
   if (error) throw error;
   return { profiles: (data as ProfileRow[]).map(mapProfile), source: "supabase" as const };
+}
+
+/** Visitors' directory: alumni who stay listed, with only what a card shows. */
+export async function loadPublicProfiles() {
+  if (!supabase || !isSupabaseConfigured) {
+    return { profiles: alumniProfiles, source: "demo" as const };
+  }
+  const { data, error } = await supabase.rpc("public_directory_profiles");
+  if (error) throw error;
+  return { profiles: (data as PublicProfileRow[]).map(mapPublicProfile), source: "public" as const };
 }
 
 export async function loadProfile(id: string) {
@@ -138,7 +91,7 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
     supabase
       .from("profiles")
       .select(
-        "id, first_name, last_name, member_role, gender, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics, career_steps",
+        "id, first_name, last_name, member_role, gender, graduation_year, specialty, specialties, domain, city, country, experience, photo_url, linkedin_url, portfolio_url, offers_mentoring, mentoring_topics, career_steps, listed_publicly",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -153,7 +106,7 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
   if (contactResult.error) throw contactResult.error;
   if (!profileResult.data) throw new Error("Votre profil est introuvable.");
 
-  const row = profileResult.data as ProfileRow;
+  const row = profileResult.data as ProfileRow & { listed_publicly: boolean };
   return {
     firstName: row.first_name,
     lastName: row.last_name,
@@ -173,6 +126,7 @@ export async function loadEditableProfile(id: string): Promise<EditableProfile> 
     mentoringTopics: row.mentoring_topics?.filter(Boolean) ?? [],
     careerSteps: parseCareerSteps(row.career_steps),
     contactVisible: contactResult.data?.is_visible === true,
+    listedPublicly: row.listed_publicly,
   };
 }
 
@@ -215,6 +169,7 @@ export async function updateEditableProfile(
       offers_mentoring: offersMentoring,
       mentoring_topics: mentoringTopics,
       career_steps: toCareerStepRows(profile.careerSteps),
+      listed_publicly: profile.listedPublicly,
     })
     .eq("id", id)
     .select("id")

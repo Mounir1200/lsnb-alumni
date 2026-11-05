@@ -1,7 +1,8 @@
 import { LayoutGrid, List, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlumniCard } from "../components/alumni/AlumniCard";
+import { ProfileGateDialog, type GatedProfile } from "../components/auth/ProfileGate";
 import { DirectoryConstellation } from "../components/directory/DirectoryConstellation";
 import {
   DirectoryEmpty,
@@ -12,15 +13,23 @@ import {
 import { Button } from "../components/ui/Button";
 import type { AlumniProfile } from "../data/alumni";
 import { useDirectoryProfiles } from "../hooks/useDirectoryProfiles";
+import { profileIdFromHref } from "../lib/profileGate";
 import { normalizeSearchText as normalize } from "../lib/searchText";
 import "../components/directory/DirectoryViewControls.css";
 
 const noProfiles: AlumniProfile[] = [];
 
+const sourceLabels = {
+  demo: "Profils fictifs · démonstration",
+  public: "Alumni du réseau · fiches réservées aux membres",
+  supabase: "Profils des membres",
+} as const;
+
 export function DirectoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const directory = useDirectoryProfiles();
   const profiles = directory.status === "ready" ? directory.profiles : noProfiles;
+  const [gatedProfile, setGatedProfile] = useState<GatedProfile | null>(null);
   const query = searchParams.get("q") ?? "";
   const domain = searchParams.get("domaine") ?? "";
   const country = searchParams.get("pays") ?? "";
@@ -77,6 +86,17 @@ export function DirectoryPage() {
       );
     });
   }, [country, domain, mentoringOnly, profiles, query]);
+
+  // Visitors browse the public listing; opening a profile asks them to sign in or join first.
+  const gateProfileLink = (event: MouseEvent<HTMLDivElement>) => {
+    if (directory.status !== "ready" || directory.source !== "public") return;
+    const href = (event.target as Element).closest("a")?.getAttribute("href");
+    const id = profileIdFromHref(href);
+    const profile = profiles.find((item) => item.id === id);
+    if (!profile) return;
+    event.preventDefault();
+    setGatedProfile({ id: profile.id, name: `${profile.firstName} ${profile.lastName}` });
+  };
 
   const hasFilters = Boolean(query || domain || country || mentoringOnly);
   const activeFilterCount = [query, domain, country, mentoringOnly].filter(Boolean).length;
@@ -173,7 +193,7 @@ export function DirectoryPage() {
           </div>
         </aside>
 
-        <div className="directory-results">
+        <div className="directory-results" onClickCapture={gateProfileLink}>
           <div className="directory-view-toolbar">
             <div className="directory-view-summary">
               <p className="directory-view-summary__count" role="status" aria-live="polite">
@@ -183,9 +203,7 @@ export function DirectoryPage() {
                 {directory.status === "loading" && "Chargement des profils…"}
               </p>
               {directory.status === "ready" && (
-                <span className="directory-view-summary__source">
-                  {directory.source === "demo" ? "Profils fictifs · démonstration" : "Profils des membres"}
-                </span>
+                <span className="directory-view-summary__source">{sourceLabels[directory.source]}</span>
               )}
             </div>
             <div className="directory-view-controls" role="group" aria-label="Affichage des profils">
@@ -201,6 +219,7 @@ export function DirectoryPage() {
           {renderResults()}
         </div>
       </section>
+      <ProfileGateDialog profile={gatedProfile} onClose={() => setGatedProfile(null)} />
     </div>
   );
 }

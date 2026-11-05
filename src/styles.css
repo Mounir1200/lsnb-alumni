@@ -4335,6 +4335,75 @@ a.connection-card__person:hover b {
   color: #63717d;
 }
 
+.profile-gate {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.profile-gate p {
+  max-width: 560px;
+  margin: 0;
+  color: #63717d;
+  line-height: 1.6;
+}
+
+.profile-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.profile-gate-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  /* The CSS reset removes the browser's auto margin that centres a modal dialog. */
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--chalk);
+  box-shadow: 0 24px 60px rgba(7, 29, 51, 0.35);
+}
+
+.profile-gate-dialog::backdrop {
+  background: rgba(7, 29, 51, 0.62);
+}
+
+.profile-gate-dialog__panel {
+  position: relative;
+  padding: 44px 28px 32px;
+}
+
+.profile-gate-dialog h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  line-height: 1.15;
+}
+
+.profile-gate-dialog__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.profile-gate-dialog__close:hover {
+  background: var(--sand);
+}
+
 .member-page {
   min-height: 72vh;
   padding-block: clamp(64px, 10vw, 130px);

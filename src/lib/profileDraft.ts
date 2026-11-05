@@ -20,6 +20,7 @@ export type EditorForm = {
   offersMentoring: boolean;
   mentoringTopics: string;
   contactVisible: boolean;
+  listedPublicly: boolean;
 };
 
 export type ProfileDraft = { savedAt: Date; form: EditorForm };
@@ -59,7 +60,8 @@ function parseForm(value: unknown): EditorForm | undefined {
   const form = value as Record<string, unknown>;
   if (!TEXT_FIELDS.every((field) => typeof form[field] === "string")) return undefined;
   if (!ROLES.includes(form.memberRole as EditorForm["memberRole"]) || !GENDERS.includes(form.gender as ProfileGender)) return undefined;
-  if (typeof form.offersMentoring !== "boolean" || typeof form.contactVisible !== "boolean" || !Array.isArray(form.careerSteps)) return undefined;
+  if (![form.offersMentoring, form.contactVisible, form.listedPublicly].every((value) => typeof value === "boolean")) return undefined;
+  if (!Array.isArray(form.careerSteps)) return undefined;
   const careerSteps = form.careerSteps.map(parseCareerStepDraft);
   if (careerSteps.some((step) => step === undefined)) return undefined;
   return { ...(form as EditorForm), careerSteps: careerSteps as CareerStepDraft[] };

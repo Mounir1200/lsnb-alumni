@@ -8,6 +8,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { ProfileGate } from "../components/auth/ProfileGate";
 import { ProfileMentorshipNetwork } from "../components/mentoring/ProfileMentorshipNetwork";
 import { ProfileAside } from "../components/profile/ProfileAside";
 import { ProfileMilestones } from "../components/profile/ProfileMilestones";
@@ -104,9 +105,7 @@ export function ProfilePage() {
   if (!demoProfile && isSupabaseConfigured && !authLoading && !user) {
     return (
       <section className="auth-state-page">
-        <h1>Retrouvez ce membre du réseau.</h1>
-        <p>Connectez-vous pour consulter son profil et son réseau de mentorat.</p>
-        <ButtonLink to={`/connexion?next=${encodeURIComponent(`/alumni/${profileId}`)}`}>Se connecter</ButtonLink>
+        <ProfileGate profileId={profileId} heading="h1" />
       </section>
     );
   }

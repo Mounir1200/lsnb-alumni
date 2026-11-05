@@ -65,6 +65,7 @@ function toEditorForm(profile: EditableProfile): EditorForm {
     offersMentoring: profile.offersMentoring,
     mentoringTopics: profile.mentoringTopics.join("\n"),
     contactVisible: profile.contactVisible,
+    listedPublicly: profile.listedPublicly,
   };
 }
 
@@ -218,6 +219,7 @@ export function EditProfilePage() {
         offersMentoring: form.memberRole === "alumni" && form.offersMentoring,
         mentoringTopics: parseList(form.mentoringTopics),
         contactVisible: form.contactVisible,
+        listedPublicly: form.listedPublicly,
         email: user.email ?? "",
       });
       // The profile now holds these values: the draft effect clears what remains.
@@ -592,6 +594,22 @@ export function EditProfilePage() {
                 Désactivez ce choix pour être contacté uniquement par les demandes du site.
               </span>
             </label>
+
+            {form.memberRole === "alumni" && (
+              <label className="form-check">
+                <input
+                  type="checkbox"
+                  checked={form.listedPublicly}
+                  onChange={(event) => updateField("listedPublicly", event.target.checked)}
+                />
+                <Orbit aria-hidden="true" />
+                <span>
+                  <b>Apparaître dans l’annuaire public</b>
+                  Sans connexion, les visiteurs voient votre nom, votre photo, votre promotion, votre domaine,
+                  votre ville et votre pays. Votre fiche complète reste réservée aux membres connectés.
+                </span>
+              </label>
+            )}
 
             <label className="field-group">
               <span>Adresse e-mail du compte</span>
