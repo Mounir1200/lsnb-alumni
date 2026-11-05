@@ -1,10 +1,7 @@
 import {
   ArrowLeft,
-  Check,
   GraduationCap,
-  LoaderCircle,
   MapPin,
-  MessageCircle,
   Orbit,
   PencilLine,
 } from "lucide-react";
@@ -14,6 +11,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { ProfileMentorshipNetwork } from "../components/mentoring/ProfileMentorshipNetwork";
 import { ProfileAside } from "../components/profile/ProfileAside";
 import { ProfileMilestones } from "../components/profile/ProfileMilestones";
+import { ProfileRequestButtons, type MentoringStatus, type RequestKind } from "../components/profile/ProfileRequestButtons";
 import { ProfileStory } from "../components/profile/ProfileStory";
 import { ProfileTrajectory } from "../components/profile/ProfileTrajectory";
 import "../components/profile/Profile.css";
@@ -23,7 +21,8 @@ import { alumniProfiles, getAlumniProfile, type AlumniProfile } from "../data/al
 import { loadProfile } from "../lib/profileRepository";
 import { getProfileCompletionPath } from "../lib/auth";
 import { normalizeSearchText } from "../lib/searchText";
-import { createConnectionRequest, getConnectionErrorMessage, loadActiveMentorships, loadProfileConnections, type ConnectionRequest, type Mentorship } from "../lib/mentorshipRepository";
+import { createConnectionRequest, findMemberConnection, getConnectionErrorMessage, loadActiveMentorships, loadProfileConnections, type ConnectionRequest, type Mentorship } from "../lib/mentorshipRepository";
+import { peerConnectionStatus } from "../lib/relations";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { NotFoundPage } from "./NotFoundPage";
 
@@ -39,10 +38,10 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<AlumniProfile | undefined>(demoProfile);
   const [loading, setLoading] = useState(Boolean(!demoProfile && isSupabaseConfigured));
   const [requestSent, setRequestSent] = useState(false);
-  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestOpen, setRequestOpen] = useState<RequestKind | null>(null);
   const [requestStatus, setRequestStatus] = useState<RequestStatus>({ kind: "idle" });
   const [connectionsReload, setConnectionsReload] = useState(0);
-  const [connections, setConnections] = useState<{ scope: string; requests?: ConnectionRequest[]; mentorships?: Mentorship[]; error?: string }>();
+  const [connections, setConnections] = useState<{ scope: string; requests?: ConnectionRequest[]; mentorships?: Mentorship[]; connected?: boolean; error?: string }>();
   const requestScope = `${user?.id ?? ""}:${profileId}`;
   const currentScope = useRef(requestScope);
   currentScope.current = requestScope;
@@ -55,7 +54,7 @@ export function ProfilePage() {
 
   useEffect(() => {
     setRequestSent(false);
-    setRequestOpen(false);
+    setRequestOpen(null);
     setRequestStatus({ kind: "idle" });
 
     const localProfile = getAlumniProfile(profileId);
@@ -94,8 +93,10 @@ export function ProfilePage() {
     if (!user || !profileCompleted || demoProfile || authLoading) return;
     let active = true;
     setConnections({ scope: requestScope });
-    void Promise.all([loadProfileConnections(user.id, profileId), loadActiveMentorships(user.id)])
-      .then(([requests, mentorships]) => { if (active) setConnections({ scope: requestScope, requests, mentorships }); })
+    void Promise.all([loadProfileConnections(user.id, profileId), loadActiveMentorships(user.id), findMemberConnection(user.id, profileId)])
+      .then(([requests, mentorships, connection]) => {
+        if (active) setConnections({ scope: requestScope, requests, mentorships, connected: connection !== null });
+      })
       .catch((error: unknown) => { if (active) setConnections({ scope: requestScope, error: getConnectionErrorMessage(error) }); });
     return () => { active = false; };
   }, [user?.id, profileId, profileCompleted, authLoading, Boolean(demoProfile), connectionsReload, requestScope]);
@@ -131,25 +132,28 @@ export function ProfilePage() {
   const repeatsDomain = normalizeSearchText(profile.currentRole) === normalizeSearchText(profile.domain);
   const roleLine = [repeatsDomain ? "" : profile.currentRole, profile.organization].filter(Boolean).join(" · ");
   const currentConnections = connections?.scope === requestScope ? connections : undefined;
-  const connectionsReady = currentConnections?.requests !== undefined && currentConnections.mentorships !== undefined;
-  const requestKind = profile.offersMentoring ? "mentoring" : "contact";
-  const relevantRequests = currentConnections?.requests?.filter((item) => item.kind === requestKind) ?? [];
-  const pendingRequest = relevantRequests.find((item) => item.status === "pending" && (
-    requestKind === "contact" || item.requesterId === user?.id
-  ));
-  const activeMentorship = currentConnections?.mentorships?.find((item) => item.mentorId === profile.id && item.menteeId === user?.id);
-  const acceptedContact = requestKind === "contact" && relevantRequests.some((item) => item.status === "accepted");
-  const acceptedConversation = currentConnections?.requests?.find((item) => item.status === "accepted");
-  const relationshipExists = requestKind === "mentoring" ? Boolean(activeMentorship) : acceptedContact;
-  const declinedRequest = relevantRequests.find((item) => item.status === "declined" && item.requesterId === user?.id);
-  const requestUnavailable = profile.isDemo === false && (!connectionsReady || Boolean(pendingRequest) || relationshipExists);
+  const requests = currentConnections?.requests ?? [];
+  const connectionsReady = currentConnections?.requests !== undefined && currentConnections.mentorships !== undefined
+    && currentConnections.connected !== undefined;
+  // A demo profile only pretends: once "sent", both requests read as waiting.
+  const demoSent = profile.isDemo !== false && requestSent;
+  const peerStatus = demoSent ? "sent" : peerConnectionStatus(user?.id ?? "", requests, currentConnections?.connected ?? false);
+  const ownMentoringRequests = requests.filter((item) => item.kind === "mentoring" && item.requesterId === user?.id);
+  const hasActiveMentorship = currentConnections?.mentorships?.some((item) => item.mentorId === profile.id && item.menteeId === user?.id);
+  const mentoring: MentoringStatus = hasActiveMentorship ? "active"
+    : demoSent || ownMentoringRequests.some((item) => item.status === "pending") ? "pending" : "none";
+  const acceptedConversation = requests.find((item) => item.status === "accepted");
+  const hasRelation = peerStatus !== "none" || mentoring !== "none";
+  const declinedRequest = requests.some((item) => item.status === "declined" && item.requesterId === user?.id);
+  const isRequestUnavailable = (kind: RequestKind) => profile.isDemo === false
+    && (!connectionsReady || (kind === "connection" ? peerStatus !== "none" : mentoring !== "none"));
 
-  const handleRequestClick = () => {
+  const handleRequestClick = (kind: RequestKind) => {
     if (profile.isDemo !== false) {
       setRequestSent(true);
       return;
     }
-    setRequestOpen(true);
+    setRequestOpen(kind);
   };
 
   const handleRequestSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -165,7 +169,8 @@ export function ProfilePage() {
       setRequestStatus({ kind: "error", message: "Vous ne pouvez pas vous envoyer une demande." });
       return;
     }
-    if (requestStatus.kind === "loading" || requestUnavailable) return;
+    const requestKind = requestOpen;
+    if (!requestKind || requestStatus.kind === "loading" || isRequestUnavailable(requestKind)) return;
     const data = new FormData(event.currentTarget);
     if (requestKind === "mentoring" && data.get("networkConsent") !== "on") {
       setRequestStatus({ kind: "error", message: "Confirmez la visibilité du mentorat avant d’envoyer votre demande." });
@@ -177,7 +182,7 @@ export function ProfilePage() {
       await createConnectionRequest(user.id, profile.id, requestKind, String(data.get("message") ?? "").trim());
       if (!mounted.current || currentScope.current !== actingScope) return;
       setRequestSent(true);
-      setRequestOpen(false);
+      setRequestOpen(null);
       setRequestStatus({ kind: "success", message: "Votre demande a été transmise. Retrouvez-la dans Mes relations et demandes." });
       setConnectionsReload((value) => value + 1);
     } catch (error) {
@@ -221,23 +226,12 @@ export function ProfilePage() {
               ) : profile.isDemo === false && !profileCompleted ? (
                 <ButtonLink to={getProfileCompletionPath(`/alumni/${profileId}`)} size="lg">Compléter mon profil</ButtonLink>
               ) : (
-                <Button
-                  size="lg"
-                  onClick={handleRequestClick}
-                  disabled={(profile.isDemo !== false && requestSent) || requestUnavailable}
-                >
-                  {profile.isDemo === false && !connectionsReady && !currentConnections?.error ? (
-                    <><LoaderCircle size={18} className="spin" aria-hidden="true" /> Vérification des demandes…</>
-                  ) : relationshipExists ? (
-                    <><Check size={18} aria-hidden="true" /> {requestKind === "mentoring" ? "Mentorat en cours" : "Échange accepté"}</>
-                  ) : pendingRequest ? (
-                    <><Check size={18} aria-hidden="true" /> {pendingRequest.requesterId === user?.id ? "Demande en attente" : "Demande reçue"}</>
-                  ) : requestSent && profile.isDemo !== false ? (
-                    <><Check size={18} aria-hidden="true" /> Demande enregistrée</>
-                  ) : (
-                    <><MessageCircle size={18} aria-hidden="true" /> {requestKind === "mentoring" ? "Demander un mentorat" : "Demander un échange"}</>
-                  )}
-                </Button>
+                <ProfileRequestButtons
+                  checking={profile.isDemo === false && !connectionsReady && !currentConnections?.error}
+                  peerStatus={peerStatus}
+                  mentoring={profile.offersMentoring ? mentoring : undefined}
+                  onRequest={handleRequestClick}
+                />
               )}
               {!isOwnProfile && requestSent && (
                 <span role="status">
@@ -247,22 +241,29 @@ export function ProfilePage() {
                 </span>
               )}
               {!isOwnProfile && currentConnections?.error && <span role="alert">{currentConnections.error} <Button size="sm" variant="light" onClick={() => setConnectionsReload((value) => value + 1)}>Réessayer</Button></span>}
-              {!isOwnProfile && (pendingRequest || relationshipExists || requestSent) && profile.isDemo === false && <ButtonLink to="/espace/relations" size="sm" variant="light">Gérer mes relations et demandes</ButtonLink>}
+              {!isOwnProfile && (hasRelation || requestSent) && profile.isDemo === false && <ButtonLink to="/espace/relations" size="sm" variant="light">Gérer mes relations et demandes</ButtonLink>}
               {!isOwnProfile && acceptedConversation && profile.isDemo === false && <ButtonLink to={`/espace/messages/${acceptedConversation.id}`} size="sm" variant="light">Ouvrir la conversation</ButtonLink>}
-              {!isOwnProfile && connectionsReady && declinedRequest && !pendingRequest && !relationshipExists && !requestSent && <span>Votre précédente demande a été refusée. Vous pouvez formuler une nouvelle demande.</span>}
+              {!isOwnProfile && connectionsReady && declinedRequest && !hasRelation && !requestSent && <span>Votre précédente demande a été refusée. Vous pouvez formuler une nouvelle demande.</span>}
             </div>
           </div>
 
           <ProfileTrajectory city={profile.city} country={profile.country} careerSteps={profile.careerSteps} />
         </section>
 
-        {requestOpen && !requestUnavailable && (
-          <form key={requestScope} className="profile-request-form" onSubmit={handleRequestSubmit}>
+        {requestOpen && !isRequestUnavailable(requestOpen) && (
+          <form key={`${requestScope}:${requestOpen}`} className="profile-request-form" onSubmit={handleRequestSubmit}>
             <div>
               <p className="eyebrow eyebrow--dark">
-                {profile.offersMentoring ? "Demande de mentorat" : "Demande de contact"}
+                {requestOpen === "mentoring" ? "Demande de mentorat" : "Demande de connexion"}
               </p>
-              <h2>Présentez votre question à {profile.firstName}.</h2>
+              <h2>
+                {requestOpen === "mentoring"
+                  ? `Présentez votre question à ${profile.firstName}.`
+                  : `Ajoutez ${profile.firstName} à votre réseau.`}
+              </h2>
+              {requestOpen === "connection" && (
+                <p>Une fois votre demande acceptée, vous serez en relation et pourrez échanger dans la messagerie.</p>
+              )}
             </div>
             <label className="field-group">
               <span>Votre message</span>
@@ -272,13 +273,16 @@ export function ProfilePage() {
                 minLength={20}
                 maxLength={1200}
                 disabled={requestStatus.kind === "loading"}
+                defaultValue={requestOpen === "connection"
+                  ? `Bonjour ${profile.firstName}, je souhaite vous ajouter à mon réseau sur l’annuaire du LSNB.`
+                  : undefined}
                 placeholder="Expliquez brièvement votre situation et le conseil recherché."
                 required
               />
               <small>20 à 1 200 caractères. Ce message est visible uniquement par vous et son destinataire.</small>
               <small>Ce texte de présentation n’est pas chiffré comme les messages. Partagez vos informations confidentielles dans la messagerie après acceptation.</small>
             </label>
-            {requestKind === "mentoring" && (
+            {requestOpen === "mentoring" && (
               <label className="form-check">
                 <input type="checkbox" name="networkConsent" required disabled={requestStatus.kind === "loading"} />
                 <span>Si cette demande est acceptée, j’accepte que notre mentorat apparaisse sur nos deux profils, visible par les membres connectés.</span>
@@ -291,7 +295,7 @@ export function ProfilePage() {
               </div>
             )}
             <div className="profile-request-form__actions">
-              <Button variant="outline" disabled={requestStatus.kind === "loading"} onClick={() => setRequestOpen(false)}>Annuler</Button>
+              <Button variant="outline" disabled={requestStatus.kind === "loading"} onClick={() => setRequestOpen(null)}>Annuler</Button>
               <Button type="submit" disabled={requestStatus.kind === "loading"}>Envoyer la demande</Button>
             </div>
           </form>

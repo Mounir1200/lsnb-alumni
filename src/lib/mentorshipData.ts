@@ -3,7 +3,7 @@ import { mapMemberSummary as mapMember, memberColumns, type MemberRow, type Memb
 import { collectRowsById as collectRows, isUuid } from "./pagedRows";
 
 export type { MemberSummary };
-export type ConnectionKind = "contact" | "mentoring";
+export type ConnectionKind = "contact" | "mentoring" | "connection";
 export type ConnectionStatus = "pending" | "accepted" | "declined";
 
 /** The offer a contact request asks about; `offer` is null once it is deleted or hidden. */
@@ -35,6 +35,15 @@ export type Mentorship = {
 
 export type MentorshipNetwork = { mentors: Mentorship[]; mentees: Mentorship[] };
 
+/** A peer connection seen from one member: `peer` is null once their profile is hidden. */
+export type MemberConnection = {
+  id: string;
+  requestId: string;
+  createdAt: string;
+  peerId: string;
+  peer: MemberSummary | null;
+};
+
 type RequestRow = {
   id: string; requester_id: string; recipient_id: string; request_kind: ConnectionKind;
   status: ConnectionStatus; message: string; created_at: string; responded_at: string | null;
@@ -45,6 +54,17 @@ type MentorshipRow = {
   id: string; mentor_id: string; mentee_id: string; created_at: string;
   mentor: MemberRow | null; mentee: MemberRow | null;
 };
+type MemberConnectionRow = {
+  id: string; member_a: string; member_b: string; request_id: string; created_at: string;
+  first: MemberRow | null; second: MemberRow | null;
+};
+
+const memberConnectionColumns = `id, member_a, member_b, request_id, created_at,
+  first:profiles!member_connections_member_a_fkey(${memberColumns}),
+  second:profiles!member_connections_member_b_fkey(${memberColumns})`;
+
+/** A pair is stored once, smaller id first (see public.member_connections). */
+const orderedPair = (first: string, second: string) => (first < second ? [first, second] : [second, first]);
 
 const requestColumns = `id, requester_id, recipient_id, request_kind, status, message, created_at, responded_at, offer_id,
   requester:profiles!connection_requests_requester_id_fkey(${memberColumns}),
@@ -181,6 +201,39 @@ export function createMentorshipRepository(supabase: SupabaseClient | null) {
     if (!data) throw new ConnectionActionError("Cette demande a déjà été traitée ou retirée. Actualisez la liste.");
   }
 
+  async function loadMemberConnections(userId: string): Promise<MemberConnection[]> {
+    const id = checkedId(userId);
+    const db = client();
+    const rows = await collectRows((before) => {
+      const query = db.from("member_connections").select(memberConnectionColumns)
+        .or(`member_a.eq.${id},member_b.eq.${id}`).order("id", { ascending: false }).limit(100);
+      return before ? query.lt("id", before) : query;
+    });
+    return (rows as MemberConnectionRow[]).map((row) => {
+      const isFirst = row.member_a === id;
+      return {
+        id: row.id, requestId: row.request_id, createdAt: row.created_at,
+        peerId: isFirst ? row.member_b : row.member_a,
+        peer: mapMember(isFirst ? row.second : row.first),
+      };
+    });
+  }
+
+  async function findMemberConnection(userId: string, profileId: string): Promise<{ id: string } | null> {
+    const [first, second] = orderedPair(checkedId(userId), checkedId(profileId));
+    const { data, error } = await client().from("member_connections").select("id")
+      .eq("member_a", first).eq("member_b", second).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  async function removeMemberConnection(id: string): Promise<void> {
+    const { data, error } = await client().from("member_connections").delete()
+      .eq("id", checkedId(id)).select("id").maybeSingle();
+    if (error) throw error;
+    if (!data) throw new ConnectionActionError("Cette relation a déjà été retirée ou n’est plus accessible. Actualisez la liste.");
+  }
+
   async function endMentorship(id: string): Promise<void> {
     // The trigger supplies the authoritative time and actor; the client only
     // requests the transition. A stale/double action cannot report false success.
@@ -193,6 +246,10 @@ export function createMentorshipRepository(supabase: SupabaseClient | null) {
   function getConnectionErrorMessage(error: unknown): string {
     if (error instanceof ConnectionActionError) return error.message;
     const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+    const detail = error && typeof error === "object" && "message" in error ? String(error.message) : "";
+    if (code === "23505" && detail.includes("waiting for your answer")) {
+      return "Ce membre vous a déjà envoyé une demande de connexion : répondez-y dans Mes relations.";
+    }
     if (code === "23505") return "Une demande ou une relation existe déjà avec cette personne. Actualisez la liste.";
     if (code === "42501") return "Cette action n’est pas autorisée. Vérifiez votre connexion et votre profil.";
     if (code === "23514" || code === "22023" || code === "P0001") {
@@ -201,5 +258,9 @@ export function createMentorshipRepository(supabase: SupabaseClient | null) {
     return "Impossible de mettre à jour les mises en relation. Réessayez dans un instant.";
   }
 
-  return { loadConnectionRequests, loadProfileConnections, countPendingReceivedRequests, loadMentorshipNetwork, loadActiveMentorships, createConnectionRequest, answerConnectionRequest, withdrawConnectionRequest, endMentorship, getConnectionErrorMessage };
+  return {
+    loadConnectionRequests, loadProfileConnections, countPendingReceivedRequests, loadMentorshipNetwork, loadActiveMentorships,
+    createConnectionRequest, answerConnectionRequest, withdrawConnectionRequest, endMentorship,
+    loadMemberConnections, findMemberConnection, removeMemberConnection, getConnectionErrorMessage,
+  };
 }

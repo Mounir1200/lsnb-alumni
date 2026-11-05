@@ -2831,6 +2831,12 @@ textarea:focus-visible {
   font-size: 0.74rem;
 }
 
+.profile-hero__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .profile-request-form {
   display: grid;
   grid-template-columns: 0.8fr 1.2fr;

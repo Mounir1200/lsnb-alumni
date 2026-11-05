@@ -241,7 +241,7 @@ function ConversationThread({ conversation, userId }: { conversation: Conversati
       <Link to="/espace/messages" className="message-thread__back" aria-label="Retour aux conversations"><ArrowLeft size={20} aria-hidden="true" /></Link>
       {peer && <Avatar initials={peer.initials} avatarTone={peer.avatarTone} photoUrl={peer.photoUrl} label={`Photo de ${peerName}`} />}
       <div><h2>{peer ? <Link to={`/alumni/${peer.id}`}>{peerName}</Link> : peerName}</h2>
-        <p>{conversation.request.kind === "mentoring" ? "Mentorat" : "Échange privé"}</p>
+        <p>{conversationKindLabels[conversation.request.kind]}</p>
       </div>
       <span className="message-thread__connection" title={connected ? "Réception en temps réel" : "Actualisation régulière en cours"}>{connected ? "En direct" : "Synchronisation"}</span>
     </header>
@@ -277,6 +277,8 @@ function ConversationThread({ conversation, userId }: { conversation: Conversati
   </section>;
 }
 
+const conversationKindLabels = { mentoring: "Mentorat", connection: "Relation", contact: "Échange privé" } as const;
+
 function MessagesWorkspace({ userId }: { userId: string }) {
   const { conversationId } = useParams();
   const { revision, refresh, reportError } = useMessaging();
@@ -306,7 +308,7 @@ function MessagesWorkspace({ userId }: { userId: string }) {
               const name = peer ? `${peer.firstName} ${peer.lastName}` : "Membre indisponible";
               return <li key={conversation.id}><Link to={`/espace/messages/${conversation.id}`} aria-current={conversation.id === conversationId ? "page" : undefined} className={conversation.unreadCount ? "is-unread" : ""}>
                 {peer ? <Avatar initials={peer.initials} avatarTone={peer.avatarTone} photoUrl={peer.photoUrl} label={`Photo de ${name}`} /> : <span className="message-avatar-unavailable"><MessageCircle size={22} aria-hidden="true" /></span>}
-                <span className="messages-inbox__text"><span className="messages-inbox__name">{name}<time dateTime={conversation.updatedAt}>{formatDate(conversation.updatedAt)}</time></span><span className="messages-inbox__preview">{conversation.lastMessage}</span><span className="messages-inbox__kind">{conversation.request.offerId ? "Question sur une offre" : conversation.request.kind === "mentoring" ? "Mentorat" : "Échange"}</span></span>
+                <span className="messages-inbox__text"><span className="messages-inbox__name">{name}<time dateTime={conversation.updatedAt}>{formatDate(conversation.updatedAt)}</time></span><span className="messages-inbox__preview">{conversation.lastMessage}</span><span className="messages-inbox__kind">{conversation.request.offerId ? "Question sur une offre" : conversationKindLabels[conversation.request.kind]}</span></span>
                 {conversation.unreadCount > 0 && <span className="message-unread-count" aria-label={`${conversation.unreadCount} messages non lus`}>{conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}</span>}
               </Link></li>;
             })}</ul>}

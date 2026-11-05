@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, LoaderCircle, Network, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, Check, LoaderCircle, Network, RefreshCw, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
@@ -12,11 +12,21 @@ import {
   getConnectionErrorMessage,
   loadActiveMentorships,
   loadConnectionRequests,
+  loadMemberConnections,
+  removeMemberConnection,
   withdrawConnectionRequest,
   type ConnectionRequest,
+  type MemberConnection,
   type MemberSummary,
   type Mentorship,
 } from "../lib/mentorshipRepository";
+import { requestKindLabel } from "../lib/relations";
+
+const acceptedMessages: Record<ConnectionRequest["kind"], string> = {
+  connection: "Connexion acceptée : vous êtes maintenant en relation.",
+  mentoring: "Mentorat accepté. Votre relation apparaît dans vos réseaux.",
+  contact: "Demande d’échange acceptée.",
+};
 
 function MemberIdentity({ member }: { member: MemberSummary | null }) {
   if (!member) return <span className="connection-card__person"><b>Profil indisponible</b></span>;
@@ -35,7 +45,7 @@ export function ConnectionsPage() {
   const { refresh: refreshPendingRequests, revision: requestsRevision } = usePendingRequests();
   const userId = user?.id;
   const [reload, setReload] = useState(0);
-  const [state, setState] = useState<{ userId: string; requests?: ConnectionRequest[]; mentorships?: Mentorship[]; error?: string }>();
+  const [state, setState] = useState<{ userId: string; requests?: ConnectionRequest[]; mentorships?: Mentorship[]; connections?: MemberConnection[]; error?: string }>();
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "success" | "error"; message: string }>();
   const [consents, setConsents] = useState<Record<string, boolean>>({});
@@ -61,8 +71,8 @@ export function ConnectionsPage() {
     if (!userId) return;
     let active = true;
     setState((previous) => previous?.userId === userId ? previous : { userId });
-    void Promise.all([loadConnectionRequests(userId), loadActiveMentorships(userId)])
-      .then(([requests, mentorships]) => { if (active) setState({ userId, requests, mentorships }); })
+    void Promise.all([loadConnectionRequests(userId), loadActiveMentorships(userId), loadMemberConnections(userId)])
+      .then(([requests, mentorships, connections]) => { if (active) setState({ userId, requests, mentorships, connections }); })
       .catch((error: unknown) => { if (active) setState({ userId, error: getConnectionErrorMessage(error) }); });
     return () => { active = false; };
   }, [userId, reload, requestsRevision]);
@@ -95,7 +105,8 @@ export function ConnectionsPage() {
 
   if (!userId) return null;
   const current = state?.userId === userId ? state : undefined;
-  const ready = current?.requests !== undefined && current.mentorships !== undefined;
+  const ready = current?.requests !== undefined && current.mentorships !== undefined && current.connections !== undefined;
+  const connections = current?.connections ?? [];
   const received = current?.requests?.filter((item) => item.recipientId === userId) ?? [];
   const sent = current?.requests?.filter((item) => item.requesterId === userId) ?? [];
   const mentors = current?.mentorships?.filter((item) => item.menteeId === userId) ?? [];
@@ -115,7 +126,7 @@ export function ConnectionsPage() {
           <MemberIdentity member={member} />
           <span className={`connection-status connection-status--${request.status}`}>{requestStatusLabels[request.status]}</span>
         </div>
-        <p className="connection-card__kind">{request.offerId ? "Question sur une offre" : request.kind === "mentoring" ? "Demande de mentorat" : "Demande d’échange"}</p>
+        <p className="connection-card__kind">{requestKindLabel(request)}</p>
         {request.offerId && (
           <p className="connection-card__offer">
             {request.offer
@@ -136,7 +147,7 @@ export function ConnectionsPage() {
             {unavailableMember ? <p className="connection-card__note">Ce profil n’est plus disponible. Vous pouvez refuser la demande.</p>
               : mentoringPaused && <p className="connection-card__note">Réactivez votre offre de mentorat dans <Link className="text-link text-link--dark" to="/espace/modifier">Modifier mon profil</Link> pour accepter cette demande.</p>}
             <div className="connection-card__actions">
-              <Button size="sm" disabled={Boolean(busy) || cannotAccept || (request.kind === "mentoring" && !consents[request.id])} onClick={() => void performAction(request.id, () => answerConnectionRequest(request.id, "accepted"), request.kind === "mentoring" ? "Mentorat accepté. Votre relation apparaît dans vos réseaux." : "Demande d’échange acceptée.")}>
+              <Button size="sm" disabled={Boolean(busy) || cannotAccept || (request.kind === "mentoring" && !consents[request.id])} onClick={() => void performAction(request.id, () => answerConnectionRequest(request.id, "accepted"), acceptedMessages[request.kind])}>
                 {busy === request.id ? <LoaderCircle className="spin" size={15} aria-hidden="true" /> : <Check size={15} aria-hidden="true" />} Accepter
               </Button>
               <Button size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => void performAction(request.id, () => answerConnectionRequest(request.id, "declined"), "La demande a été refusée.")}><X size={15} aria-hidden="true" /> Refuser</Button>
@@ -147,7 +158,7 @@ export function ConnectionsPage() {
           <div className="connection-card__actions"><Button size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => void performAction(request.id, () => withdrawConnectionRequest(request.id), "Votre demande a été retirée.")}>Retirer ma demande</Button></div>
         )}
         {request.status === "accepted" && request.kind === "mentoring" && <p className="connection-card__note">{activeMentorship ? "Vous avez actuellement un mentorat en cours avec ce membre." : "Vous n’avez plus de mentorat en cours avec ce membre."}</p>}
-        {request.status === "accepted" && request.kind === "contact" && <p className="connection-card__note">Votre conversation privée est ouverte. Vous pouvez poursuivre l’échange dans la messagerie.</p>}
+        {request.status === "accepted" && request.kind !== "mentoring" && <p className="connection-card__note">Votre conversation privée est ouverte. Vous pouvez poursuivre l’échange dans la messagerie.</p>}
         {request.status === "accepted" && <div className="connection-card__actions"><ButtonLink size="sm" to={`/espace/messages/${request.id}`}>Ouvrir la conversation</ButtonLink>{member && <ButtonLink size="sm" variant="outline" to={`/alumni/${member.id}`}>Voir le profil</ButtonLink>}</div>}
       </li>
     );
@@ -173,23 +184,46 @@ export function ConnectionsPage() {
     );
   };
 
+  // Shares the confirmation state with mentorships: ids are unique across both lists.
+  const renderConnection = (connection: MemberConnection) => {
+    const member = connection.peer;
+    const name = member ? ` avec ${member.firstName} ${member.lastName}` : " avec ce profil indisponible";
+    return (
+      <li className="mentorship-row" key={connection.id}>
+        {member ? <MentorshipPerson member={member} /> : <p className="mentorship-row__unavailable">Profil indisponible</p>}
+        <div className="mentorship-row__details">
+          <time dateTime={connection.createdAt}>En relation depuis le {new Date(connection.createdAt).toLocaleDateString("fr-FR")}</time>
+          <ButtonLink size="sm" variant="outline" to={`/espace/messages/${connection.requestId}`}>Écrire</ButtonLink>
+          <button ref={(element) => { endButtons.current[connection.id] = element; }} type="button" className="button button--ghost button--sm" disabled={Boolean(busy)} aria-expanded={endingId === connection.id} aria-controls={`remove-connection-${connection.id}`} aria-label={`Retirer la relation${name}`} onClick={() => setEndingId(endingId === connection.id ? null : connection.id)}>Retirer</button>
+        </div>
+        <div className="connection-confirm" id={`remove-connection-${connection.id}`} hidden={endingId !== connection.id}>
+          <p>Retirer cette relation ? Elle disparaît pour vous deux ; vos messages restent dans la messagerie.</p>
+          <div className="connection-card__actions">
+            <Button size="sm" disabled={Boolean(busy)} onClick={() => void performAction(connection.id, () => removeMemberConnection(connection.id), "La relation a été retirée.")}>Confirmer le retrait</Button>
+            <Button size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => { setEndingId(null); endButtons.current[connection.id]?.focus(); }}>Garder la relation</Button>
+          </div>
+        </div>
+      </li>
+    );
+  };
+
   return (
     <div className="connections-page page-shell">
       <Link to="/espace" className="back-link"><ArrowLeft size={17} aria-hidden="true" /> Retour à mon espace</Link>
       <header className="connections-page__header">
         <p className="eyebrow eyebrow--dark">Des parcours qui se rencontrent</p>
         <h1>Mes relations et demandes</h1>
-        <p>Retrouvez les demandes d’échange et de mentorat, puis choisissez les accompagnements que vous souhaitez faire vivre.</p>
+        <p>Retrouvez vos connexions, les demandes de connexion, d’échange et de mentorat, puis choisissez les relations que vous souhaitez faire vivre.</p>
       </header>
       <div className="connections-page__toolbar">
-        <p>Les mentorats acceptés sont visibles par les membres connectés. Les messages des demandes restent privés entre les deux personnes.</p>
+        <p>Vos connexions ne sont visibles que par vous deux. Les mentorats acceptés sont visibles par les membres connectés. Les messages des demandes restent privés entre les deux personnes.</p>
         <Button variant="outline" size="sm" disabled={Boolean(busy) || (!ready && !current?.error)} onClick={reloadConnections}><RefreshCw size={16} aria-hidden="true" /> Actualiser</Button>
       </div>
       {notice && <div className={`form-status form-status--${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>{notice.message}</div>}
       {current?.error ? (
         <div className="form-status form-status--error" role="alert">{current.error}<Button variant="outline" onClick={reloadConnections}>Réessayer</Button></div>
       ) : !ready ? (
-        <p className="connections-loading" role="status"><LoaderCircle className="spin" aria-hidden="true" /> Chargement de vos demandes et mentorats…</p>
+        <p className="connections-loading" role="status"><LoaderCircle className="spin" aria-hidden="true" /> Chargement de vos relations, demandes et mentorats…</p>
       ) : (
         <>
           <div className="connections-columns">
@@ -199,9 +233,13 @@ export function ConnectionsPage() {
             </section>
             <section className="connections-section" aria-labelledby="sent-requests-title">
               <div className="connections-section__heading"><h2 id="sent-requests-title">Demandes envoyées</h2><span className="connections-count">{sent.length}</span></div>
-              {sent.length ? <ul className="connections-list">{sent.map((request) => renderRequest(request, false))}</ul> : <p className="connections-empty">Aucune demande envoyée. <Link className="text-link text-link--dark" to="/annuaire?mentor=true">Trouver un mentor</Link></p>}
+              {sent.length ? <ul className="connections-list">{sent.map((request) => renderRequest(request, false))}</ul> : <p className="connections-empty">Aucune demande envoyée. <Link className="text-link text-link--dark" to="/annuaire">Explorer l’annuaire</Link></p>}
             </section>
           </div>
+          <section className="connections-section" aria-labelledby="member-connections-title">
+            <div className="connections-section__heading"><h2 id="member-connections-title"><Users size={20} aria-hidden="true" /> Mes connexions</h2><span className="connections-count">{connections.length}</span></div>
+            {connections.length ? <ul className="connections-list">{connections.map(renderConnection)}</ul> : <p className="connections-empty">Vous n’êtes encore en relation avec personne. <Link className="text-link text-link--dark" to="/annuaire">Explorer l’annuaire</Link></p>}
+          </section>
           <section className="connections-section" aria-labelledby="active-mentorships-title">
             <div className="connections-section__heading"><h2 id="active-mentorships-title"><Network size={20} aria-hidden="true" /> Mon réseau de mentorat</h2></div>
             <div className="connections-columns connections-columns--mentorships">
