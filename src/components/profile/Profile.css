@@ -33,17 +33,6 @@
   margin-bottom: 0;
 }
 
-.profile-story__text .profile-story__lede {
-  margin-bottom: 0.9em;
-  color: var(--ink);
-  font-family: "Bricolage Grotesque", "Arial Narrow", sans-serif;
-  font-size: clamp(1.3rem, 2vw, 1.65rem);
-  font-weight: 560;
-  line-height: 1.32;
-  letter-spacing: -0.02em;
-  text-wrap: pretty;
-}
-
 .profile-story__text.is-collapsed {
   max-height: 27rem;
   overflow: hidden;

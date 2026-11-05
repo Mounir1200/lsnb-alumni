@@ -4,34 +4,17 @@ import { spawnSync } from "node:child_process";
 import { BOBO_DIOULASSO, findPlace, isNearSchool } from "../../../src/data/places.ts";
 import { toStoryBlocks } from "../../../src/lib/profileStory.ts";
 
-// Over the 200-character lede limit on purpose.
-const longSentence = "Après deux années de classes préparatoires à Ouagadougou, j’ai intégré une école d’ingénieurs en France où je me suis spécialisé en science des données, avec deux échanges universitaires en Lituanie et en Allemagne.";
-
-test("a short story becomes a lede and keeps the member's paragraphs", () => {
+test("the opening paragraph keeps the same size as the rest of the story", () => {
   assert.deepEqual(toStoryBlocks("  Je travaille dans l’énergie solaire.  \n\n\nJ’aide les élèves à choisir leur filière.  "), {
-    lede: "Je travaille dans l’énergie solaire.",
-    paragraphs: ["J’aide les élèves à choisir leur filière."],
+    paragraphs: ["Je travaille dans l’énergie solaire.", "J’aide les élèves à choisir leur filière."],
   });
-});
-
-test("a long first paragraph opens with its first sentence when that sentence is short", () => {
-  const blocks = toStoryBlocks(`Le LSNB m’a appris la rigueur et la persévérance au quotidien. ${longSentence} Aujourd’hui je travaille à Lyon.`);
-  assert.equal(blocks.lede, "Le LSNB m’a appris la rigueur et la persévérance au quotidien.");
-  assert.deepEqual(blocks.paragraphs, [`${longSentence} Aujourd’hui je travaille à Lyon.`]);
-});
-
-test("long opening sentences and abbreviations are never cut into a lede", () => {
-  const story = `${longSentence} ${longSentence}`;
-  assert.deepEqual(toStoryBlocks(story), { paragraphs: [story] });
-  const abbreviation = `J’ai rencontré M. Ouédraogo en terminale. ${longSentence}`;
-  assert.equal(toStoryBlocks(abbreviation).lede, undefined);
-  assert.deepEqual(toStoryBlocks("   \n  "), { paragraphs: [] });
 });
 
 test("paragraph splitting preserves CRLF, Unicode boundary whitespace and interior spaces", () => {
-  assert.deepEqual(toStoryBlocks("\u00a0Bonjour. \r\n\t\r\n Deux   mots.\u00a0\n"), {
-    lede: "Bonjour.", paragraphs: ["Deux   mots."],
+  assert.deepEqual(toStoryBlocks("\xa0Bonjour. \r\n\t\r\n Deux   mots.\xa0\n"), {
+    paragraphs: ["Bonjour.", "Deux   mots."],
   });
+  assert.deepEqual(toStoryBlocks("   \n  "), { paragraphs: [] });
 });
 
 test("long interior whitespace without a newline cannot stall the parser", () => {

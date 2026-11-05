@@ -7,7 +7,7 @@ import { cn } from "../../lib/cn";
 const STORY_PREVIEW_CHARACTERS = 1200;
 
 export function ProfileStory({ firstName, story }: { firstName: string; story: string }) {
-  const { lede, paragraphs } = toStoryBlocks(story);
+  const { paragraphs } = toStoryBlocks(story);
   const isLong = [...story].length > STORY_PREVIEW_CHARACTERS;
   const [isExpanded, setIsExpanded] = useState(false);
   const textId = useId();
@@ -24,11 +24,10 @@ export function ProfileStory({ firstName, story }: { firstName: string; story: s
   return (
     <section ref={sectionRef} className="profile-story" aria-labelledby={`${textId}-title`}>
       <h2 id={`${textId}-title`} className="profile-section-title">Son parcours</h2>
-      {!lede && paragraphs.length === 0 ? (
+      {paragraphs.length === 0 ? (
         <p className="profile-story__empty">{firstName} n’a pas encore raconté son parcours.</p>
       ) : (
         <div id={textId} className={cn("profile-story__text", isLong && !isExpanded && "is-collapsed")}>
-          {lede && <p className="profile-story__lede">{lede}</p>}
           {paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </div>
       )}
