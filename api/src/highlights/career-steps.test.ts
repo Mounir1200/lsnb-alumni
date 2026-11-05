@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createCareerStepDraft,
+  currentYearMonth,
   findCurrentJob,
   formatCareerPeriod,
+  parseCareerStepDraft,
   isLsnbStep,
   isOngoingStep,
   normalizeCareerSteps,
@@ -138,4 +140,61 @@ test("a member's own LSNB step is recognised to replace the automatic baccalaure
     { kind: "work", title: "Professeur", organization: "LSNB", start_year: 2024, end_year: null },
   ]);
   assert.deepEqual(steps.map(isLsnbStep), [true, true, false, false]);
+});
+
+test("dates are accepted up to their exact limits and refused just beyond", () => {
+  const accepts = (changes: Partial<CareerStepDraft>) => assert.doesNotThrow(() => normalizeCareerSteps([draft({ title: "Licence", ongoing: true, ...changes })]));
+  const refuses = (changes: Partial<CareerStepDraft>, message: RegExp) => assert.throws(() => normalizeCareerSteps([draft({ title: "Licence", ongoing: true, ...changes })]), message);
+  accepts({ startYear: "1950" });
+  accepts({ startYear: "2100" });
+  refuses({ startYear: "1900" }, /année de début/);
+  refuses({ startYear: "2101" }, /année de début/);
+  accepts({ startYear: "2020", startMonth: "1" });
+  accepts({ startYear: "2020", startMonth: "12" });
+});
+
+test("within one year, months decide whether a step ends before it starts", () => {
+  const step = (changes: Partial<CareerStepDraft>) => draft({ title: "Stage", startYear: "2024", endYear: "2024", ...changes });
+  assert.doesNotThrow(() => normalizeCareerSteps([step({ startMonth: "9" })]));
+  assert.doesNotThrow(() => normalizeCareerSteps([step({ endMonth: "3" })]));
+  assert.doesNotThrow(() => normalizeCareerSteps([step({ startMonth: "3", endMonth: "3" })]));
+  assert.throws(() => normalizeCareerSteps([step({ startMonth: "4", endMonth: "3" })]), /précède/);
+});
+
+test("texts are accepted up to their exact length limits", () => {
+  assert.doesNotThrow(() => normalizeCareerSteps([draft({ title: "BA", startYear: "2020", ongoing: true })]));
+  assert.doesNotThrow(() => normalizeCareerSteps([draft({ title: "x".repeat(120), organization: "o".repeat(120), location: "l".repeat(120), startYear: "2020", ongoing: true })]));
+  assert.throws(() => normalizeCareerSteps([draft({ title: "x".repeat(121), startYear: "2020", ongoing: true })]), /intitulé/);
+  assert.throws(() => normalizeCareerSteps([draft({ title: "Licence", location: "l".repeat(121), startYear: "2020", ongoing: true })]), /120 caractères/);
+  assert.equal(normalizeCareerSteps(Array.from({ length: 12 }, () => draft({ title: "Licence", startYear: "2020", ongoing: true }))).length, 12);
+});
+
+test("steps starting together are ordered by their end, the ongoing one last", () => {
+  const rows = [
+    { kind: "work", title: "En cours", start_year: 2020, end_year: null },
+    { kind: "work", title: "Long", start_year: 2020, end_year: 2023 },
+    { kind: "work", title: "Court", start_year: 2020, end_year: 2021 },
+  ];
+  assert.deepEqual(parseCareerSteps(rows).map((step) => step.title), ["Court", "Long", "En cours"]);
+  assert.deepEqual(parseCareerSteps([...rows].reverse()).map((step) => step.title), ["Court", "Long", "En cours"]);
+});
+
+test("stored rows that are not objects, and months outside 1 to 12, are dropped", () => {
+  assert.deepEqual(parseCareerSteps([null, 42, { kind: "work", title: "Stage", start_year: 2020, start_month: 1, end_year: 2020, end_month: 12 }])
+    .map(({ startMonth, endMonth }) => [startMonth, endMonth]), [[1, 12]]);
+  assert.equal(parseCareerSteps([{ kind: "work", title: "Stage", start_year: 2020, start_month: 0 }])[0]?.startMonth, undefined);
+});
+
+test("a saved form row is restored only when it has the expected shape", () => {
+  const row = { kind: "work", title: "Stage", organization: "", location: "", startYear: "2020", startMonth: "", endYear: "", endMonth: "", ongoing: true };
+  assert.equal(parseCareerStepDraft(row)?.title, "Stage");
+  assert.equal(parseCareerStepDraft(null), undefined);
+  assert.equal(parseCareerStepDraft({ ...row, ongoing: "yes" }), undefined);
+  assert.equal(parseCareerStepDraft({ ...row, kind: "hobby" }), undefined);
+  assert.equal(parseCareerStepDraft({ ...row, title: 3 }), undefined);
+});
+
+test("today is read at month precision, January being month 1", () => {
+  assert.deepEqual(currentYearMonth(new Date(2026, 10, 5)), { year: 2026, month: 11 });
+  assert.deepEqual(currentYearMonth(new Date(2027, 0, 31)), { year: 2027, month: 1 });
 });

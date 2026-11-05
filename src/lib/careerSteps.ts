@@ -119,9 +119,9 @@ function parseMonth(value: string, position: number, label: string) {
   return month;
 }
 
-/** A missing month counts as the start of its year, so a year-only date sorts first. */
+/** Orders dates by month; a missing month counts as January, so a year-only date sorts first. */
 function monthIndex(year: number, month?: number) {
-  return year * MONTH_LABELS.length + (month ?? 1) - 1;
+  return year * MONTH_LABELS.length + (month ?? 1);
 }
 
 function endIndex(step: CareerStep) {
@@ -133,11 +133,12 @@ function compareSteps(first: CareerStep, second: CareerStep) {
     || endIndex(first) - endIndex(second);
 }
 
-/** Keep aligned with the same-year rule of public.is_valid_career_steps. */
+/**
+ * A missing end month counts as December and a missing start month as January, so
+ * months only decide within one year. Keep aligned with public.is_valid_career_steps.
+ */
 function endsBeforeStart({ startYear, startMonth, endYear, endMonth }: CareerStep) {
-  if (endYear === null) return false;
-  if (endYear !== startYear) return endYear < startYear;
-  return startMonth !== undefined && endMonth !== undefined && endMonth < startMonth;
+  return endYear !== null && monthIndex(endYear, endMonth ?? MONTH_LABELS.length) < monthIndex(startYear, startMonth);
 }
 
 /** Adds only the months that are known: an absent month has no key at all. */
