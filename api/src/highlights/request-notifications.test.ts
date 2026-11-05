@@ -85,6 +85,9 @@ test("one scheduled round shares five emails, unread messages first", async () =
   limits.length = 0;
   assert.deepEqual(await runNotificationRound([channel(7), channel(9)]), { claimed: 5, delivered: 5, failed: 0 });
   assert.deepEqual(limits, [5]);
+  limits.length = 0;
+  assert.deepEqual(await runNotificationRound([channel(4), channel(9)]), { claimed: 5, delivered: 5, failed: 0 });
+  assert.deepEqual(limits, [5, 1]);
 });
 
 test("request emails carry no name or message and escape their link", () => {

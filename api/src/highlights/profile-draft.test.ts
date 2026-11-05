@@ -107,3 +107,8 @@ test("a blocked or missing storage never breaks the form", () => {
   assert.doesNotThrow(() => saveProfileDraft("member-a", form(), undefined));
   assert.equal(loadProfileDraft("member-a", undefined), undefined);
 });
+
+test("comparing drafts does not depend on the order of their fields", () => {
+  const reordered = Object.fromEntries(Object.entries(form()).reverse()) as EditorForm;
+  assert.equal(hasSameDraftContent(form(), reordered), true);
+});

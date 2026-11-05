@@ -43,3 +43,33 @@ test("the service RPC reports storage failures without upstream details", async 
   await assert.rejects(createServiceRpc(config, async () => new Response("{not json", { status: 200 }))("anything", {}), isStorage(502));
   assert.equal(await createServiceRpc(config, async () => new Response("", { status: 200 }))("anything", {}), undefined);
 });
+
+test("notification configuration refuses every unsafe or missing part before any claim", async () => {
+  const { loadNotificationConfig } = await import("../notifications/delivery.js");
+  const valid = { BREVO_API_KEY: "secret", MESSAGING_FROM_EMAIL: "network@example.test", MESSAGING_SITE_URL: "https://network.example.test",
+    SUPABASE_URL: "https://project.supabase.co", SUPABASE_SECRET_KEY: "db-secret" };
+  assert.equal(loadNotificationConfig(valid).supabaseUrl, "https://project.supabase.co");
+  assert.throws(() => loadNotificationConfig({}), (error: unknown) => error instanceof NotificationError && error.stage === "configuration" && error.status === 0);
+  const unsafe: Record<string, string>[] = [
+    { MESSAGING_FROM_EMAIL: "not-an-address" },
+    { MESSAGING_SITE_URL: "https://user@network.example.test" },
+    { MESSAGING_SITE_URL: "https://:secret@network.example.test" },
+    { MESSAGING_SITE_URL: "https://network.example.test/#fragment" },
+    { SUPABASE_URL: "http://project.supabase.co" },
+    { SUPABASE_URL: "https://user@project.supabase.co" },
+    { SUPABASE_URL: "https://:secret@project.supabase.co" },
+    { SUPABASE_URL: "https://project.supabase.co/?x=1" },
+    { SUPABASE_URL: "https://project.supabase.co/#x" },
+    { SUPABASE_URL: "https://project.supabase.co/rest" },
+  ];
+  for (const change of unsafe) {
+    assert.throws(() => loadNotificationConfig({ ...valid, ...change }), NotificationError, JSON.stringify(change));
+  }
+});
+
+test("a Brevo refusal without a readable body is a delivery error, not a crash", async () => {
+  const { createBrevoSender } = await import("../notifications/delivery.js");
+  const send = createBrevoSender({ apiKey: "key", fromEmail: "network@example.test" }, async () => new Response("<html>", { status: 400 }));
+  await assert.rejects(send({ to: "member@example.test", subject: "s", text: "t", html: "h", idempotencyKey: "k" }),
+    (error: unknown) => error instanceof NotificationError && error.stage === "delivery" && error.status === 400);
+});
