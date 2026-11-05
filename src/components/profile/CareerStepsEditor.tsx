@@ -17,6 +17,7 @@ const groups: Record<CareerStepKind, {
   title: string;
   organizationLabel: string;
   organization: string;
+  ongoing: string;
 }> = {
   education: {
     legend: "Formation",
@@ -26,6 +27,7 @@ const groups: Record<CareerStepKind, {
     title: "Ex. Licence de physique",
     organizationLabel: "Établissement",
     organization: "Ex. École d’ingénieurs",
+    ongoing: "En cours : je suis toujours cette formation",
   },
   work: {
     legend: "Expériences professionnelles",
@@ -35,11 +37,28 @@ const groups: Record<CareerStepKind, {
     title: "Ex. Développeur IA",
     organizationLabel: "Organisation",
     organization: "Ex. Entreprise, laboratoire, ONG",
+    ongoing: "En cours : j’occupe toujours ce poste",
   },
 };
 
 // Upcoming steps (an accepted admission) may start next year.
 const LATEST_START_OFFSET_YEARS = 1;
+
+const monthNames = Array.from({ length: 12 }, (_, index) =>
+  new Intl.DateTimeFormat("fr-FR", { month: "long", timeZone: "UTC" }).format(Date.UTC(2000, index, 1)));
+
+/** Months are optional: the empty choice keeps a year-only date. */
+function MonthField({ label, value, onChange }: { label: string; value: string; onChange: (month: string) => void }) {
+  return (
+    <label className="field-group">
+      <span>{label} <small>(facultatif)</small></span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">—</option>
+        {monthNames.map((name, index) => <option key={name} value={String(index + 1)}>{name}</option>)}
+      </select>
+    </label>
+  );
+}
 
 type CareerStepsEditorProps = {
   steps: CareerStepDraft[];
@@ -126,6 +145,7 @@ export function CareerStepsEditor({ steps, onChange, disabled = false }: CareerS
           </div>
 
           <div className="form-row">
+            <MonthField label="Mois de début" value={step.startMonth} onChange={(startMonth) => update(step.key, { startMonth })} />
             <label className="field-group">
               <span>Année de début</span>
               <input
@@ -139,21 +159,35 @@ export function CareerStepsEditor({ steps, onChange, disabled = false }: CareerS
                 required
               />
             </label>
-            <label className="field-group">
-              <span>Année de fin</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={step.endYear}
-                onChange={(event) => update(step.key, { endYear: event.target.value })}
-                min={Number(step.startYear) || year.min}
-                max={year.max}
-                placeholder="En cours"
-                aria-describedby={`${id}-end-help`}
-              />
-              <small id={`${id}-end-help`}>Laissez vide si c’est votre situation actuelle.</small>
-            </label>
           </div>
+
+          <label className="form-check">
+            <input
+              type="checkbox"
+              checked={step.ongoing}
+              onChange={(event) => update(step.key, { ongoing: event.target.checked })}
+            />
+            <span>{copy.ongoing}</span>
+          </label>
+
+          {!step.ongoing && (
+            <div className="form-row">
+              <MonthField label="Mois de fin" value={step.endMonth} onChange={(endMonth) => update(step.key, { endMonth })} />
+              <label className="field-group">
+                <span>Année de fin</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={step.endYear}
+                  onChange={(event) => update(step.key, { endYear: event.target.value })}
+                  min={Number(step.startYear) || year.min}
+                  max={year.max}
+                  placeholder="2024"
+                  required
+                />
+              </label>
+            </div>
+          )}
         </div>
       </li>
     );

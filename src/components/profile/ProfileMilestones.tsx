@@ -1,5 +1,5 @@
 import type { AlumniProfile } from "../../data/alumni";
-import { isLsnbStep, isOngoingStep, type CareerStep } from "../../lib/careerSteps";
+import { formatCareerPeriod, isLsnbStep, isOngoingStep, type CareerStep } from "../../lib/careerSteps";
 
 type Milestone = {
   key: string;
@@ -10,16 +10,11 @@ type Milestone = {
   tone?: "origin" | "now";
 };
 
-function formatPeriod({ startYear, endYear }: CareerStep) {
-  if (endYear === null) return `Depuis ${startYear}`;
-  return endYear === startYear ? String(startYear) : `${startYear} – ${endYear}`;
-}
-
 function toMilestone(step: CareerStep, index: number): Milestone {
   const isOngoing = isOngoingStep(step);
   return {
     key: `${step.kind}-${index}`,
-    label: formatPeriod(step),
+    label: formatCareerPeriod(step),
     // "Depuis 2024" already says it; a closed period ending later needs the word.
     note: isOngoing && step.endYear !== null ? "En cours" : undefined,
     title: step.title,
