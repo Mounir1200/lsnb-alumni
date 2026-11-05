@@ -1,7 +1,6 @@
 import { renderRequestNotificationEmail, type RequestEmailEvent, type RequestEmailKind } from "../messaging/emailTemplate.js";
 import {
   createBrevoSender,
-  createServiceRpc,
   emailPattern,
   NotificationError,
   uuidPattern,
@@ -24,16 +23,8 @@ export type RequestNotificationStore = JobStore<RequestNotificationJob>;
 const EVENTS: RequestEmailEvent[] = ["received", "accepted"];
 const KINDS: RequestEmailKind[] = ["connection", "mentoring"];
 
-export function createRequestNotificationStore(config: Pick<NotificationConfig, "supabaseUrl" | "secretKey">,
-  fetchImpl: typeof fetch = fetch): RequestNotificationStore {
-  const rpc = createServiceRpc(config, fetchImpl);
-  return {
-    claim: (limit) => rpc<RequestNotificationJob[]>("request_claim_notifications", { p_limit: limit }),
-    finish: (job, success) => rpc<void>("request_finish_notification", {
-      p_job_id: job.job_id, p_lease_token: job.lease_token, p_success: success,
-    }),
-  };
-}
+/** The request queue's two service-role RPCs, for createRpcJobStore. */
+export const REQUEST_QUEUE_RPCS = { claim: "request_claim_notifications", finish: "request_finish_notification" } as const;
 
 function isSafeJob(job: RequestNotificationJob) {
   return uuidPattern.test(job.job_id) && uuidPattern.test(job.request_id) && emailPattern.test(job.email)

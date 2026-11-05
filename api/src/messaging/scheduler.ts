@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import { notificationChannel, runNotificationRound, type NotificationChannel, type NotificationConfig } from "../notifications/delivery.js";
-import { createRequestNotificationSender, createRequestNotificationStore } from "../requests/notifications.js";
+import { createRpcJobStore, notificationChannel, runNotificationRound, type NotificationChannel, type NotificationConfig } from "../notifications/delivery.js";
+import { createRequestNotificationSender, REQUEST_QUEUE_RPCS, type RequestNotificationJob } from "../requests/notifications.js";
 import { createNotificationSender, createNotificationStore, loadNotificationConfig } from "./notifications.js";
 
 type DeliveryCounts = { claimed: number; delivered: number; failed: number };
@@ -27,7 +27,7 @@ export function createNotificationScheduler(apiKey: string, run: () => Promise<D
 export function notificationChannels(config: NotificationConfig): NotificationChannel[] {
   return [
     notificationChannel(createNotificationStore(config), createNotificationSender(config)),
-    notificationChannel(createRequestNotificationStore(config), createRequestNotificationSender(config)),
+    notificationChannel(createRpcJobStore<RequestNotificationJob>(config, REQUEST_QUEUE_RPCS), createRequestNotificationSender(config)),
   ];
 }
 

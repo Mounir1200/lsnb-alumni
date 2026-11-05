@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderRequestNotificationEmail } from "../messaging/emailTemplate.js";
 import { NotificationError } from "../messaging/notifications.js";
-import { notificationChannel, runNotificationRound } from "../notifications/delivery.js";
+import { createRpcJobStore, notificationChannel, runNotificationRound } from "../notifications/delivery.js";
 import {
   createRequestNotificationSender,
-  createRequestNotificationStore,
+  REQUEST_QUEUE_RPCS,
   type RequestNotificationJob,
 } from "../requests/notifications.js";
 
@@ -59,7 +59,7 @@ test("unsafe or unknown job input never reaches the email provider", async () =>
 
 test("the request store uses only its two RPCs with the server key", async () => {
   const { calls, fetcher } = capture();
-  const store = createRequestNotificationStore({ supabaseUrl: "https://project.supabase.co", secretKey: "sb_secret_server" }, async (input, init) => {
+  const store = createRpcJobStore<RequestNotificationJob>({ supabaseUrl: "https://project.supabase.co", secretKey: "sb_secret_server" }, REQUEST_QUEUE_RPCS, async (input, init) => {
     await fetcher(input, init);
     return new Response(calls.length === 1 ? JSON.stringify([job]) : "", { status: 200 });
   });

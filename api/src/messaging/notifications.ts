@@ -1,7 +1,7 @@
 import { renderMessageNotificationEmail } from "./emailTemplate.js";
 import {
   createBrevoSender,
-  createServiceRpc,
+  createRpcJobStore,
   deliverJobs,
   emailPattern,
   NotificationError,
@@ -25,13 +25,7 @@ export type NotificationStore = JobStore<NotificationJob>;
 
 export function createNotificationStore(config: Pick<NotificationConfig, "supabaseUrl" | "secretKey">,
   fetchImpl: typeof fetch = fetch): NotificationStore {
-  const rpc = createServiceRpc(config, fetchImpl);
-  return {
-    claim: (limit) => rpc<NotificationJob[]>("messaging_claim_notifications", { p_limit: limit }),
-    finish: (job, success) => rpc<void>("messaging_finish_notification", {
-      p_job_id: job.job_id, p_lease_token: job.lease_token, p_success: success,
-    }),
-  };
+  return createRpcJobStore(config, { claim: "messaging_claim_notifications", finish: "messaging_finish_notification" }, fetchImpl);
 }
 
 export function createNotificationSender(config: Pick<NotificationConfig, "apiKey" | "fromEmail" | "siteUrl">,

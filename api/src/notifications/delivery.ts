@@ -87,6 +87,20 @@ export interface JobStore<Job> {
   finish(job: Job, success: boolean): Promise<void>;
 }
 
+type LeasedJob = { job_id: string; lease_token: string };
+
+/** A queue reached through its two service-role RPCs: claim under a lease, then finish that lease. */
+export function createRpcJobStore<Job extends LeasedJob>(config: Pick<NotificationConfig, "supabaseUrl" | "secretKey">,
+  rpcNames: { claim: string; finish: string }, fetchImpl: typeof fetch = fetch): JobStore<Job> {
+  const rpc = createServiceRpc(config, fetchImpl);
+  return {
+    claim: (limit) => rpc<Job[]>(rpcNames.claim, { p_limit: limit }),
+    finish: (job, success) => rpc<void>(rpcNames.finish, {
+      p_job_id: job.job_id, p_lease_token: job.lease_token, p_success: success,
+    }),
+  };
+}
+
 export type DeliveryCounts = { claimed: number; delivered: number; failed: number };
 
 export async function deliverJobs<Job>(store: JobStore<Job>, send: (job: Job) => Promise<void>, limit = ROUND_CAPACITY): Promise<DeliveryCounts> {
