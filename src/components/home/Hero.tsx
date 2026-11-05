@@ -1,8 +1,11 @@
 import { animate, stagger } from "animejs";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
+import { heroActions } from "../../lib/heroActions";
+import { SITE_ORIGIN } from "../../lib/site";
 import { ButtonLink } from "../ui/Button";
 import { TrajectoryField } from "../visual/TrajectoryField";
 import { HeroSearch } from "./HeroSearch";
@@ -11,7 +14,7 @@ export function Hero() {
   const rootRef = useRef<HTMLElement>(null);
   const reducedMotion = useReducedMotion();
   const { user, isLoading } = useAuth();
-  const isVisitor = !isLoading && !user;
+  const actions = heroActions({ isVisitor: !isLoading && !user });
 
   useEffect(() => {
     if (!rootRef.current || reducedMotion) return;
@@ -44,8 +47,8 @@ export function Hero() {
       <div className="page-shell hero__stage">
         <div className="hero__copy">
           <p className="hero__coordinate" data-hero-enter>
-            <span>11.1771° N</span>
-            <span>4.2979° W</span>
+            <span>{SITE_ORIGIN.latitude}</span>
+            <span>{SITE_ORIGIN.longitude}</span>
             <b>Sya, Burkina Faso</b>
           </p>
           <h1 id="hero-title">
@@ -62,25 +65,12 @@ export function Hero() {
             de départ.
           </p>
           <div className="hero__actions" data-hero-enter>
-            {isVisitor ? (
-              <>
-                <ButtonLink to="/rejoindre" variant="light" size="lg">
-                  Créer mon compte <ArrowRight size={18} aria-hidden="true" />
-                </ButtonLink>
-                <ButtonLink to="/annuaire" variant="ghost" size="lg">
-                  Explorer l’annuaire <ArrowRight size={18} aria-hidden="true" />
-                </ButtonLink>
-              </>
-            ) : (
-              <>
-                <ButtonLink to="/annuaire" variant="light" size="lg">
-                  Explorer l’annuaire <ArrowRight size={18} aria-hidden="true" />
-                </ButtonLink>
-                <ButtonLink to="/rejoindre?mentorat=true" variant="ghost" size="lg">
-                  Proposer un mentorat <ArrowRight size={18} aria-hidden="true" />
-                </ButtonLink>
-              </>
-            )}
+            <ButtonLink to={actions.primary.to} variant="light" size="lg">
+              {actions.primary.label} <ArrowRight size={18} aria-hidden="true" />
+            </ButtonLink>
+            <Link to={actions.secondary.to} className="text-link text-link--light text-link--action">
+              {actions.secondary.label} <ArrowRight size={18} aria-hidden="true" />
+            </Link>
           </div>
         </div>
 

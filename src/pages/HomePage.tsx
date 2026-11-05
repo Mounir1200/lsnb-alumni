@@ -13,6 +13,7 @@ import { Hero } from "../components/home/Hero";
 import { WeeklyHighlights } from "../components/home/WeeklyHighlights";
 import { Reveal } from "../components/motion/Reveal";
 import { ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import { SectionPathBackdrop } from "../components/visual/SectionPathBackdrop";
 import { pickHomePhotos, type HomePhoto } from "../data/homePhotos";
 
@@ -79,7 +80,7 @@ export function HomePage() {
       <section className="section discovery-section" aria-labelledby="discovery-title">
         <div className="page-shell discovery-section__layout">
           <Reveal className="discovery-section__intro">
-            <p className="eyebrow">Trouver le bon point de contact</p>
+            <RouteStop tone="light">Trouver le bon point de contact</RouteStop>
             <h2 id="discovery-title">Chercher par ce qui compte vraiment.</h2>
             <p>
               Une recherche directe par spécialité, domaine, pays ou disponibilité au mentorat.
@@ -126,7 +127,7 @@ export function HomePage() {
           </Reveal>
 
           <Reveal className="mentoring-section__copy" delay={80}>
-            <p className="eyebrow eyebrow--dark">Mentorat volontaire</p>
+            <RouteStop>Mentorat volontaire</RouteStop>
             <h2 id="mentoring-title">Des conseils.<br />Pas des promesses.</h2>
             <p>
               Un élève peut demander un échange à un ancien qui s’est déclaré disponible. Le but
@@ -152,7 +153,7 @@ export function HomePage() {
               <ButtonLink to="/annuaire?mentor=true">
                 Trouver un mentor <MessageCircle size={18} aria-hidden="true" />
               </ButtonLink>
-              <Link to="/rejoindre?mentorat=true" className="text-link text-link--dark">
+              <Link to="/rejoindre?mentorat=true" className="text-link text-link--action">
                 Devenir mentor <ArrowRight size={17} aria-hidden="true" />
               </Link>
             </div>
@@ -164,7 +165,7 @@ export function HomePage() {
         <SectionPathBackdrop variant="roots" />
         <div className="page-shell">
           <Reveal className="roots-section__headline">
-            <p className="eyebrow">Notre point commun</p>
+            <RouteStop>Notre point commun</RouteStop>
             <h2 id="roots-title">La science pour élan.<br />Sya pour ancrage.</h2>
           </Reveal>
 
@@ -215,13 +216,13 @@ export function HomePage() {
       <section className="join-cta">
         <div className="page-shell join-cta__inner">
           <div>
-            <p className="eyebrow">Élève ou alumni</p>
+            <RouteStop tone="light">Prochaine escale : vous</RouteStop>
             <h2>Ajoutez votre trajectoire<br />à la carte.</h2>
           </div>
           <div>
             <p>
-              Créez un profil clair, partagez votre parcours et choisissez librement si vous
-              souhaitez proposer du mentorat.
+              Élève ou alumni, créez un profil clair, partagez votre parcours et choisissez
+              librement si vous souhaitez proposer du mentorat.
             </p>
             <ButtonLink to="/rejoindre" variant="light" size="lg">
               Créer mon profil <ArrowRight size={18} aria-hidden="true" />

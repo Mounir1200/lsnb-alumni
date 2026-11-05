@@ -18,7 +18,6 @@ Ce qui ne change pas : bleu nuit `#0c2948` / `#071d33`, ocre banco `#c27d38` / `
 ## Diagnostic (par priorité)
 
 Haute :
-- La photo du lycée de l'accueil est chargée depuis un site externe et ne s'affiche pas.
 - Textes trop petits : libellés en capitales à 11,5 px, boutons à 13 px, descriptions sous 14 px.
 - Navigation de l'en-tête en boîtes encadrées : lourde, et « Se connecter » disparaît sous 1 080 px.
 
@@ -30,6 +29,7 @@ Moyenne :
 
 Basse :
 - 89 tailles de police différentes, arrondis disparates : pas d'échelle commune.
+- La photo du lycée est liée directement depuis L'Obs Paalga (780 × 470 px) : elle s'affiche, mais dépend de ce site. À remplacer par les photos officielles du lycée.
 
 ## Système
 
@@ -48,3 +48,11 @@ Basse :
 5. Mentorat, offres, Highlights.
 6. Espace membre, relations, messages.
 7. Contrôle : responsive, accessibilité, check-list des lois UX et anti-slop.
+
+## Accueil (fait)
+
+- Chaque section s'ouvre sur une escale : un point ocre, son libellé, et le tracé pointillé qui descend du bord de la section. Le tracé se dessine à l'arrivée de la section quand le navigateur le permet, sinon il est simplement là.
+- Hero : une seule action principale, l'autre devient un lien fléché.
+- Libellés, étapes et légendes à 13-14 px, contrastes AA (ocre foncé `--banco-deep` pour les petits textes sur fond clair).
+- Final « Prochaine escale : vous » : la section monte sur la précédente, coins arrondis comme les arches.
+- Pied de page : liens lisibles, le point de départ (coordonnées du lycée, comme le hero) ; le crédit photo passe en bas.
