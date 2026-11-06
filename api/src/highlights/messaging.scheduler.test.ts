@@ -46,6 +46,14 @@ test("notification trigger cannot choose recipients or messages and returns only
   }finally{await app.close()}
 });
 
+test("a full round of five jobs is reported as it is",async()=>{
+  const app=await buildApp({config,logger:false,notificationScheduler:createNotificationScheduler(apiKey,async()=>({claimed:5,delivered:4,failed:1}))});
+  try {
+    const response=await app.inject({method:'POST',url:'/messaging/notifications/run',headers:auth,payload:{}});
+    assert.equal(response.statusCode,200);assert.deepEqual(response.json(),{claimed:5,delivered:4,failed:1});
+  }finally{await app.close()}
+});
+
 test("the trigger starts twenty rounds a minute at most, and impostors cannot use them up",async()=>{
   let runs=0;
   const app=await buildApp({config,logger:false,notificationScheduler:createNotificationScheduler(apiKey,async()=>{runs++;return {claimed:0,delivered:0,failed:0}})});

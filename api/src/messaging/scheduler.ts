@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import { createRpcJobStore, notificationChannel, runNotificationRound, type NotificationChannel, type NotificationConfig } from "../notifications/delivery.js";
+import { createRpcJobStore, notificationChannel, ROUND_CAPACITY, runNotificationRound, type NotificationChannel, type NotificationConfig } from "../notifications/delivery.js";
 import { createRequestNotificationSender, REQUEST_QUEUE_RPCS, type RequestNotificationJob } from "../requests/notifications.js";
 import { createNotificationSender, createNotificationStore, loadNotificationConfig } from "./notifications.js";
 import { createRoundLimit, type RoundLimit } from "./roundLimit.js";
@@ -38,18 +38,42 @@ export function configuredNotificationScheduler(env: NodeJS.ProcessEnv = process
   return createNotificationScheduler(config.apiKey, () => runNotificationRound(notificationChannels(config)));
 }
 
+const UNAUTHORIZED = { error: "Déclenchement non autorisé." };
+const UNAVAILABLE = { error: "Les notifications sont momentanément indisponibles." };
+
+function bearerToken(authorization: string | undefined) {
+  return authorization?.match(/^Bearer ([a-f0-9]{64})$/i)?.[1];
+}
+
+/** There is no API for choosing a recipient, a message, or a provider payload. */
+function isEmptyTrigger(body: unknown, query: object) {
+  const isEmptyBody = body === undefined
+    || (body !== null && typeof body === "object" && !Array.isArray(body) && Object.keys(body).length === 0);
+  return isEmptyBody && Object.keys(query).length === 0;
+}
+
+/** A round claims at most its capacity, and each claimed job is either delivered or failed. */
+function isRoundResult({ claimed, delivered, failed }: DeliveryCounts) {
+  return [claimed, delivered, failed].every((count) => Number.isInteger(count) && count >= 0 && count <= ROUND_CAPACITY)
+    && claimed === delivered + failed;
+}
+
+/** Only the counters leave the API, never what the round returned besides them. */
+async function runRound(backend: NotificationScheduler): Promise<DeliveryCounts> {
+  const { claimed, delivered, failed } = await backend.run();
+  if (!isRoundResult({ claimed, delivered, failed })) throw new Error("Invalid delivery counters");
+  return { claimed, delivered, failed };
+}
+
 export async function registerNotificationSchedulerRoute(app: FastifyInstance, backend?: NotificationScheduler,
   roundLimit: RoundLimit = createRoundLimit()) {
   app.post("/messaging/notifications/run", { bodyLimit: 256 }, async (request, reply) => {
     reply.header("cache-control", "no-store");
-    const token = request.headers.authorization?.match(/^Bearer ([a-f0-9]{64})$/i)?.[1];
-    if (!token) return reply.code(401).send({ error: "Déclenchement non autorisé." });
-    if (!backend) return reply.code(503).send({ error: "Les notifications sont momentanément indisponibles." });
-    if (!backend.authorize(token)) return reply.code(401).send({ error: "Déclenchement non autorisé." });
-    // There is no API for choosing a recipient, a message, or a provider payload.
-    const body = request.body;
-    if ((body !== undefined && (body === null || typeof body !== "object" || Array.isArray(body) || Object.keys(body).length !== 0))
-      || Object.keys(request.query as object).length !== 0) return reply.code(400).send({ error: "Requête invalide." });
+    const token = bearerToken(request.headers.authorization);
+    if (!token) return reply.code(401).send(UNAUTHORIZED);
+    if (!backend) return reply.code(503).send(UNAVAILABLE);
+    if (!backend.authorize(token)) return reply.code(401).send(UNAUTHORIZED);
+    if (!isEmptyTrigger(request.body, request.query as object)) return reply.code(400).send({ error: "Requête invalide." });
     // Only a valid trigger takes a round, so an impostor cannot use up the budget.
     const slot = roundLimit.take();
     if (!slot.allowed) {
@@ -57,13 +81,9 @@ export async function registerNotificationSchedulerRoute(app: FastifyInstance, b
         .send({ error: "Trop de déclenchements. Réessayez dans une minute." });
     }
     try {
-      const result = await backend.run();
-      const { claimed, delivered, failed } = result;
-      if (![claimed, delivered, failed].every(count => Number.isInteger(count) && count >= 0 && count <= 5)
-        || claimed !== delivered + failed) throw new Error("Invalid delivery counters");
-      return { claimed, delivered, failed };
+      return await runRound(backend);
     } catch {
-      return reply.code(503).send({ error: "Les notifications sont momentanément indisponibles." });
+      return reply.code(503).send(UNAVAILABLE);
     }
   });
 }
