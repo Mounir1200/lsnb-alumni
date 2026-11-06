@@ -134,19 +134,10 @@ export function HomePage() {
               est simple&nbsp;: comprendre une filière, préparer un choix et éviter d’avancer seul.
             </p>
 
-            <ol className="mentoring-steps">
-              <li>
-                <span>01</span>
-                <div><b>Découvrir</b><p>Lire un parcours et ses spécialités.</p></div>
-              </li>
-              <li>
-                <span>02</span>
-                <div><b>Demander</b><p>Expliquer en quelques lignes ce dont on a besoin.</p></div>
-              </li>
-              <li>
-                <span>03</span>
-                <div><b>Échanger</b><p>Le mentor accepte selon sa disponibilité.</p></div>
-              </li>
+            <ol className="mentoring-steps route-steps">
+              <li><div><b>Découvrir</b><p>Lire un parcours et ses spécialités.</p></div></li>
+              <li><div><b>Demander</b><p>Expliquer en quelques lignes ce dont on a besoin.</p></div></li>
+              <li><div><b>Échanger</b><p>Le mentor accepte selon sa disponibilité.</p></div></li>
             </ol>
 
             <div className="mentoring-section__actions">

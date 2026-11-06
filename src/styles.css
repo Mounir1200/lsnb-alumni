@@ -177,7 +177,9 @@ textarea:focus-visible {
 
 /* A section opens on a stop of the route that runs down the page. The stop
    leads its section, so the section's top edge is one --section-pad above it:
-   the dashed line comes down from that edge to the stop. */
+   the dashed line comes down from that edge to the stop. Outside a section
+   (page heroes) --section-pad is unset, the line has no height and the stop
+   keeps its point only. */
 .route-stop {
   --route-color: var(--banco);
   position: relative;
@@ -235,6 +237,62 @@ textarea:focus-visible {
   from {
     transform: scaleY(0);
   }
+}
+
+/* A process drawn as a route: numbered stops joined by the dashed line. */
+.route-steps {
+  --step-color: var(--banco);
+  --step-number: var(--banco-deep);
+  --step-fill: var(--paper);
+  display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  counter-reset: route-step;
+}
+
+.route-steps > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  padding-bottom: var(--space-6);
+  counter-increment: route-step;
+}
+
+.route-steps > li:last-child {
+  padding-bottom: 0;
+}
+
+.route-steps > li::before {
+  content: counter(route-step);
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--step-color);
+  border-radius: 50%;
+  background: var(--step-fill);
+  color: var(--step-number);
+  font-size: var(--text-fine);
+  font-weight: 750;
+}
+
+.route-steps > li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 32px;
+  bottom: 4px;
+  left: 13px;
+  width: 2px;
+  background: linear-gradient(var(--step-color) 60%, transparent 0) 0 0 / 2px 10px repeat-y;
+  opacity: 0.75;
+}
+
+.route-steps--light {
+  --step-color: var(--banco-light);
+  --step-number: var(--banco-light);
+  --step-fill: transparent;
 }
 
 .section {
@@ -2067,27 +2125,7 @@ textarea:focus-visible {
 }
 
 .mentoring-steps {
-  display: grid;
-  gap: 0;
-  padding: 0;
-  margin: 0 0 38px;
-  list-style: none;
-  border-top: 1px solid var(--line);
-}
-
-.mentoring-steps li {
-  display: grid;
-  grid-template-columns: 54px 1fr;
-  gap: 16px;
-  padding-block: 19px;
-  border-bottom: 1px solid var(--line);
-}
-
-.mentoring-steps li > span {
-  color: var(--banco-deep);
-  font-size: var(--text-label);
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  margin-bottom: 38px;
 }
 
 .mentoring-steps b {
@@ -2351,12 +2389,6 @@ textarea:focus-visible {
   margin-bottom: 30px;
   font-size: clamp(2.9rem, 5vw, 5.4rem);
   line-height: 0.94;
-}
-
-/* The hero centres its copy, so this stop does not sit one padding below the
-   edge: it keeps its point and drops the line. */
-.directory-hero .route-stop::before {
-  display: none;
 }
 
 .directory-hero__copy > p:last-child {
