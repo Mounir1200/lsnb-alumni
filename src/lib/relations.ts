@@ -11,6 +11,18 @@ export function requestedKinds(kind: RequestKind): RequestKind[] {
   return kind === "mentoring" ? ["connection", "mentoring"] : ["connection"];
 }
 
+/**
+ * The requests still worth a look on "Mes relations": the ones waiting for an
+ * answer, and the refusals of a member's own requests. Accepted requests live on
+ * as connections, mentorships and conversations.
+ */
+export function openRequests(userId: string, requests: ConnectionRequest[]) {
+  return {
+    received: requests.filter((request) => request.recipientId === userId && request.status === "pending"),
+    sent: requests.filter((request) => request.requesterId === userId && request.status !== "accepted"),
+  };
+}
+
 /** Where two members stand in their peer connection, seen by one of them. */
 export type PeerConnectionStatus = "connected" | "sent" | "received" | "none";
 
