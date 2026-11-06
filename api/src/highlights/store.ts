@@ -11,8 +11,13 @@ export class HighlightStorageError extends Error {
   }
 }
 
-export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: typeof fetch = fetch): HighlightRepairStore {
-  async function request<T>(path: string, body?: unknown): Promise<T> {
+type PublishedArticle = StoredArticle & {
+  profiles: { is_active: boolean; member_role: string; listed_publicly: boolean };
+  highlight_article_repairs?: { title: string | null; paragraphs: string[] | null; generated_at: string | null } | null;
+};
+
+function createRestRequest(config: HighlightStorageConfig, fetchImpl: typeof fetch) {
+  return async function request<T>(path: string, body?: unknown): Promise<T> {
     const headers: Record<string, string> = { apikey: config.secretKey };
     // Legacy service_role JWTs require Authorization; new sb_secret keys are resolved by the gateway.
     if (config.secretKey.startsWith("eyJ")) headers.Authorization = `Bearer ${config.secretKey}`;
@@ -34,7 +39,11 @@ export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: 
     } catch {
       throw new HighlightStorageError(502);
     }
-  }
+  };
+}
+
+export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: typeof fetch = fetch): HighlightRepairStore {
+  const request = createRestRequest(config, fetchImpl);
 
   return {
     async current(weekStart) {
@@ -48,45 +57,16 @@ export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: 
         "highlight_articles.profiles.listed_publicly": "eq.true",
         limit: "1",
       });
-      const rows = await request<{
-        published_at: string;
-        highlight_articles: (StoredArticle & {
-          profiles: { is_active: boolean; member_role: string; listed_publicly: boolean };
-          highlight_article_repairs?: { title: string | null; paragraphs: string[] | null; generated_at: string | null } | null;
-        })[];
-      }[]>(`weekly_highlights?${params}`);
+      const rows = await request<{ published_at: string; highlight_articles: PublishedArticle[] }[]>(`weekly_highlights?${params}`);
       const edition = rows[0];
       if (!edition || !edition.published_at) return null;
-      const articles = edition.highlight_articles.filter((article) =>
-        article.profiles?.is_active && article.profiles.member_role === "alumni" && article.profiles.listed_publicly &&
-        article.title && Array.isArray(article.paragraphs) && article.paragraphs.length &&
-        (article.generation_method === "ai" || article.generation_method === "fallback"),
-      );
+      const articles = edition.highlight_articles.filter(isPublicArticle);
       if (articles.length !== 2 || articles[0]!.profile_id === articles[1]!.profile_id) return null;
       return {
         weekStart,
         weekEnd: weekEnd(weekStart),
         publishedAt: edition.published_at,
-        articles: articles.sort((a, b) => a.slot - b.slot).map((article) => {
-          const profile = article.source_profile;
-          const repair = article.highlight_article_repairs;
-          const repaired = article.generation_method === "fallback" && repair?.generated_at && repair.title &&
-            Array.isArray(repair.paragraphs) && repair.paragraphs.length > 0;
-          // Explicit allowlist: no source snapshot, lease, gender, contacts or provider metadata is public.
-          return {
-            profileId: article.profile_id,
-            firstName: profile.first_name,
-            lastName: profile.last_name,
-            graduationYear: profile.graduation_year,
-            specialty: profile.specialty,
-            city: profile.city,
-            country: profile.country,
-            photoUrl: publicPhotoUrl(profile.photo_url),
-            title: repaired ? repair.title! : article.title!,
-            paragraphs: repaired ? repair.paragraphs! : article.paragraphs!,
-            generationMethod: repaired ? "ai" : article.generation_method!,
-          };
-        }),
+        articles: articles.sort((a, b) => a.slot - b.slot).map(toPublicArticle),
       } satisfies PublicHighlight;
     },
     claim: (weekStart) => request<HighlightClaim>("rpc/claim_weekly_highlight", { p_week_start: weekStart }),
@@ -116,6 +96,40 @@ export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: 
         p_title: article.title, p_paragraphs: article.paragraphs, p_model: article.model,
       });
     },
+  };
+}
+
+/** Shown only while its member is an active alumnus listed publicly, and only with a complete text. */
+function isPublicArticle(article: PublishedArticle): boolean {
+  const member = article.profiles;
+  const isShownMember = Boolean(member?.is_active && member.member_role === "alumni" && member.listed_publicly);
+  const hasText = Boolean(article.title && Array.isArray(article.paragraphs) && article.paragraphs.length > 0);
+  return isShownMember && hasText && (article.generation_method === "ai" || article.generation_method === "fallback");
+}
+
+/** A completed repair replaces a fallback text; otherwise the saved text stands. */
+function publicText(article: PublishedArticle) {
+  const repair = article.highlight_article_repairs;
+  if (article.generation_method === "fallback" && repair?.generated_at && repair.title
+    && Array.isArray(repair.paragraphs) && repair.paragraphs.length > 0) {
+    return { title: repair.title, paragraphs: repair.paragraphs, generationMethod: "ai" as const };
+  }
+  return { title: article.title!, paragraphs: article.paragraphs!, generationMethod: article.generation_method! };
+}
+
+/** Explicit allowlist: no source snapshot, lease, gender, contacts or provider metadata is public. */
+function toPublicArticle(article: PublishedArticle): PublicHighlight["articles"][number] {
+  const profile = article.source_profile;
+  return {
+    profileId: article.profile_id,
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    graduationYear: profile.graduation_year,
+    specialty: profile.specialty,
+    city: profile.city,
+    country: profile.country,
+    photoUrl: publicPhotoUrl(profile.photo_url),
+    ...publicText(article),
   };
 }
 
