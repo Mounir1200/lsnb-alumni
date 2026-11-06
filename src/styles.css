@@ -4804,6 +4804,47 @@ a.connection-card__person:hover b {
   font-size: 1.8rem;
 }
 
+.legal-page h3 {
+  max-width: 760px;
+  margin: 28px 0 8px;
+  color: var(--ink);
+  font-size: 1.15rem;
+}
+
+.legal-page > ul {
+  max-width: 760px;
+  margin: 0 0 16px;
+  padding-left: 1.2em;
+  color: #5f6d78;
+  list-style: disc;
+}
+
+.legal-page > ul li::marker {
+  color: var(--banco);
+}
+
+.legal-page a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--banco);
+  text-underline-offset: 3px;
+}
+
+.legal-page a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.legal-page a svg {
+  display: inline-block;
+  margin-left: 2px;
+  vertical-align: -2px;
+}
+
+.legal-page > ul li + li {
+  margin-top: 8px;
+}
+
 .site-footer {
   padding-block: 80px 28px;
   background: var(--ink-deep);

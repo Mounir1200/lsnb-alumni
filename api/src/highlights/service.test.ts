@@ -116,7 +116,7 @@ test("public read exposes only the saved portraits and applies active alumni fil
   const rows = [1, 2].map((slot) => ({
     slot, profile_id: `member-${slot}`, source_profile: { ...source, email: "private@example.test", gender: "female" },
     title: generated.title, paragraphs: generated.paragraphs, generation_method: "ai",
-    profiles: { is_active: true, member_role: "alumni" },
+    profiles: { is_active: true, member_role: "alumni", listed_publicly: true },
   }));
   const mockFetch = (async (url, init) => {
     requestedUrl = String(url);
@@ -136,6 +136,50 @@ test("public read exposes only the saved portraits and applies active alumni fil
   assert.equal(await store.current("2026-09-07"), null);
   rows[0]!.profiles.is_active = true;
   rows[0]!.profiles.member_role = "student";
+  assert.equal(await store.current("2026-09-07"), null);
+});
+
+test("the public read hides incomplete editions, orders the duo and keeps a fallback without a complete repair", async () => {
+  const article = (slot: number, overrides: Record<string, unknown> = {}) => ({
+    slot, profile_id: `member-${slot}`, source_profile: source,
+    title: generated.title, paragraphs: generated.paragraphs, generation_method: "ai",
+    profiles: { is_active: true, member_role: "alumni", listed_publicly: true }, ...overrides,
+  });
+  const edition = (articles: unknown[], publishedAt: string | null = "2026-09-07T00:00:30Z") =>
+    [{ published_at: publishedAt, highlight_articles: articles }];
+  let editions: unknown[] = [];
+  const store = createHighlightStore({ url: "https://example.supabase.co", secretKey: "sb_secret_test" },
+    (async () => Response.json(editions)) as typeof fetch);
+  const read = (value: unknown[]) => { editions = value; return store.current("2026-09-07"); };
+
+  assert.equal(await read([]), null, "no edition");
+  assert.equal(await read(edition([article(1), article(2)], null)), null, "not published");
+  const ordered = await read(edition([article(2), article(1)]));
+  assert.deepEqual(ordered?.articles.map((item) => item.profileId), ["member-1", "member-2"]);
+  for (const broken of [{ profiles: null }, { title: null }, { paragraphs: [] }, { paragraphs: "Texte" }, { generation_method: "other" }]) {
+    assert.equal(await read(edition([article(1), article(2, broken)])), null, JSON.stringify(broken));
+  }
+  const emptyRepair = { generated_at: "2026-09-08T00:00:00Z", title: "Réparé", paragraphs: [] };
+  for (const repair of [undefined, emptyRepair]) {
+    const result = await read(edition([article(1, { generation_method: "fallback", highlight_article_repairs: repair }), article(2)]));
+    assert.deepEqual([result?.articles[0]?.title, result?.articles[0]?.generationMethod], [generated.title, "fallback"]);
+  }
+});
+
+test("a published portrait disappears once its member leaves the public directory", async () => {
+  let requestedUrl = "";
+  const rows = [1, 2].map((slot) => ({
+    slot, profile_id: `member-${slot}`, source_profile: source,
+    title: generated.title, paragraphs: generated.paragraphs, generation_method: "ai",
+    profiles: { is_active: true, member_role: "alumni", listed_publicly: true },
+  }));
+  const store = createHighlightStore({ url: "https://example.supabase.co", secretKey: "sb_secret_test" }, (async (url) => {
+    requestedUrl = String(url);
+    return Response.json([{ published_at: "2026-09-07T00:00:30Z", highlight_articles: rows }]);
+  }) as typeof fetch);
+  assert.equal((await store.current("2026-09-07"))?.articles.length, 2);
+  assert.equal(new URL(requestedUrl).searchParams.get("highlight_articles.profiles.listed_publicly"), "eq.true");
+  rows[1]!.profiles.listed_publicly = false;
   assert.equal(await store.current("2026-09-07"), null);
 });
 

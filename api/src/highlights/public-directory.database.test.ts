@@ -8,6 +8,10 @@ type Listing = Record<string, unknown> & { id: string; first_name: string }
 
 const listedBy = async (member: string | null, role = 'anon') =>
   asMember(db, member, async () => (await db.query<Listing>('select * from public.public_directory_profiles()')).rows, role)
+type HighlightClaim = { outcome: string; articles: { profile_id: string }[] }
+const claimThisWeek = async () => (await db.query<{ result: HighlightClaim }>(
+  "select public.claim_weekly_highlight(date_trunc('week', timezone('Africa/Ouagadougou', clock_timestamp()))::date) as result",
+)).rows[0]!.result
 
 describe('Public member directory', { concurrency: false }, () => {
   before(async () => { db = await createMigratedDatabase() })
@@ -44,6 +48,16 @@ describe('Public member directory', { concurrency: false }, () => {
     assert.deepEqual((await listedBy(null)).map((row) => row.id), [viewer])
     const seenByMember = await asMember(db, viewer, () => db.query('select id from public.profiles where id = $1', [hidden]))
     assert.equal(seenByMember.rows.length, 1)
+  })
+
+  it('keeps members who left the public directory out of the weekly Highlight', async () => {
+    const listed = await seedMember(db, { firstName: 'Awa' })
+    const hidden = await seedMember(db, { firstName: 'Discrète' })
+    await db.query('update public.profiles set listed_publicly = false where id = $1', [hidden])
+    assert.equal((await claimThisWeek()).outcome, 'empty', 'one listed alumnus cannot make a duo')
+    const other = await seedMember(db, { firstName: 'Binta' })
+    const drawn = (await claimThisWeek()).articles.map((article) => article.profile_id).sort()
+    assert.deepEqual(drawn, [listed, other].sort())
   })
 
   it('shows nothing while the site is in maintenance', async () => {
