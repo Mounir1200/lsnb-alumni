@@ -18,8 +18,8 @@
 
 .directory-view-summary__count {
   margin: 0;
-  color: #596b78;
-  font-size: 0.82rem;
+  color: #536371;
+  font-size: var(--text-small);
 }
 
 .directory-view-summary__count b {
@@ -28,8 +28,8 @@
 }
 
 .directory-view-summary__source {
-  color: #62716b;
-  font-size: 0.7rem;
+  color: #5b6a66;
+  font-size: var(--text-label);
 }
 
 .directory-view-controls {
@@ -56,7 +56,7 @@
   background: transparent;
   color: #52635e;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--text-small);
   font-weight: 650;
   cursor: pointer;
 }

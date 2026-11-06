@@ -281,7 +281,7 @@ textarea:focus-visible {
 
 .demo-note {
   color: #7a6551;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
   font-weight: 600;
 }
 
@@ -728,7 +728,7 @@ textarea:focus-visible {
   gap: 18px;
   margin-bottom: 30px;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 0.66rem;
+  font-size: var(--text-label);
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -856,14 +856,14 @@ textarea:focus-visible {
   background: rgba(7, 29, 51, 0.82);
   color: rgba(255, 255, 255, 0.78);
   border-left: 2px solid var(--banco-light);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 650;
   letter-spacing: 0.05em;
 }
 
 .trajectory-field__label b {
   color: var(--banco-light);
-  font-size: 0.52rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -919,7 +919,7 @@ textarea:focus-visible {
   padding: 2px 0 3px 16px;
   color: rgba(255, 255, 255, 0.55);
   border-left: 1px solid rgba(168, 209, 177, 0.58);
-  font-size: 0.62rem;
+  font-size: var(--text-fine);
   line-height: 1.4;
   letter-spacing: 0.12em;
   text-align: left;
@@ -973,12 +973,12 @@ textarea:focus-visible {
   gap: 9px;
   margin: 0;
   color: #687581;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
 }
 
 .hero-search__meta-copy strong {
   color: var(--ink);
-  font-size: 0.76rem;
+  font-size: var(--text-small);
 }
 
 .hero-search__route-mark {
@@ -1016,7 +1016,7 @@ textarea:focus-visible {
   gap: 7px;
   padding: 0 7px;
   color: #596a79;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -1033,7 +1033,7 @@ textarea:focus-visible {
   background: var(--ink);
   color: var(--chalk);
   border-radius: 50%;
-  font-size: 0.62rem;
+  font-size: var(--text-fine);
 }
 
 .hero-search__field {
@@ -1145,14 +1145,14 @@ textarea:focus-visible {
 
 .hero-search__filter-heading span {
   color: #6e7983;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
 }
 
 .hero-search__filter-panel > label {
   display: grid;
   gap: 7px;
   color: #526271;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -1165,7 +1165,7 @@ textarea:focus-visible {
   padding: 0 38px 0 13px;
   background: var(--paper);
   color: var(--ink);
-  font-size: 0.76rem;
+  font-size: 1rem;
 }
 
 .hero-search__filter-actions {
@@ -1182,7 +1182,7 @@ textarea:focus-visible {
   min-height: 36px;
   padding: 0 8px;
   color: #667581;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 
@@ -1417,7 +1417,7 @@ textarea:focus-visible {
 
 .highlight-portrait__promotion {
   color: var(--mango);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -1441,7 +1441,7 @@ textarea:focus-visible {
 .highlight-portrait__location {
   margin-top: 3px;
   color: #647078;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .highlight-portrait h3 {
@@ -1495,19 +1495,19 @@ textarea:focus-visible {
 
 .highlight-portrait__footer > span {
   color: #647078;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
 }
 
 .highlight-portrait__source {
   margin: 0 0 8px;
   color: #647078;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 .highlights-source-note {
   margin: 36px 0 0;
   color: #647078;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .highlights-state {
@@ -1549,7 +1549,7 @@ textarea:focus-visible {
   padding-left: 16px;
   color: #536371;
   border-left: 2px solid var(--mango);
-  font-size: 0.74rem;
+  font-size: var(--text-small);
   line-height: 1.7;
 }
 
@@ -2442,7 +2442,7 @@ textarea:focus-visible {
   gap: 10px;
   transform: translate(-50%, -50%);
   color: rgba(255,255,255,0.68);
-  font-size: 0.56rem;
+  font-size: 0.75rem;
 }
 
 .directory-constellation__origin i {
@@ -2463,7 +2463,7 @@ textarea:focus-visible {
 
 .directory-constellation__origin b {
   color: var(--banco-light);
-  font-size: 0.5rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -2475,7 +2475,7 @@ textarea:focus-visible {
   align-items: flex-end;
   gap: 10px;
   color: rgba(255,255,255,0.68);
-  font-size: 0.52rem;
+  font-size: 0.6875rem;
   line-height: 1.25;
 }
 
@@ -2602,7 +2602,7 @@ textarea:focus-visible {
   max-width: 260px;
   margin: 0;
   color: rgba(255,255,255,0.58);
-  font-size: 0.67rem;
+  font-size: var(--text-label);
 }
 
 .directory-filters__controls {
@@ -2626,7 +2626,7 @@ textarea:focus-visible {
 
 .directory-filter-field > span:first-child {
   color: #435669;
-  font-size: 0.62rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -2640,7 +2640,7 @@ textarea:focus-visible {
   color: var(--ink);
   border: 1px solid rgba(12, 41, 72, 0.2);
   border-radius: 2px;
-  font-size: 0.76rem;
+  font-size: 1rem;
   outline: none;
 }
 
@@ -2704,14 +2704,14 @@ textarea:focus-visible {
 
 .directory-filter-switch > span:last-child {
   display: grid;
-  color: #71808b;
-  font-size: 0.59rem;
+  color: #5b6a76;
+  font-size: var(--text-label);
   line-height: 1.35;
 }
 
 .directory-filter-switch b {
   color: var(--ink);
-  font-size: 0.69rem;
+  font-size: 0.9375rem;
 }
 
 .directory-filters__reset.button {
@@ -2726,7 +2726,7 @@ textarea:focus-visible {
 
 .field-group > span:first-child {
   color: var(--ink);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -2741,7 +2741,7 @@ textarea:focus-visible {
   color: var(--ink);
   border: 1px solid rgba(12, 41, 72, 0.24);
   border-radius: 2px;
-  font-size: 0.78rem;
+  font-size: 1rem;
   outline: none;
 }
 
@@ -2751,7 +2751,7 @@ textarea:focus-visible {
 
 .field-group small {
   color: #6d7882;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .input-with-icon {
@@ -2794,14 +2794,14 @@ textarea:focus-visible {
 .form-check span {
   display: grid;
   color: #6a747c;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
   line-height: 1.45;
 }
 
 .filter-check b,
 .form-check b {
   color: var(--ink);
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .directory-results__bar {
@@ -2827,7 +2827,7 @@ textarea:focus-visible {
 
 .directory-results__bar > span {
   color: #826a52;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .directory-grid {
@@ -2927,7 +2927,7 @@ textarea:focus-visible {
   gap: 8px;
   margin-bottom: 32px;
   color: #52616e;
-  font-size: 0.74rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -2973,7 +2973,7 @@ textarea:focus-visible {
 .profile-hero__domain {
   margin-bottom: 6px;
   color: var(--banco-light);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 750;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3005,7 +3005,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 7px;
   color: rgba(255,255,255,0.7);
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .profile-hero__facts li.is-mentoring {
@@ -3024,7 +3024,7 @@ textarea:focus-visible {
   flex-basis: 100%;
   max-width: 520px;
   color: rgba(255,255,255,0.68);
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .profile-hero__buttons {
@@ -3090,7 +3090,7 @@ textarea:focus-visible {
 .profile-aside > section > p:first-child {
   margin-bottom: 14px;
   color: var(--ink);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -3123,7 +3123,7 @@ textarea:focus-visible {
   background: var(--chalk);
   color: var(--ink);
   border: 1px solid var(--line);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 650;
 }
 
@@ -3148,14 +3148,14 @@ textarea:focus-visible {
   padding-left: 18px;
   margin: 0 0 22px;
   color: rgba(255,255,255,0.75);
-  font-size: 0.76rem;
+  font-size: var(--text-small);
 }
 
 .profile-mentoring-card > span {
   display: block;
   margin-bottom: 20px;
   color: rgba(255,255,255,0.72);
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .profile-mentoring-card > p {
@@ -3163,7 +3163,7 @@ textarea:focus-visible {
   padding-top: 14px;
   color: #c7dccb;
   border-top: 1px solid rgba(255,255,255,0.2);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 
@@ -3180,7 +3180,7 @@ textarea:focus-visible {
 
 .profile-demo-notice p {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
 }
 
 .profile-related {
@@ -3221,12 +3221,12 @@ textarea:focus-visible {
 .profile-related a > span {
   display: grid;
   color: #6a747d;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
 }
 
 .profile-related a b {
   color: var(--ink);
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .profile-next-action {
@@ -3359,7 +3359,7 @@ textarea:focus-visible {
   display: grid;
   min-width: 0;
   color: #5e6e7b;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .connection-card__person b {
@@ -3377,7 +3377,7 @@ a.connection-card__person:hover b {
   padding: 4px 8px;
   background: var(--sand);
   color: var(--ink);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -3396,14 +3396,14 @@ a.connection-card__person:hover b {
 .connection-card__kind {
   margin: 18px 0 8px;
   color: var(--mango);
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
 .connection-card__offer {
   margin: -4px 0 10px;
   color: #465866;
-  font-size: 0.78rem;
+  font-size: var(--text-small);
   overflow-wrap: anywhere;
 }
 
@@ -3428,7 +3428,7 @@ a.connection-card__person:hover b {
 .connection-card__note,
 .connection-card time {
   color: #5e6e7b;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .connection-card__note {
@@ -3437,7 +3437,7 @@ a.connection-card__person:hover b {
 
 .connection-card .form-check,
 .profile-request-form .form-check {
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .connection-confirm {
@@ -3496,7 +3496,7 @@ a.connection-card__person:hover b {
   align-items: center;
   gap: 7px;
   color: #596976;
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .profile-network > p {
@@ -3603,13 +3603,13 @@ a.connection-card__person:hover b {
 
 .mentorship-person__info > span {
   color: #465866;
-  font-size: 0.79rem;
+  font-size: var(--text-small);
   line-height: 1.5;
 }
 
 .mentorship-person__info small {
   color: #596976;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 
@@ -3676,14 +3676,14 @@ a.connection-card__person:hover b {
   gap: 4px 12px;
   padding-left: 84px;
   color: #596976;
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .mentorship-row__details .button {
   min-height: 44px;
   padding: 8px 0;
   color: #596976;
-  font-size: 0.74rem;
+  font-size: var(--text-small);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -3785,7 +3785,7 @@ a.connection-card__person:hover b {
   padding-block: 18px;
   color: #687581;
   border-bottom: 1px solid var(--line);
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 .account-story__principles svg {
@@ -3824,7 +3824,7 @@ a.connection-card__person:hover b {
 
 .account-form-wrap__header span {
   color: var(--mango);
-  font-size: 0.65rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -3889,7 +3889,7 @@ a.connection-card__person:hover b {
   align-items: center;
   gap: 14px;
   color: #5f6c77;
-  font-size: 0.73rem;
+  font-size: var(--text-small);
   line-height: 1.5;
   text-align: center;
 }
@@ -3912,7 +3912,7 @@ a.connection-card__person:hover b {
 .account-google > p {
   margin: 0;
   color: #5f6c77;
-  font-size: 0.78rem;
+  font-size: var(--text-small);
   line-height: 1.6;
   text-align: center;
 }
@@ -3936,7 +3936,7 @@ a.connection-card__person:hover b {
   grid-column: 1 / -1;
   margin-bottom: 6px;
   color: var(--ink);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -3972,7 +3972,7 @@ a.connection-card__person:hover b {
 
 .role-picker span {
   color: #697580;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .photo-upload {
@@ -4013,12 +4013,12 @@ a.connection-card__person:hover b {
 .photo-upload > span:last-child {
   display: grid;
   color: #6a7680;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .photo-upload b {
   color: var(--ink);
-  font-size: 0.76rem;
+  font-size: var(--text-small);
 }
 
 .form-check {
@@ -4040,7 +4040,7 @@ a.connection-card__person:hover b {
 
 .form-consent {
   color: #687581;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
 }
 
 .form-consent a {
@@ -4055,7 +4055,7 @@ a.connection-card__person:hover b {
   align-items: flex-start;
   gap: 10px;
   padding: 13px 15px;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 
@@ -4109,14 +4109,14 @@ a.connection-card__person:hover b {
 .profile-draft-hint {
   margin: -6px 0 0;
   color: #6d7882;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 
 .account-form__login {
   margin: 0;
   color: #6b7680;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   text-align: center;
 }
 
@@ -4208,7 +4208,7 @@ a.connection-card__person:hover b {
 .profile-editor-preview p {
   overflow: hidden;
   color: var(--banco-light);
-  font-size: 0.58rem;
+  font-size: var(--text-fine);
   font-weight: 760;
   letter-spacing: 0.09em;
   text-overflow: ellipsis;
@@ -4228,7 +4228,7 @@ a.connection-card__person:hover b {
   margin-top: 5px;
   overflow: hidden;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -4240,7 +4240,7 @@ a.connection-card__person:hover b {
   padding-top: 15px;
   color: rgba(255, 255, 255, 0.48);
   border-top: 1px solid rgba(255, 255, 255, 0.14);
-  font-size: 0.58rem;
+  font-size: var(--text-fine);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -4287,7 +4287,7 @@ a.connection-card__person:hover b {
   display: grid;
   min-width: 0;
   color: #687581;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .profile-editor-photo__copy b {
@@ -4323,7 +4323,7 @@ a.connection-card__person:hover b {
   background: var(--ink);
   color: var(--chalk);
   border: 1px solid var(--ink);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 740;
 }
 
@@ -4456,7 +4456,7 @@ a.connection-card__person:hover b {
   background: none;
   color: #5f6c77;
   border: 0;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   cursor: pointer;
 }
 
@@ -4652,7 +4652,7 @@ a.connection-card__person:hover b {
   padding: 12px 14px;
   background: #e5efe7;
   color: #24502f;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 .member-card__confirmed svg,
@@ -4717,12 +4717,12 @@ a.connection-card__person:hover b {
 .member-card__photo > span {
   display: grid;
   color: #6a7680;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .member-card__photo b {
   color: var(--ink);
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .member-card__identity p,
@@ -4733,7 +4733,7 @@ a.connection-card__person:hover b {
 
 .member-card__identity p {
   color: var(--mango);
-  font-size: 0.64rem;
+  font-size: var(--text-label);
   font-weight: 780;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4746,7 +4746,7 @@ a.connection-card__person:hover b {
 
 .member-card__identity div > span {
   color: #6a7680;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 .member-card__status {
@@ -4760,12 +4760,12 @@ a.connection-card__person:hover b {
 .member-card__status span {
   display: grid;
   color: #6a7680;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
 }
 
 .member-card__status b {
   color: var(--ink);
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .member-card > .button {
@@ -5312,12 +5312,12 @@ a.connection-card__person:hover b {
     max-width: 92px;
     padding: 5px 7px;
     background: rgba(7, 29, 51, 0.9);
-    font-size: 0.53rem;
+    font-size: 0.6875rem;
     line-height: 1.2;
   }
 
   .trajectory-field__label b {
-    font-size: 0.45rem;
+    font-size: 0.625rem;
   }
 
   .trajectory-field__label--west {
@@ -5580,7 +5580,7 @@ a.connection-card__person:hover b {
   }
 
   .directory-constellation__profile b {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .directory-constellation__profile--north {
