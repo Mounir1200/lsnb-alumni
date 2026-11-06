@@ -2291,28 +2291,32 @@ textarea:focus-visible {
   color: var(--chalk);
 }
 
-.join-cta::after {
-  content: "";
-  position: absolute;
-  right: -110px;
-  bottom: -170px;
-  width: 520px;
-  height: 520px;
-  border: 1px solid rgba(231, 183, 125, 0.28);
-  border-radius: 50% 50% 0 0;
-}
-
 .join-cta__inner {
   position: relative;
   z-index: 1;
   display: grid;
   grid-template-columns: 1.25fr 0.75fr;
-  align-items: end;
+  /* Top-aligned, so the stop leads the section and its line meets the edge. */
+  align-items: start;
   gap: 90px;
 }
 
+/* The way in: an arch, like the portrait frames, opens around the last
+   action; its sides run down to the section's edge. */
 .join-cta__inner > div:last-child {
+  position: relative;
   max-width: 460px;
+  padding: 112px 44px 8px;
+}
+
+.join-cta__inner > div:last-child::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 calc(-1 * var(--section-pad));
+  border: 1px solid rgba(231, 183, 125, 0.36);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
 }
 
 .join-cta__inner > div:last-child p {
@@ -5585,6 +5589,10 @@ a.connection-card__person:hover b {
 
   .join-cta__inner {
     gap: 32px;
+  }
+
+  .join-cta__inner > div:last-child {
+    padding: 88px 28px 4px;
   }
 
   .directory-content {
