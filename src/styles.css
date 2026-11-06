@@ -52,6 +52,8 @@
   --space-24: 96px;
   --radius-control: 4px;
   --radius-card: 10px;
+  /* Large blocks: the profile hero, its request form and side panels. */
+  --radius-panel: 18px;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --duration-fast: 150ms;
   --duration: 240ms;
@@ -2978,6 +2980,12 @@ textarea:focus-visible {
     radial-gradient(circle at 84% 50%, rgba(46, 90, 54, 0.26), transparent 36%),
     var(--ink);
   color: var(--chalk);
+  border-radius: var(--radius-panel);
+}
+
+/* The request form opens under the hero, as its lower part. */
+.profile-hero:has(+ .profile-request-form) {
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
 }
 
 .profile-hero__main {
@@ -3077,6 +3085,7 @@ textarea:focus-visible {
   padding: 30px;
   background: #efe5d8;
   border-bottom: 1px solid rgba(12, 41, 72, 0.2);
+  border-radius: 0 0 var(--radius-panel) var(--radius-panel);
 }
 
 .profile-request-form h2 {
@@ -3122,6 +3131,7 @@ textarea:focus-visible {
 .profile-aside > section {
   padding: 26px;
   background: #efe5d8;
+  border-radius: var(--radius-panel);
 }
 
 .profile-aside > section > p:first-child {
@@ -3160,6 +3170,7 @@ textarea:focus-visible {
   background: var(--chalk);
   color: var(--ink);
   border: 1px solid var(--line);
+  border-radius: 6px;
   font-size: var(--text-label);
   font-weight: 650;
 }
