@@ -2544,10 +2544,10 @@ textarea:focus-visible {
   filter: drop-shadow(0 0 7px rgba(255, 194, 122, 0.95));
 }
 
-.directory-constellation[data-active-route="route-aicha"] .route-aicha,
-.directory-constellation[data-active-route="route-karim"] .route-karim,
-.directory-constellation[data-active-route="route-moussa"] .route-moussa,
-.directory-constellation[data-active-route="route-fanta"] .route-fanta {
+.directory-constellation[data-active-route="route-north"] .route-north,
+.directory-constellation[data-active-route="route-east"] .route-east,
+.directory-constellation[data-active-route="route-west"] .route-west,
+.directory-constellation[data-active-route="route-south"] .route-south {
   stroke: #f4bb78;
   stroke-width: 2.6;
   opacity: 1;
@@ -2622,6 +2622,23 @@ textarea:focus-visible {
   font-family: "Bricolage Grotesque", sans-serif;
   font-size: 0.82rem;
   letter-spacing: -0.02em;
+}
+
+/* A place waiting for the next member photo: the same arch, empty and dashed. */
+.directory-constellation__holder {
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 104px;
+  flex: 0 0 auto;
+  color: rgba(231, 183, 125, 0.72);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 45px 45px 4px 4px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.directory-constellation__profile.is-placeholder {
+  color: rgba(255, 255, 255, 0.56);
 }
 
 .directory-constellation__profile:hover img,
@@ -5698,7 +5715,8 @@ a.connection-card__person:hover b {
     height: 310px;
   }
 
-  .directory-constellation__profile img {
+  .directory-constellation__profile img,
+  .directory-constellation__holder {
     width: 62px;
     height: 80px;
   }
