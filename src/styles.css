@@ -270,6 +270,11 @@ textarea:focus-visible {
   display: block;
 }
 
+/* A heading split into lines that each wrap, and balance, on their own. */
+.heading-line {
+  display: block;
+}
+
 .section-heading__mobile-break {
   display: none;
 }
@@ -1226,15 +1231,18 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-/* The same dashed route and ochre stops that open the sections below. */
-.network-ribbon__stop i {
+/* One leg of a journey: the dashed ochre route that ends on a stop. The home
+   ribbon and the directory cards draw their journeys with it. */
+.route-leg {
   position: relative;
-  width: 44px;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--leg-length, 44px);
   height: 2px;
   background: linear-gradient(90deg, var(--banco) 60%, transparent 0) 0 0 / 10px 2px repeat-x;
 }
 
-.network-ribbon__stop i::after {
+.route-leg::after {
   content: "";
   position: absolute;
   top: -3px;
@@ -1712,7 +1720,7 @@ textarea:focus-visible {
   background: var(--chalk);
   color: var(--ink);
   border-radius: 7px;
-  font-size: 0.65rem;
+  font-size: var(--text-fine);
   font-weight: 750;
 }
 
@@ -1727,9 +1735,9 @@ textarea:focus-visible {
 }
 
 .alumni-card__domain {
-  margin: 0 0 7px;
+  margin: 0 0 8px;
   color: var(--mango);
-  font-size: 0.63rem;
+  font-size: var(--text-label);
   font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1743,24 +1751,44 @@ textarea:focus-visible {
 }
 
 .alumni-card__role {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   color: #465866;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   line-height: 1.5;
 }
 
+/* The card's journey: from Sya, along one dashed leg, to where the member is.
+   It flows as text, so a long place wraps after the leg instead of leaving it. */
 .alumni-card__location {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
   margin: 0;
-  color: #596976;
-  font-size: 0.72rem;
+  color: #4d5b67;
+  font-size: var(--text-small);
+  line-height: 1.6;
 }
 
-.alumni-card__location svg {
-  flex: 0 0 auto;
+.alumni-card__origin {
+  margin-right: 8px;
+  color: var(--banco-deep);
+  font-size: var(--text-fine);
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.alumni-card__leg {
+  --leg-length: 30px;
+  margin-right: 12px;
+  vertical-align: middle;
+}
+
+.alumni-card__home {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--banco);
+  vertical-align: middle;
 }
 
 .alumni-card__inline-promotion {
@@ -1777,11 +1805,11 @@ textarea:focus-visible {
 }
 
 .alumni-card__specialties li {
-  padding: 4px 8px;
+  padding: 4px 9px;
   background: #f2f1e9;
   color: #4c5c5a;
   border-radius: 5px;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 
@@ -1798,13 +1826,13 @@ textarea:focus-visible {
 .alumni-card__invitation {
   display: grid;
   gap: 4px;
-  color: #596976;
-  font-size: 0.67rem;
+  color: #536371;
+  font-size: var(--text-label);
 }
 
 .alumni-card__invitation b {
   color: var(--ink);
-  font-size: 0.78rem;
+  font-size: 0.9375rem;
 }
 
 .alumni-card__mentor {
@@ -2321,15 +2349,21 @@ textarea:focus-visible {
 .directory-hero h1 {
   max-width: 760px;
   margin-bottom: 30px;
-  font-size: clamp(3.2rem, 5.5vw, 6.1rem);
-  line-height: 0.9;
+  font-size: clamp(2.9rem, 5vw, 5.4rem);
+  line-height: 0.94;
+}
+
+/* The hero centres its copy, so this stop does not sit one padding below the
+   edge: it keeps its point and drops the line. */
+.directory-hero .route-stop::before {
+  display: none;
 }
 
 .directory-hero__copy > p:last-child {
   max-width: 520px;
   margin-bottom: 0;
-  color: rgba(255, 255, 255, 0.67);
-  font-size: 0.94rem;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: var(--text-body);
 }
 
 .directory-constellation {
@@ -2532,12 +2566,13 @@ textarea:focus-visible {
 
 .directory-filters__titleline {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px 16px;
   margin-bottom: 28px;
   color: #b7d8bf;
-  font-size: 0.57rem;
+  font-size: var(--text-fine);
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2551,7 +2586,7 @@ textarea:focus-visible {
 
 .directory-filters__titleline b {
   color: var(--banco-light);
-  font-size: 0.55rem;
+  font-size: var(--text-fine);
 }
 
 .directory-filters__title h2 {
@@ -5398,7 +5433,7 @@ a.connection-card__person:hover b {
     padding-left: 20px;
   }
 
-  .network-ribbon__stop i {
+  .network-ribbon__stop .route-leg {
     display: none;
   }
 
@@ -5808,8 +5843,7 @@ a.connection-card__person:hover b {
 }
 
 .directory-grid--list .alumni-card__inline-promotion {
-  display: inline;
-  margin-left: 4px;
+  display: block;
   color: var(--mango);
 }
 

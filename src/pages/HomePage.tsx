@@ -67,9 +67,9 @@ export function HomePage() {
         <div className="page-shell network-ribbon__inner">
           <p>Un annuaire construit autour des parcours, pas des titres.</p>
           <div aria-hidden="true" className="network-ribbon__route">
-            <span className="network-ribbon__stop">Bobo-Dioulasso<i /></span>
-            <span className="network-ribbon__stop">Ouagadougou<i /></span>
-            <span className="network-ribbon__stop">Dakar<i /></span>
+            <span className="network-ribbon__stop">Bobo-Dioulasso<i className="route-leg" /></span>
+            <span className="network-ribbon__stop">Ouagadougou<i className="route-leg" /></span>
+            <span className="network-ribbon__stop">Dakar<i className="route-leg" /></span>
             <span className="network-ribbon__stop">Le monde</span>
           </div>
         </div>

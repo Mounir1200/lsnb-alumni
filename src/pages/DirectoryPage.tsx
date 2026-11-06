@@ -11,6 +11,7 @@ import {
   DirectoryNoResults,
 } from "../components/directory/DirectoryStates";
 import { Button } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import type { AlumniProfile } from "../data/alumni";
 import { useDirectoryProfiles } from "../hooks/useDirectoryProfiles";
 import { profileIdFromHref } from "../lib/profileGate";
@@ -120,8 +121,11 @@ export function DirectoryPage() {
       <header className="directory-hero">
         <div className="page-shell directory-hero__inner">
           <div className="directory-hero__copy">
-            <p className="eyebrow">Annuaire LSNB</p>
-            <h1>Trouver la bonne personne,<br />pas seulement un nom.</h1>
+            <RouteStop tone="light">Annuaire LSNB</RouteStop>
+            <h1>
+              <span className="heading-line">Trouver la bonne personne,</span>{" "}
+              <span className="heading-line">pas seulement un nom.</span>
+            </h1>
             <p>
               Cherchez une spécialité, un domaine, un pays ou une disponibilité au mentorat.
               Les coordonnées restent sous le contrôle de chaque membre.

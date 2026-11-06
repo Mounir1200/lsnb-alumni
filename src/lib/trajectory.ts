@@ -22,6 +22,12 @@ function toStop(city: string, country: string): TrajectoryStop | undefined {
   return { name: place.precision === "city" ? city : country, coordinates: place.coordinates };
 }
 
+/** True when the member lives in or around Bobo-Dioulasso, where every path starts. */
+export function livesAtOrigin(city: string, country: string): boolean {
+  const place = findPlace(city, country);
+  return place !== undefined && isNearSchool(place.coordinates);
+}
+
 const placeKey = ({ coordinates }: TrajectoryStop) => `${coordinates.latitude},${coordinates.longitude}`;
 
 /**

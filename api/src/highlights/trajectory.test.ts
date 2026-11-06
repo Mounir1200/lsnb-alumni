@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { CareerStep } from "../../../src/lib/careerSteps.ts";
-import { MAX_TRAJECTORY_STOPS, toTrajectoryStops } from "../../../src/lib/trajectory.ts";
+import { livesAtOrigin, MAX_TRAJECTORY_STOPS, toTrajectoryStops } from "../../../src/lib/trajectory.ts";
 
 const step = (location: string, startYear: number): CareerStep =>
   ({ kind: "education", title: "Étape", organization: "", location, startYear, endYear: startYear + 1 });
@@ -44,4 +44,16 @@ test("a detailed place keeps its city, whatever sits between city and country", 
 
 test("two different places in a row are both kept", () => {
   assert.deepEqual(names(toTrajectoryStops([step("Lyon, France", 2019), step("Paris, France", 2021)], "", "")), ["Lyon", "Paris"]);
+});
+
+test("a member living in or around Bobo-Dioulasso is still at the starting point", () => {
+  assert.equal(livesAtOrigin("Bobo-Dioulasso", "Burkina Faso"), true);
+  assert.equal(livesAtOrigin("bobo dioulasso", ""), true);
+});
+
+test("a member living elsewhere, or somewhere unknown, has left the starting point", () => {
+  assert.equal(livesAtOrigin("Dakar", "Sénégal"), false);
+  assert.equal(livesAtOrigin("Ouagadougou", "Burkina Faso"), false);
+  assert.equal(livesAtOrigin("Ville inconnue", "Burkina Faso"), false);
+  assert.equal(livesAtOrigin("", ""), false);
 });
