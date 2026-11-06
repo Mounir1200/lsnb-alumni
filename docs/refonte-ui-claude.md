@@ -56,3 +56,20 @@ Basse :
 - Libellés, étapes et légendes à 13-14 px, contrastes AA (ocre foncé `--banco-deep` pour les petits textes sur fond clair).
 - Final « Prochaine escale : vous » : la section monte sur la précédente, coins arrondis comme les arches.
 - Pied de page : liens lisibles, le point de départ (coordonnées du lycée, comme le hero) ; le crédit photo passe en bas.
+
+## Autres pages (fait)
+
+- Annuaire : titre en deux lignes équilibrées, filtres lisibles (libellés 13 px, champs 16 px), et sur chaque carte le trajet du membre : « SYA », un segment pointillé, la ville actuelle. Un membre resté à Bobo-Dioulasso garde un seul point.
+- Profil : la frise Formation / Expériences devient le tracé du membre, avec le LSNB et le poste actuel mis en avant comme sur le globe.
+- Étapes (mentorat de l'accueil, « comment ça marche » des offres) : des escales numérotées reliées par le tracé.
+- Toutes les pages s'ouvrent sur une escale lisible. Quatre pages (inscription, profil à compléter, espace membre, retour de connexion) utilisaient un libellé vert pâle illisible sur fond clair.
+- Échelle typographique appliquée partout : plus aucun texte sous 12 px hors visuels décoratifs.
+- Final de l'accueil : l'action « Créer mon profil » est encadrée par une arche, comme une porte.
+
+## Contrôle
+
+- 375, 768 et 1280 px : aucun défilement horizontal sur 11 pages ; chaque tracé rejoint le bord de sa section.
+- Contraste des nouveaux textes : de 5,0 à 14,5:1 (AA).
+- Focus visible global conservé ; animation du tracé seulement sans « mouvement réduit ».
+- Build de production et 394 tests : OK.
+- Non vérifié visuellement : les pages derrière connexion (espace membre, relations, messages, éditeurs), faute de compte de test hors production.
