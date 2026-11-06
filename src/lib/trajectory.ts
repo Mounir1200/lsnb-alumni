@@ -9,9 +9,12 @@ export const MAX_TRAJECTORY_STOPS = 6;
 
 export const SCHOOL_STOP: TrajectoryStop = { name: "Bobo-Dioulasso", coordinates: BOBO_DIOULASSO };
 
-/** "Angers, France": the first part names the city, the last the country; a single word may be either. */
+/**
+ * "Angers, France", "Sfax / Tunisie", "Sousse - Tunisie", "Poitiers (France)":
+ * the first part names the city, the last the country; a single word may be either.
+ */
 function splitLocation(location: string) {
-  const parts = location.split(",").map((part) => part.trim()).filter(Boolean);
+  const parts = location.split(/[,/;|()–—]|\s-\s/).map((part) => part.trim()).filter(Boolean);
   return { city: parts[0] ?? "", country: parts.at(-1) ?? "" };
 }
 
