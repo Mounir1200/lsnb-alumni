@@ -1,6 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { SITE_NAME, SITE_ORIGIN } from "../../lib/site";
+import { SITE_NAME } from "../../lib/site";
 import { BrandMark } from "../ui/BrandMark";
 
 export function SiteFooter() {
@@ -29,15 +29,6 @@ export function SiteFooter() {
           <a href="mailto:contact@lsnb-reseau.org">Nous écrire</a>
           <Link to="/confidentialite">Confidentialité</Link>
         </nav>
-
-        <div className="site-footer__origin">
-          <p>Point de départ</p>
-          <p className="site-footer__coordinates">
-            <span>{SITE_ORIGIN.latitude}</span>
-            <span>{SITE_ORIGIN.longitude}</span>
-          </p>
-          <p>Lycée Scientifique National<br />Bobo-Dioulasso, Burkina Faso</p>
-        </div>
       </div>
 
       <div className="page-shell site-footer__bottom">

@@ -55,7 +55,7 @@ Basse :
 - Hero : une seule action principale, l'autre devient un lien fléché.
 - Libellés, étapes et légendes à 13-14 px, contrastes AA (ocre foncé `--banco-deep` pour les petits textes sur fond clair).
 - Final « Prochaine escale : vous » : la section monte sur la précédente, coins arrondis comme les arches.
-- Pied de page : liens lisibles, le point de départ (coordonnées du lycée, comme le hero) ; le crédit photo passe en bas.
+- Pied de page : liens lisibles ; le crédit photo passe en bas.
 
 ## Autres pages (fait)
 
