@@ -167,7 +167,7 @@ export function SiteHeader() {
             <>
               <HeaderLink item={relationsItem} badge={relationsBadge} />
               <HeaderLink item={messagesItem} badge={<UnreadMessagesBadge />} />
-              <ButtonLink to="/espace" size="sm" variant="light">
+              <ButtonLink to={`/alumni/${user.id}`} size="sm" variant="light">
                 Mon espace
               </ButtonLink>
               <SignOutButton className="site-header__signout" />
@@ -215,7 +215,7 @@ export function SiteHeader() {
               {user ? (
                 <>
                   <SignOutButton className="site-header__mobile-signout" />
-                  <ButtonLink to="/espace" variant="light">Mon espace</ButtonLink>
+                  <ButtonLink to={`/alumni/${user.id}`} variant="light">Mon espace</ButtonLink>
                 </>
               ) : (
                 <>

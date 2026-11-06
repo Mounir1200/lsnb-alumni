@@ -278,7 +278,7 @@ export function EditProfilePage() {
       <div className="page-shell account-page__grid profile-editor-page__grid">
         <aside className="account-story profile-editor-story">
           <Link to="/espace" className="back-link">
-            <ArrowLeft size={17} aria-hidden="true" /> Retour à mon espace
+            <ArrowLeft size={17} aria-hidden="true" /> Retour à mon profil
           </Link>
           <RouteStop>Profil personnel</RouteStop>
           <h1>Un parcours vivant reste à jour.</h1>

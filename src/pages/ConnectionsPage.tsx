@@ -195,7 +195,7 @@ export function ConnectionsPage() {
 
   return (
     <div className="connections-page page-shell">
-      <Link to="/espace" className="back-link"><ArrowLeft size={17} aria-hidden="true" /> Retour à mon espace</Link>
+      <Link to={`/alumni/${userId}`} className="back-link"><ArrowLeft size={17} aria-hidden="true" /> Retour à mon profil</Link>
       <header className="connections-page__header">
         <RouteStop>Des parcours qui se rencontrent</RouteStop>
         <h1>Mes relations et demandes</h1>
