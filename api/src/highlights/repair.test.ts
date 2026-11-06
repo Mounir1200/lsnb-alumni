@@ -128,7 +128,7 @@ test("public reads overlay completed repairs and preserve fallbacks during an in
   const rows = [1, 2].map(slot => ({
     slot, profile_id: `member-${slot}`, source_profile: source,
     title: "Original", paragraphs: ["Texte de secours."], generation_method: "fallback",
-    profiles: { is_active: true, member_role: "alumni" },
+    profiles: { is_active: true, member_role: "alumni", listed_publicly: true },
     highlight_article_repairs: slot === 1
       ? { title: generated.title, paragraphs: generated.paragraphs, generated_at: "2026-09-05T12:00:00Z", repair_token: "private-token" }
       : { title: null, paragraphs: null, generated_at: null, repair_token: "private-token" },

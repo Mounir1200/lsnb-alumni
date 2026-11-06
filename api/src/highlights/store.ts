@@ -41,22 +41,24 @@ export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: 
       const params = new URLSearchParams({
         week_start: `eq.${weekStart}`,
         status: "eq.published",
-        select: "published_at,highlight_articles(slot,profile_id,source_profile,title,paragraphs,generation_method,profiles!inner(is_active,member_role),highlight_article_repairs(title,paragraphs,generated_at))",
+        select: "published_at,highlight_articles(slot,profile_id,source_profile,title,paragraphs,generation_method,profiles!inner(is_active,member_role,listed_publicly),highlight_article_repairs(title,paragraphs,generated_at))",
         "highlight_articles.profiles.is_active": "eq.true",
         "highlight_articles.profiles.member_role": "eq.alumni",
+        // A member who leaves the public directory leaves the home page too, at once.
+        "highlight_articles.profiles.listed_publicly": "eq.true",
         limit: "1",
       });
       const rows = await request<{
         published_at: string;
         highlight_articles: (StoredArticle & {
-          profiles: { is_active: boolean; member_role: string };
+          profiles: { is_active: boolean; member_role: string; listed_publicly: boolean };
           highlight_article_repairs?: { title: string | null; paragraphs: string[] | null; generated_at: string | null } | null;
         })[];
       }[]>(`weekly_highlights?${params}`);
       const edition = rows[0];
       if (!edition || !edition.published_at) return null;
       const articles = edition.highlight_articles.filter((article) =>
-        article.profiles?.is_active && article.profiles.member_role === "alumni" &&
+        article.profiles?.is_active && article.profiles.member_role === "alumni" && article.profiles.listed_publicly &&
         article.title && Array.isArray(article.paragraphs) && article.paragraphs.length &&
         (article.generation_method === "ai" || article.generation_method === "fallback"),
       );

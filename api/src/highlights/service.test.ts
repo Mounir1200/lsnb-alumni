@@ -116,7 +116,7 @@ test("public read exposes only the saved portraits and applies active alumni fil
   const rows = [1, 2].map((slot) => ({
     slot, profile_id: `member-${slot}`, source_profile: { ...source, email: "private@example.test", gender: "female" },
     title: generated.title, paragraphs: generated.paragraphs, generation_method: "ai",
-    profiles: { is_active: true, member_role: "alumni" },
+    profiles: { is_active: true, member_role: "alumni", listed_publicly: true },
   }));
   const mockFetch = (async (url, init) => {
     requestedUrl = String(url);
@@ -136,6 +136,23 @@ test("public read exposes only the saved portraits and applies active alumni fil
   assert.equal(await store.current("2026-09-07"), null);
   rows[0]!.profiles.is_active = true;
   rows[0]!.profiles.member_role = "student";
+  assert.equal(await store.current("2026-09-07"), null);
+});
+
+test("a published portrait disappears once its member leaves the public directory", async () => {
+  let requestedUrl = "";
+  const rows = [1, 2].map((slot) => ({
+    slot, profile_id: `member-${slot}`, source_profile: source,
+    title: generated.title, paragraphs: generated.paragraphs, generation_method: "ai",
+    profiles: { is_active: true, member_role: "alumni", listed_publicly: true },
+  }));
+  const store = createHighlightStore({ url: "https://example.supabase.co", secretKey: "sb_secret_test" }, (async (url) => {
+    requestedUrl = String(url);
+    return Response.json([{ published_at: "2026-09-07T00:00:30Z", highlight_articles: rows }]);
+  }) as typeof fetch);
+  assert.equal((await store.current("2026-09-07"))?.articles.length, 2);
+  assert.equal(new URL(requestedUrl).searchParams.get("highlight_articles.profiles.listed_publicly"), "eq.true");
+  rows[1]!.profiles.listed_publicly = false;
   assert.equal(await store.current("2026-09-07"), null);
 });
 
