@@ -6,10 +6,10 @@ export function PrivacyPage() {
       <RouteStop>Confidentialité</RouteStop>
       <h1>Comprendre comment votre parcours est partagé.</h1>
       <p>
-        Ce prototype sépare les informations de profil des coordonnées personnelles. Seuls les
-        membres authentifiés peuvent consulter les profils complets et chaque personne garde le
-        contrôle de la visibilité de son contact. Les portraits Highlight, eux, sont visibles par
-        tous sur l’accueil, sans connexion.
+        LSNB Alumni sépare les informations de profil des coordonnées personnelles. Seuls les
+        membres connectés consultent les profils complets, et chacun décide de la visibilité de son
+        contact. Deux contenus restent visibles sans compte : l’annuaire public et les portraits
+        Highlight de l’accueil.
       </p>
       <h2>Annuaire public</h2>
       <p>
@@ -17,14 +17,18 @@ export function PrivacyPage() {
         spécialité, domaine, ville, pays et disponibilité pour le mentorat. Le parcours, les liens,
         les relations et les coordonnées restent réservés aux membres connectés. Les élèves actuels
         n’apparaissent jamais dans cette liste publique. Chaque ancien élève peut s’en retirer à tout
-        moment depuis « Modifier mon profil » ; sa fiche reste alors visible des seuls membres.
+        moment depuis « Modifier mon profil » ; sa fiche reste alors visible des seuls membres, et il
+        n’est plus présenté dans Highlight.
       </p>
       <h2>Connexions et e-mails</h2>
       <p>
         Les connexions entre membres ne sont visibles que par les deux personnes concernées. Quand
         vous recevez une demande de connexion ou de mentorat, ou quand la vôtre est acceptée, un
-        e-mail vous prévient sans nom ni message ; vous pouvez désactiver ces e-mails dans les
-        réglages de la messagerie.
+        e-mail vous prévient aussitôt, sans nom ni message. Brevo, le prestataire d’envoi, reçoit
+        l’adresse e-mail de votre compte pour le transmettre. Pour éviter les abus, les demandes d’un
+        même membre ne vous valent pas plus d’un e-mail par jour, et un membre ne déclenche pas plus
+        de dix e-mails de demande par jour : au-delà, ses demandes restent visibles sur le site, sans
+        e-mail. Vous pouvez désactiver ces e-mails dans les réglages de la messagerie.
       </p>
       <h2>Données collectées</h2>
       <p>
@@ -89,43 +93,97 @@ export function PrivacyPage() {
       </p>
       <h2 id="highlights">Les portraits Highlight</h2>
       <p>
-        Chaque semaine, deux profils alumni actifs sont tirés au sort pour être mis à l’honneur.
-        Leurs noms, photo, promotion, spécialité, ville, pays et portrait sont publiés sur
-        l’accueil. Cette publication est accessible à toute personne, même sans compte.
+        Chaque lundi, deux anciens élèves sont mis à l’honneur sur l’accueil. Leur nom, leur photo,
+        leur promotion, leur spécialité, leur ville, leur pays et leur portrait y restent visibles
+        par tous, même sans compte, pendant la semaine.
       </p>
+      <h3>Qui est tiré au sort</h3>
       <p>
-        Pour rédiger ces portraits, les informations nécessaires sur le parcours sont envoyées
-        à OpenAI, un service d’intelligence artificielle, avec une indication d’accord féminin,
-        masculin ou neutre issue de votre choix de genre. Sans précision, le texte utilise votre
-        prénom et des formulations neutres. Les données de connexion et les
-        coordonnées enregistrées dans les champs de contact ne sont pas transmises. Le texte est fondé sur
-        les informations du profil, puis enregistré pour la semaine ; chaque visite ne déclenche
-        pas une nouvelle rédaction.
+        Le tirage se fait parmi les anciens élèves dont le compte est actif et qui figurent dans
+        l’annuaire public ; les élèves actuels n’y participent pas. Il retient d’abord les personnes
+        les moins souvent présentées et, quand le genre déclaré le permet, forme un duo femme-homme.
+        Un genre non renseigné reste éligible et n’est jamais déduit du nom ni de la photo. Se retirer
+        de l’annuaire public, ou voir son accès suspendu, retire aussi de Highlight, y compris un
+        portrait déjà publié.
       </p>
+      <h3>Ce qui sert à rédiger le portrait</h3>
+      <p>Seules ces informations de votre profil sont transmises :</p>
+      <ul>
+        <li>votre prénom et votre nom ;</li>
+        <li>votre promotion, votre spécialité, vos spécialités et votre domaine ;</li>
+        <li>votre ville et votre pays ;</li>
+        <li>le texte de votre parcours, limité à ses 5 000 premiers caractères ;</li>
+        <li>votre offre de mentorat et ses sujets, si vous en proposez ;</li>
+        <li>
+          l’accord à employer, féminin, masculin ou neutre, tiré du genre que vous avez déclaré ;
+          sans précision, le texte reste neutre et utilise votre prénom.
+        </li>
+      </ul>
       <p>
-        Vous pouvez corriger vos informations dans votre espace membre. Un portrait déjà publié
-        reflète les informations du profil au moment de sa rédaction. N’ajoutez pas de coordonnées
-        privées dans le texte de votre parcours : ce texte peut être transmis à OpenAI et repris
-        dans un portrait public.
+        Votre photo, votre adresse e-mail, vos coordonnées, vos liens LinkedIn et portfolio, vos
+        messages, vos relations et vos données de connexion ne sont jamais transmis.
       </p>
-      <h2>Modération et activité du réseau</h2>
+      <h3>Qui rédige</h3>
       <p>
-        Les modérateurs consultent les membres de leur promotion et peuvent suspendre un accès
-        en indiquant un motif. Les administrateurs gèrent les accès et peuvent les rétablir.
-        Ces décisions sont enregistrées dans un journal réservé à l’équipe habilitée ; les
-        modérateurs n’y voient que les actions concernant leur promotion.
+        Le portrait est rédigé par un modèle d’intelligence artificielle d’OpenAI, actuellement
+        gpt-6-luna, appelé par l’API d’OpenAI. Chaque profil donne lieu à une seule demande par
+        semaine, qui désactive l’enregistrement de la réponse chez OpenAI. Selon les règles d’OpenAI
+        pour son API, les données envoyées ne servent pas à entraîner ses modèles ; OpenAI peut
+        toutefois conserver jusqu’à 30 jours des journaux de contrôle des abus, qui peuvent contenir
+        la demande et la réponse.
       </p>
+      <h3>Les vérifications</h3>
       <p>
-        Pour comprendre l’utilisation du réseau, les visites des membres connectés sont comptées
-        par jour et par rubrique. Les statistiques ne collectent ni le texte des recherches,
-        ni le contenu des messages, ni les identifiants des profils consultés. Le tableau de bord
-        présente des nombres agrégés ; les modérateurs sont limités à leur promotion.
+        Les consignes interdisent d’inventer : chaque passage doit s’appuyer sur les informations
+        transmises. Avant publication, le texte est refusé s’il contient une adresse e-mail, un
+        lien, un nombre absent du profil ou une recopie du parcours. Dans ce cas, ou si OpenAI ne
+        répond pas, un court texte factuel est composé sans intelligence artificielle, à partir des
+        mêmes informations ; il peut être remplacé ensuite par un portrait rédigé.
       </p>
-      <h2>Mode démonstration</h2>
+      <h3>Conservation et corrections</h3>
       <p>
-        Tant que Supabase n’est pas configuré, le formulaire ne crée aucun compte distant. Il
-        conserve uniquement un aperçu de profil dans le navigateur, sans enregistrer le mot de
-        passe.
+        Le portrait et une copie des informations retenues sont enregistrés avec l’édition de la
+        semaine : une visite ne déclenche jamais de nouvelle rédaction. Les éditions passées restent
+        enregistrées pour équilibrer les tirages suivants, mais seule celle de la semaine est
+        affichée. Vous pouvez corriger vos informations dans votre espace membre ; un portrait déjà
+        publié reflète votre profil au moment de sa rédaction. N’ajoutez pas de coordonnées privées
+        dans le texte de votre parcours : il peut être transmis à OpenAI et repris dans un portrait
+        public.
+      </p>
+      <h2>Modération</h2>
+      <p>
+        L’équipe de modération réunit des administrateurs, qui couvrent tout le réseau, et des
+        modérateurs, chacun rattaché à une promotion.
+      </p>
+      <ul>
+        <li>
+          Dans l’espace d’administration, un modérateur voit les membres de sa promotion : nom,
+          promotion, statut, ville, pays, date d’inscription et état du compte. Il ne voit ni les
+          adresses e-mail, ni les coordonnées, ni les messages.
+        </li>
+        <li>
+          Il peut suspendre l’accès d’un membre de sa promotion en indiquant un motif. Seuls les
+          administrateurs peuvent rétablir un accès ou corriger une promotion, eux aussi avec un
+          motif.
+        </li>
+        <li>Personne ne peut se modérer soi-même ni modérer un membre de l’équipe.</li>
+        <li>
+          Un membre suspendu perd l’accès au réseau : sa fiche disparaît de l’annuaire et de
+          Highlight, et il ne reçoit plus d’e-mails de demande.
+        </li>
+      </ul>
+      <p>
+        Chaque décision est inscrite dans un journal : son auteur, le membre concerné, la promotion,
+        le motif et la date. Ce journal est réservé à l’équipe ; un modérateur n’y voit que les
+        décisions concernant sa promotion.
+      </p>
+      <h2>Statistiques d’utilisation</h2>
+      <p>
+        Pour comprendre l’utilisation du réseau, le site compte, pour chaque membre connecté, ses
+        visites par jour et par rubrique : accueil, annuaire, profils, offres, Highlight et espace
+        membre. Il ne collecte ni le texte des recherches, ni le contenu des messages, ni l’identité
+        des profils consultés. Le tableau de bord n’affiche que des totaux ; un modérateur ne voit
+        que ceux de sa promotion.
       </p>
     </article>
   );
