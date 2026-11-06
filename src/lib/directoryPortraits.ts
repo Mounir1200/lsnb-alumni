@@ -12,13 +12,12 @@ export function pickDirectoryPortraits<T extends { photoUrl?: string }>(
   profiles: T[],
   random: () => number = Math.random,
 ): DirectoryPortraitSlot<T>[] {
-  const withPhoto = profiles.filter((profile) => Boolean(profile.photoUrl));
-  // Fisher-Yates: every order is equally likely.
-  for (let index = withPhoto.length - 1; index > 0; index -= 1) {
-    const other = Math.floor(random() * (index + 1));
-    [withPhoto[index], withPhoto[other]] = [withPhoto[other]!, withPhoto[index]!];
-  }
-  const portraits = withPhoto.slice(0, DIRECTORY_PORTRAIT_SLOTS).map((profile) => ({ kind: "portrait" as const, profile }));
+  // One random key per member, then sorted on it: every order is equally likely.
+  const drawn = profiles
+    .filter((profile) => Boolean(profile.photoUrl))
+    .map((profile) => ({ profile, key: random() }))
+    .sort((first, second) => first.key - second.key);
+  const portraits = drawn.slice(0, DIRECTORY_PORTRAIT_SLOTS).map(({ profile }) => ({ kind: "portrait" as const, profile }));
   const placeholders = Array.from({ length: DIRECTORY_PORTRAIT_SLOTS - portraits.length }, () => ({ kind: "placeholder" as const }));
   return [...portraits, ...placeholders];
 }
