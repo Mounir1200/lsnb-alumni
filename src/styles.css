@@ -502,7 +502,7 @@ textarea:focus-visible {
 }
 
 .site-header__mobile-signout {
-  padding: 13px 18px;
+  padding: 13px 16px;
   font-size: 0.95rem;
   text-align: left;
 }
@@ -549,6 +549,22 @@ textarea:focus-visible {
   gap: 22px;
 }
 
+/* Header labels stay on one line; the breakpoints decide what fits. */
+.site-header__actions .button,
+.site-header__signout {
+  white-space: nowrap;
+}
+
+/* A member's actions are wider than the brand: the tabs take the middle
+   space between them instead of the page's centre. */
+.site-header--member .site-header__inner {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.site-header--member .site-header__desktop-nav {
+  justify-content: center;
+}
+
 .site-header__menu-button {
   position: relative;
   display: none;
@@ -560,6 +576,23 @@ textarea:focus-visible {
   background: transparent;
   color: var(--chalk);
   cursor: pointer;
+}
+
+/* A member's header holds two more tabs, the space and sign-out: below
+   1340 px they no longer fit, so members get the menu of tiles sooner. */
+@media (max-width: 1340px) {
+  .site-header--member .site-header__inner {
+    grid-template-columns: 1fr auto;
+  }
+
+  .site-header--member .site-header__desktop-nav,
+  .site-header--member .site-header__actions {
+    display: none;
+  }
+
+  .site-header--member .site-header__menu-button {
+    display: grid;
+  }
 }
 
 .site-header__menu-dot {
@@ -581,23 +614,100 @@ textarea:focus-visible {
   transition: max-height 280ms ease;
 }
 
+/* Never taller than the screen: a longer menu scrolls inside it. */
 .site-header__mobile-panel.is-open {
-  max-height: 440px;
+  max-height: calc(100dvh - var(--header-height-compact));
+  overflow-y: auto;
 }
 
+/* On a tablet the menu stays a narrow column under the button that opened it. */
 .site-header__mobile-panel nav {
   display: grid;
-  gap: 8px;
+  justify-items: end;
+  gap: 10px;
   padding-block: 18px 28px;
 }
 
-.site-header__mobile-panel .site-header__link {
-  min-height: 52px;
-  font-size: 0.95rem;
+/* One narrow column, so the tiles keep their size on a tablet too. */
+.site-header__mobile-panel nav > * {
+  width: min(100%, 360px);
+}
+
+/* The site's pages as a square of tiles (Hick: four choices read at a glance;
+   Fitts: large targets), the member's own pages as a row beneath them. */
+.site-header__mobile-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.site-header__mobile-tiles--own {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.site-header__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 1;
+  padding: 16px;
+  color: rgba(255, 253, 248, 0.74);
+  border: 1px solid rgba(255, 253, 248, 0.2);
+  border-radius: 16px;
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+.site-header__mobile-tiles--own .site-header__tile {
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.site-header__tile > svg {
+  color: var(--banco-light);
+}
+
+.site-header__tile-text {
+  display: grid;
+  gap: 4px;
+}
+
+.site-header__tile-text b {
+  color: var(--chalk);
+  font-size: var(--text-body);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.site-header__mobile-tiles--own .site-header__tile-text b {
+  font-size: var(--text-small);
+}
+
+.site-header__tile-text small {
+  font-size: var(--text-label);
+  line-height: 1.35;
+}
+
+.site-header__tile:hover {
+  border-color: rgba(255, 253, 248, 0.42);
+}
+
+.site-header__tile.is-active {
+  border-color: var(--banco-light);
+  background: rgba(231, 183, 125, 0.08);
+}
+
+.site-header__tile .site-header__count,
+.site-header__tile .message-unread-count {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  margin: 0;
 }
 
 .site-header__mobile-login {
-  padding: 13px 18px;
+  padding: 13px 16px;
   color: rgba(255, 253, 248, 0.78);
   font-size: 0.95rem;
   font-weight: 650;
