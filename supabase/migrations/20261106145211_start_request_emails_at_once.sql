@@ -5,12 +5,13 @@ begin;
 -- the API for a round as soon as it holds an email. The workflow stays for
 -- unread-message alerts, due five minutes after a message, and for retries.
 
--- pg_net exists on Supabase only; the local test database stubs it. Members
--- must not be able to make the database send requests of their own.
+-- pg_net exists on Supabase only; the local test database stubs it. Supabase
+-- lets every role execute its functions, a grant only supabase_admin can take
+-- back. Members still cannot reach them: the data API exposes only the public
+-- and graphql_public schemas, and no function open to members calls pg_net.
 do $$ begin
   if exists (select 1 from pg_available_extensions where name = 'pg_net') then
     create extension if not exists pg_net with schema extensions;
-    revoke execute on all functions in schema net from public, anon, authenticated;
   end if;
 end $$;
 
