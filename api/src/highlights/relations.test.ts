@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ConnectionRequest } from "../../../src/lib/mentorshipData.ts";
-import { peerConnectionStatus, requestKindLabel } from "../../../src/lib/relations.ts";
+import { peerConnectionStatus, requestedKinds, requestKindLabel } from "../../../src/lib/relations.ts";
 
 const me = "11111111-1111-4111-8111-111111111111";
 const them = "22222222-2222-4222-8222-222222222222";
@@ -35,4 +35,9 @@ test("each request kind has its own label, offer questions first", () => {
   assert.equal(requestKindLabel(request({ kind: "mentoring" })), "Demande de mentorat");
   assert.equal(requestKindLabel(request({ kind: "contact" })), "Demande d’échange");
   assert.equal(requestKindLabel(request({ kind: "contact", offerId: "44444444-4444-4444-8444-444444444444" })), "Question sur une offre");
+});
+
+test("asking for mentoring also asks to connect; asking to connect asks for nothing else", () => {
+  assert.deepEqual(requestedKinds("mentoring"), ["connection", "mentoring"]);
+  assert.deepEqual(requestedKinds("connection"), ["connection"]);
 });

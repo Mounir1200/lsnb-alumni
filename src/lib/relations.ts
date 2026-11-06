@@ -1,5 +1,16 @@
 import type { ConnectionKind, ConnectionRequest } from "./mentorshipData";
 
+/** The two requests a member sends from a profile. */
+export type RequestKind = Extract<ConnectionKind, "connection" | "mentoring">;
+
+/**
+ * A mentoring request also asks to connect; a connection request asks for
+ * nothing else. The database applies the same rule to real requests.
+ */
+export function requestedKinds(kind: RequestKind): RequestKind[] {
+  return kind === "mentoring" ? ["connection", "mentoring"] : ["connection"];
+}
+
 /** Where two members stand in their peer connection, seen by one of them. */
 export type PeerConnectionStatus = "connected" | "sent" | "received" | "none";
 

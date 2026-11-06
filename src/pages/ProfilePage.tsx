@@ -12,7 +12,7 @@ import { ProfileGate } from "../components/auth/ProfileGate";
 import { ProfileMentorshipNetwork } from "../components/mentoring/ProfileMentorshipNetwork";
 import { ProfileAside } from "../components/profile/ProfileAside";
 import { ProfileMilestones } from "../components/profile/ProfileMilestones";
-import { ProfileRequestButtons, type MentoringStatus, type RequestKind } from "../components/profile/ProfileRequestButtons";
+import { ProfileRequestButtons, type MentoringStatus } from "../components/profile/ProfileRequestButtons";
 import { ProfileStory } from "../components/profile/ProfileStory";
 import { ProfileTrajectory } from "../components/profile/ProfileTrajectory";
 import "../components/profile/Profile.css";
@@ -23,7 +23,7 @@ import { loadProfile } from "../lib/profileRepository";
 import { getProfileCompletionPath } from "../lib/auth";
 import { normalizeSearchText } from "../lib/searchText";
 import { createConnectionRequest, findMemberConnection, getConnectionErrorMessage, loadActiveMentorships, loadProfileConnections, type ConnectionRequest, type Mentorship } from "../lib/mentorshipRepository";
-import { peerConnectionStatus } from "../lib/relations";
+import { peerConnectionStatus, requestedKinds, type RequestKind } from "../lib/relations";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { NotFoundPage } from "./NotFoundPage";
 
@@ -38,7 +38,10 @@ export function ProfilePage() {
   const demoProfile = getAlumniProfile(profileId);
   const [profile, setProfile] = useState<AlumniProfile | undefined>(demoProfile);
   const [loading, setLoading] = useState(Boolean(!demoProfile && isSupabaseConfigured));
-  const [requestSent, setRequestSent] = useState(false);
+  // What this visit sent: a mentoring request counts as a connection request too.
+  const [sentKinds, setSentKinds] = useState<RequestKind[]>([]);
+  const requestSent = sentKinds.length > 0;
+  const recordSent = (kind: RequestKind) => setSentKinds((kinds) => [...new Set([...kinds, ...requestedKinds(kind)])]);
   const [requestOpen, setRequestOpen] = useState<RequestKind | null>(null);
   const [requestStatus, setRequestStatus] = useState<RequestStatus>({ kind: "idle" });
   const [connectionsReload, setConnectionsReload] = useState(0);
@@ -54,7 +57,7 @@ export function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    setRequestSent(false);
+    setSentKinds([]);
     setRequestOpen(null);
     setRequestStatus({ kind: "idle" });
 
@@ -134,13 +137,13 @@ export function ProfilePage() {
   const requests = currentConnections?.requests ?? [];
   const connectionsReady = currentConnections?.requests !== undefined && currentConnections.mentorships !== undefined
     && currentConnections.connected !== undefined;
-  // A demo profile only pretends: once "sent", both requests read as waiting.
-  const demoSent = profile.isDemo !== false && requestSent;
-  const peerStatus = demoSent ? "sent" : peerConnectionStatus(user?.id ?? "", requests, currentConnections?.connected ?? false);
+  // A demo profile only pretends, showing what each request would send.
+  const demoKinds = profile.isDemo !== false ? sentKinds : [];
+  const peerStatus = demoKinds.includes("connection") ? "sent" : peerConnectionStatus(user?.id ?? "", requests, currentConnections?.connected ?? false);
   const ownMentoringRequests = requests.filter((item) => item.kind === "mentoring" && item.requesterId === user?.id);
   const hasActiveMentorship = currentConnections?.mentorships?.some((item) => item.mentorId === profile.id && item.menteeId === user?.id);
   const mentoring: MentoringStatus = hasActiveMentorship ? "active"
-    : demoSent || ownMentoringRequests.some((item) => item.status === "pending") ? "pending" : "none";
+    : demoKinds.includes("mentoring") || ownMentoringRequests.some((item) => item.status === "pending") ? "pending" : "none";
   const acceptedConversation = requests.find((item) => item.status === "accepted");
   const hasRelation = peerStatus !== "none" || mentoring !== "none";
   const declinedRequest = requests.some((item) => item.status === "declined" && item.requesterId === user?.id);
@@ -149,7 +152,7 @@ export function ProfilePage() {
 
   const handleRequestClick = (kind: RequestKind) => {
     if (profile.isDemo !== false) {
-      setRequestSent(true);
+      recordSent(kind);
       return;
     }
     setRequestOpen(kind);
@@ -176,13 +179,19 @@ export function ProfilePage() {
       return;
     }
     const actingScope = requestScope;
+    const alsoAsksToConnect = requestKind === "mentoring" && peerStatus === "none";
     setRequestStatus({ kind: "loading" });
     try {
       await createConnectionRequest(user.id, profile.id, requestKind, String(data.get("message") ?? "").trim());
       if (!mounted.current || currentScope.current !== actingScope) return;
-      setRequestSent(true);
+      recordSent(requestKind);
       setRequestOpen(null);
-      setRequestStatus({ kind: "success", message: "Votre demande a été transmise. Retrouvez-la dans Mes relations et demandes." });
+      setRequestStatus({
+        kind: "success",
+        message: alsoAsksToConnect
+          ? "Vos demandes de mentorat et de connexion ont été transmises. Retrouvez-les dans Mes relations et demandes."
+          : "Votre demande a été transmise. Retrouvez-la dans Mes relations et demandes.",
+      });
       setConnectionsReload((value) => value + 1);
     } catch (error) {
       if (mounted.current && currentScope.current === actingScope) setRequestStatus({ kind: "error", message: getConnectionErrorMessage(error) });
@@ -262,6 +271,9 @@ export function ProfilePage() {
               </h2>
               {requestOpen === "connection" && (
                 <p>Une fois votre demande acceptée, vous serez en relation et pourrez échanger dans la messagerie.</p>
+              )}
+              {requestOpen === "mentoring" && peerStatus === "none" && (
+                <p>Elle vaut aussi demande de connexion&nbsp;: si {profile.firstName} accepte le mentorat, vous serez en relation.</p>
               )}
             </div>
             <label className="field-group">

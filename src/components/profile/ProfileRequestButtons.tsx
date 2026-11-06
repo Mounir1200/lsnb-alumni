@@ -1,8 +1,7 @@
 import { Check, LoaderCircle, Orbit, UserCheck, UserPlus } from "lucide-react";
-import type { PeerConnectionStatus } from "../../lib/relations";
+import type { PeerConnectionStatus, RequestKind } from "../../lib/relations";
 import { Button, ButtonLink } from "../ui/Button";
 
-export type RequestKind = "connection" | "mentoring";
 export type MentoringStatus = "active" | "pending" | "none";
 
 const connectionLabels: Record<Exclude<PeerConnectionStatus, "received">, string> = {
@@ -25,7 +24,7 @@ type ProfileRequestButtonsProps = {
   onRequest: (kind: RequestKind) => void;
 };
 
-/** Any two members can connect; mentoring is asked separately from members who offer it. */
+/** Any two members can connect; asking a member who offers mentoring for it also asks to connect. */
 export function ProfileRequestButtons({ checking, peerStatus, mentoring, onRequest }: ProfileRequestButtonsProps) {
   if (checking) {
     return (
