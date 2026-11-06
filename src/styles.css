@@ -450,50 +450,30 @@ textarea:focus-visible {
 .site-header__desktop-nav {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
 }
 
 .site-header__link,
 .site-header__login {
   color: rgba(255, 253, 248, 0.78);
-  font-size: 0.9375rem;
   font-weight: 650;
-  transition: color var(--duration-fast) ease;
+  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 
-/* Plain words, with an ochre stroke under the current page: the stroke is the route's colour. */
+/* Each page is a framed tab; the current one is outlined in the route's ochre. */
 .site-header__link {
-  --nav-pad: 14px;
-  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 var(--nav-pad);
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 253, 248, 0.2);
+  border-radius: 12px;
+  font-size: var(--text-label);
   white-space: nowrap;
 }
 
-.site-header__desktop-nav .site-header__link::after {
-  position: absolute;
-  right: var(--nav-pad);
-  bottom: 6px;
-  left: var(--nav-pad);
-  height: 2px;
-  border-radius: 2px;
-  background: var(--banco-light);
-  content: "";
-  opacity: 0;
-  transform: scaleX(0.4);
-  transition: opacity var(--duration-fast) ease, transform var(--duration) var(--ease-out);
-}
-
-.site-header__desktop-nav .site-header__link:hover::after {
-  opacity: 0.45;
-  transform: scaleX(1);
-}
-
-.site-header__desktop-nav .site-header__link.is-active::after {
-  opacity: 1;
-  transform: scaleX(1);
+.site-header__login {
+  font-size: 0.9375rem;
 }
 
 .site-header__link:hover,
@@ -543,11 +523,8 @@ textarea:focus-visible {
 }
 
 .site-header__link.is-active {
+  border-color: var(--banco-light);
   color: var(--chalk);
-}
-
-.site-header__mobile-panel .site-header__link.is-active {
-  box-shadow: inset 3px 0 0 var(--banco-light);
 }
 
 .site-header__count {
@@ -4943,7 +4920,7 @@ a.connection-card__person:hover b {
   }
 
   .site-header__link {
-    --nav-pad: 10px;
+    padding-inline: 14px;
   }
 
   .site-header__actions {

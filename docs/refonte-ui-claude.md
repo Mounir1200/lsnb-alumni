@@ -19,7 +19,7 @@ Ce qui ne change pas : bleu nuit `#0c2948` / `#071d33`, ocre banco `#c27d38` / `
 
 Haute :
 - Textes trop petits : libellés en capitales à 11,5 px, boutons à 13 px, descriptions sous 14 px.
-- Navigation de l'en-tête en boîtes encadrées : lourde, et « Se connecter » disparaît sous 1 080 px.
+- « Se connecter » disparaît de l'en-tête sous 1 080 px.
 
 Moyenne :
 - Duo automatique bouton plein + bouton contour sur chaque section.
@@ -36,7 +36,7 @@ Basse :
 - **Typographie** : échelle unique (display, titre, sous-titre, corps, petit, libellé). Corps 16 px minimum ; libellés 13 px, réservés aux vrais libellés.
 - **Espacement** : multiples de 8 px pour le rythme entre blocs.
 - **Boutons** : hauteur 44 / 48 / 56 px, texte 15 px ; une action principale par section ; l'action secondaire devient un lien fléché.
-- **Navigation** : liens texte, indicateur ocre sous la page active, connexion toujours visible.
+- **Navigation** : onglets encadrés, la page active cernée d'ocre (le style choisi par l'utilisateur), connexion toujours visible ; l'en-tête reste en haut et se compacte au défilement.
 - **Mouvement** : 150 à 300 ms, tracés qui se dessinent une fois, `prefers-reduced-motion` respecté, contenu toujours visible sans animation.
 
 ## Étapes
