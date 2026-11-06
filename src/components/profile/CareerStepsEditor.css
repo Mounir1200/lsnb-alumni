@@ -9,7 +9,7 @@
 .career-editor__title {
   margin: 0;
   color: var(--ink);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -46,7 +46,7 @@
 .career-editor__hint {
   margin: 0;
   color: #6d7882;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 
@@ -81,7 +81,7 @@
 
 .career-step-card__header > b {
   color: var(--ink);
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .career-step-card__remove {
@@ -95,7 +95,7 @@
   background: none;
   color: #7d301d;
   cursor: pointer;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 
