@@ -1,4 +1,4 @@
-import { DoorOpen, Handshake, LogOut, Menu, MessageCircle, Newspaper, Orbit, UserRound, Users, X, type LucideIcon } from "lucide-react";
+import { DoorOpen, Handshake, LogOut, Menu, MessageCircle, Newspaper, Orbit, Users, X, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, type Location } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
@@ -15,9 +15,9 @@ type NavigationItem = {
   label: string;
   to: string;
   isCurrent: (location: Location) => boolean;
-  /** Shown on the phone menu's tiles only; the compact tiles of a member's own pages carry no hint. */
+  /** Shown on the phone menu's tiles only. */
   icon: LucideIcon;
-  hint?: string;
+  hint: string;
 };
 
 const isMentorDirectory = ({ pathname, search }: Location) =>
@@ -50,6 +50,7 @@ const relationsItem: NavigationItem = {
   to: "/espace/relations",
   isCurrent: ({ pathname }) => pathname === "/espace/relations",
   icon: Handshake,
+  hint: "Demandes et contacts",
 };
 
 const messagesItem: NavigationItem = {
@@ -57,15 +58,7 @@ const messagesItem: NavigationItem = {
   to: "/espace/messages",
   isCurrent: ({ pathname }) => pathname === "/espace/messages" || pathname.startsWith("/espace/messages/"),
   icon: MessageCircle,
-};
-
-const spaceItem: NavigationItem = {
-  label: "Mon espace",
-  to: "/espace",
-  // Relations and messages live under it but have their own entries.
-  isCurrent: (location) => location.pathname.startsWith("/espace")
-    && !relationsItem.isCurrent(location) && !messagesItem.isCurrent(location),
-  icon: UserRound,
+  hint: "Vos conversations",
 };
 
 const useIsCurrent = (item: NavigationItem) => item.isCurrent(useLocation());
@@ -84,7 +77,7 @@ function HeaderLink({ item, badge }: { item: NavigationItem; badge?: ReactNode }
   );
 }
 
-/** A page on the phone menu: a square tile with its icon, its name and, for the site's pages, a short hint. */
+/** A page on the phone menu: a tile with its icon, its name and a short hint. */
 function MenuTile({ item, badge }: { item: NavigationItem; badge?: ReactNode }) {
   const isCurrent = useIsCurrent(item);
   const Icon = item.icon;
@@ -97,7 +90,7 @@ function MenuTile({ item, badge }: { item: NavigationItem; badge?: ReactNode }) 
       <Icon size={22} aria-hidden="true" />
       <span className="site-header__tile-text">
         <b>{item.label}</b>
-        {item.hint && <small aria-hidden="true">{item.hint}</small>}
+        <small aria-hidden="true">{item.hint}</small>
       </span>
       {badge}
     </Link>
@@ -211,24 +204,26 @@ export function SiteHeader() {
           <nav aria-label="Navigation mobile" className="page-shell">
             <div className="site-header__mobile-tiles">
               {navigation.map((item) => <MenuTile key={item.to} item={item} />)}
-            </div>
-            {user ? (
-              <>
-                <div className="site-header__mobile-tiles site-header__mobile-tiles--own">
+              {user && (
+                <>
                   <MenuTile item={relationsItem} badge={relationsBadge} />
                   <MenuTile item={messagesItem} badge={<UnreadMessagesBadge />} />
-                  <MenuTile item={spaceItem} />
-                </div>
-                <SignOutButton className="site-header__mobile-signout" />
-              </>
-            ) : (
-              <>
-                <NavLink to="/connexion" className="site-header__mobile-login">Se connecter</NavLink>
-                <ButtonLink to="/rejoindre" variant="light" className="mt-2">
-                  Rejoindre le réseau
-                </ButtonLink>
-              </>
-            )}
+                </>
+              )}
+            </div>
+            <div className="site-header__mobile-account">
+              {user ? (
+                <>
+                  <SignOutButton className="site-header__mobile-signout" />
+                  <ButtonLink to="/espace" variant="light">Mon espace</ButtonLink>
+                </>
+              ) : (
+                <>
+                  <NavLink to="/connexion" className="site-header__mobile-login">Se connecter</NavLink>
+                  <ButtonLink to="/rejoindre" variant="light">Rejoindre le réseau</ButtonLink>
+                </>
+              )}
+            </div>
           </nav>
         </div>
       )}
