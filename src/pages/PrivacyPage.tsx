@@ -1,4 +1,15 @@
+import { ArrowUpRight } from "lucide-react";
+import type { ReactNode } from "react";
 import { RouteStop } from "../components/visual/RouteStop";
+
+function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+      <ArrowUpRight size={14} aria-hidden="true" />
+    </a>
+  );
+}
 
 export function PrivacyPage() {
   return (
@@ -127,10 +138,17 @@ export function PrivacyPage() {
       <p>
         Le portrait est rédigé par un modèle d’intelligence artificielle d’OpenAI, actuellement
         gpt-6-luna, appelé par l’API d’OpenAI. Chaque profil donne lieu à une seule demande par
-        semaine, qui désactive l’enregistrement de la réponse chez OpenAI. Selon les règles d’OpenAI
-        pour son API, les données envoyées ne servent pas à entraîner ses modèles ; OpenAI peut
-        toutefois conserver jusqu’à 30 jours des journaux de contrôle des abus, qui peuvent contenir
-        la demande et la réponse.
+        semaine, qui désactive l’enregistrement de la réponse chez OpenAI. Selon les{" "}
+        <ExternalLink href="https://developers.openai.com/api/docs/guides/your-data">
+          règles d’OpenAI sur les données de son API (en anglais)
+        </ExternalLink>
+        , les données envoyées ne servent pas à entraîner ses modèles ; OpenAI peut toutefois
+        conserver jusqu’à 30 jours des journaux de contrôle des abus, qui peuvent contenir la
+        demande et la réponse. Le reste de leur traitement relève de la{" "}
+        <ExternalLink href="https://openai.com/policies/privacy-policy/">
+          politique de confidentialité d’OpenAI
+        </ExternalLink>
+        .
       </p>
       <h3>Les vérifications</h3>
       <p>

@@ -4823,6 +4823,24 @@ a.connection-card__person:hover b {
   color: var(--banco);
 }
 
+.legal-page a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--banco);
+  text-underline-offset: 3px;
+}
+
+.legal-page a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.legal-page a svg {
+  display: inline-block;
+  margin-left: 2px;
+  vertical-align: -2px;
+}
+
 .legal-page > ul li + li {
   margin-top: 8px;
 }
