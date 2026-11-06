@@ -620,10 +620,11 @@ textarea:focus-visible {
   overflow-y: auto;
 }
 
-/* On a tablet the menu stays a narrow column under the button that opened it. */
+/* Wider than a phone, the menu is one compact group: centred, it balances the
+   panel instead of leaving half of it empty. */
 .site-header__mobile-panel nav {
   display: grid;
-  justify-items: end;
+  justify-items: center;
   gap: 10px;
   padding-block: 18px 28px;
 }
