@@ -3,7 +3,7 @@ import { after, before, beforeEach, describe, it } from 'node:test'
 import type { PGlite } from '@electric-sql/pglite'
 import { answerRequest, applyMigration, asMember, createMigratedDatabase, INTRODUCTION, seedMember, sendRequest } from './testDatabase.ts'
 
-const MIGRATION = '20261106120000_mentoring_asks_to_connect.sql'
+const MIGRATION = '20261106101133_mentoring_asks_to_connect.sql'
 let db: PGlite
 type Request = { id: string; request_kind: string; status: string; requester_id: string; message: string }
 
