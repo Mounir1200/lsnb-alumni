@@ -46,6 +46,12 @@ test("two different places in a row are both kept", () => {
   assert.deepEqual(names(toTrajectoryStops([step("Lyon, France", 2019), step("Paris, France", 2021)], "", "")), ["Lyon", "Paris"]);
 });
 
+test("a place written with a slash, a dash or brackets is still found", () => {
+  const steps = [step("Sfax / Tunisie", 2015), step("Sousse - Tunisie", 2017), step("Poitiers (France)", 2019)];
+  assert.deepEqual(names(toTrajectoryStops(steps, "", "")), ["Sfax", "Sousse", "Poitiers"]);
+  assert.deepEqual(names(toTrajectoryStops([step("Villeinconnue / Maroc", 2020)], "", "")), ["Maroc"]);
+});
+
 test("a member living in or around Bobo-Dioulasso is still at the starting point", () => {
   assert.equal(livesAtOrigin("Bobo-Dioulasso", "Burkina Faso"), true);
   assert.equal(livesAtOrigin("bobo dioulasso", ""), true);

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ConnectionRequest } from "../../../src/lib/mentorshipData.ts";
-import { peerConnectionStatus, requestedKinds, requestKindLabel } from "../../../src/lib/relations.ts";
+import { openRequests, peerConnectionStatus, requestedKinds, requestKindLabel } from "../../../src/lib/relations.ts";
 
 const me = "11111111-1111-4111-8111-111111111111";
 const them = "22222222-2222-4222-8222-222222222222";
@@ -40,4 +40,19 @@ test("each request kind has its own label, offer questions first", () => {
 test("asking for mentoring also asks to connect; asking to connect asks for nothing else", () => {
   assert.deepEqual(requestedKinds("mentoring"), ["connection", "mentoring"]);
   assert.deepEqual(requestedKinds("connection"), ["connection"]);
+});
+
+test("the request lists keep what still waits, and the refusals a member received an answer for", () => {
+  const ids = (requests: ConnectionRequest[]) => requests.map((item) => item.id);
+  const all = [
+    request({ id: "received-pending", requesterId: them, recipientId: me }),
+    request({ id: "received-accepted", requesterId: them, recipientId: me, status: "accepted" }),
+    request({ id: "received-declined", requesterId: them, recipientId: me, status: "declined" }),
+    request({ id: "sent-pending" }),
+    request({ id: "sent-accepted", status: "accepted" }),
+    request({ id: "sent-declined", status: "declined" }),
+  ];
+  const { received, sent } = openRequests(me, all);
+  assert.deepEqual(ids(received), ["received-pending"]);
+  assert.deepEqual(ids(sent), ["sent-pending", "sent-declined"]);
 });

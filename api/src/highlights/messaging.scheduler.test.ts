@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { buildApp } from "../app.js";
+import { ROUNDS_PER_MINUTE } from "../messaging/roundLimit.js";
 import { configuredNotificationScheduler, createNotificationScheduler } from "../messaging/scheduler.js";
 
 const apiKey="test-brevo-key-never-log";
@@ -42,6 +43,28 @@ test("notification trigger cannot choose recipients or messages and returns only
     const success=await app.inject({method:'POST',url:'/messaging/notifications/run',headers:auth,payload:{}});
     assert.equal(success.statusCode,200);assert.equal(success.headers['cache-control'],'no-store');
     assert.deepEqual(success.json(),{claimed:2,delivered:1,failed:1});assert.equal(runs,1);
+  }finally{await app.close()}
+});
+
+test("a full round of five jobs is reported as it is",async()=>{
+  const app=await buildApp({config,logger:false,notificationScheduler:createNotificationScheduler(apiKey,async()=>({claimed:5,delivered:4,failed:1}))});
+  try {
+    const response=await app.inject({method:'POST',url:'/messaging/notifications/run',headers:auth,payload:{}});
+    assert.equal(response.statusCode,200);assert.deepEqual(response.json(),{claimed:5,delivered:4,failed:1});
+  }finally{await app.close()}
+});
+
+test("the trigger starts twenty rounds a minute at most, and impostors cannot use them up",async()=>{
+  let runs=0;
+  const app=await buildApp({config,logger:false,notificationScheduler:createNotificationScheduler(apiKey,async()=>{runs++;return {claimed:0,delivered:0,failed:0}})});
+  const call=(authorization:string)=>app.inject({method:'POST',url:'/messaging/notifications/run',headers:{authorization},payload:{}});
+  try {
+    assert.equal(ROUNDS_PER_MINUTE,20);
+    for(let attempt=0;attempt<2*ROUNDS_PER_MINUTE;attempt++)assert.equal((await call(`Bearer ${'0'.repeat(64)}`)).statusCode,401);
+    for(let round=0;round<ROUNDS_PER_MINUTE;round++)assert.equal((await call(auth.authorization)).statusCode,200);
+    const refused=await call(auth.authorization);
+    assert.equal(refused.statusCode,429);assert.equal(refused.headers['cache-control'],'no-store');
+    assert.equal(refused.headers['retry-after'],'60');assert.equal(runs,ROUNDS_PER_MINUTE);
   }finally{await app.close()}
 });
 

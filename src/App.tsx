@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import { RequireAuth } from "./components/auth/RequireAuth";
+import { OwnProfileRedirect } from "./components/auth/OwnProfileRedirect";
 import { SiteFooter } from "./components/layout/SiteFooter";
 import { SiteHeader } from "./components/layout/SiteHeader";
 import { RouteTransition } from "./components/motion/RouteTransition";
@@ -12,7 +13,6 @@ import { HomePage } from "./pages/HomePage";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { JoinPage } from "./pages/JoinPage";
 import { LoginPage } from "./pages/LoginPage";
-import { MemberPage } from "./pages/MemberPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { OfferEditorPage } from "./pages/OfferEditorPage";
 import { OfferPage } from "./pages/OfferPage";
@@ -76,7 +76,7 @@ export function App() {
               path="/espace"
               element={
                 <RequireAuth>
-                  <MemberPage />
+                  <OwnProfileRedirect />
                 </RequireAuth>
               }
             />

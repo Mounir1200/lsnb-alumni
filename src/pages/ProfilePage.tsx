@@ -4,6 +4,7 @@ import {
   MapPin,
   Orbit,
   PencilLine,
+  Users,
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -229,9 +230,14 @@ export function ProfilePage() {
 
             <div className="profile-hero__action">
               {isOwnProfile ? (
-                <ButtonLink to="/espace/modifier" size="lg">
-                  <PencilLine size={18} aria-hidden="true" /> Modifier mon profil
-                </ButtonLink>
+                <div className="profile-hero__buttons">
+                  <ButtonLink to="/espace/modifier" size="lg">
+                    <PencilLine size={18} aria-hidden="true" /> Modifier mon profil
+                  </ButtonLink>
+                  <ButtonLink to="/espace/relations" size="lg" variant="ghost">
+                    <Users size={18} aria-hidden="true" /> Relations
+                  </ButtonLink>
+                </div>
               ) : profile.isDemo === false && !profileCompleted ? (
                 <ButtonLink to={getProfileCompletionPath(`/alumni/${profileId}`)} size="lg">Compléter mon profil</ButtonLink>
               ) : (
@@ -262,9 +268,7 @@ export function ProfilePage() {
         {requestOpen && !isRequestUnavailable(requestOpen) && (
           <form key={`${requestScope}:${requestOpen}`} className="profile-request-form" onSubmit={handleRequestSubmit}>
             <div>
-              <p className="eyebrow eyebrow--dark">
-                {requestOpen === "mentoring" ? "Demande de mentorat" : "Demande de connexion"}
-              </p>
+              <RouteStop>{requestOpen === "mentoring" ? "Demande de mentorat" : "Demande de connexion"}</RouteStop>
               <h2>
                 {requestOpen === "mentoring"
                   ? `Présentez votre question à ${profile.firstName}.`

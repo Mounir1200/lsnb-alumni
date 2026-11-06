@@ -131,7 +131,7 @@ export function DirectoryPage() {
               Les coordonnées restent sous le contrôle de chaque membre.
             </p>
           </div>
-          <DirectoryConstellation />
+          <DirectoryConstellation profiles={profiles} onProfileClick={gateProfileLink} />
         </div>
       </header>
 

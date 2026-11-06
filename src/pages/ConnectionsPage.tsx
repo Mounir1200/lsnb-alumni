@@ -6,7 +6,7 @@ import { Avatar } from "../components/ui/Avatar";
 import { MemberConnectionRow } from "../components/mentoring/MemberConnectionRow";
 import { MentorshipPerson } from "../components/mentoring/MentorshipPerson";
 import { usePendingRequests } from "../components/mentoring/PendingRequestsProvider";
-import { Button, ButtonLink } from "../components/ui/Button";
+import { Button } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
 import {
   answerConnectionRequest,
@@ -22,7 +22,7 @@ import {
   type MemberSummary,
   type Mentorship,
 } from "../lib/mentorshipRepository";
-import { requestKindLabel } from "../lib/relations";
+import { openRequests, requestKindLabel } from "../lib/relations";
 
 const acceptedMessages: Record<ConnectionRequest["kind"], string> = {
   connection: "Connexion acceptée : vous êtes maintenant en relation.",
@@ -109,8 +109,7 @@ export function ConnectionsPage() {
   const current = state?.userId === userId ? state : undefined;
   const ready = current?.requests !== undefined && current.mentorships !== undefined && current.connections !== undefined;
   const connections = current?.connections ?? [];
-  const received = current?.requests?.filter((item) => item.recipientId === userId) ?? [];
-  const sent = current?.requests?.filter((item) => item.requesterId === userId) ?? [];
+  const { received, sent } = openRequests(userId, current?.requests ?? []);
   const mentors = current?.mentorships?.filter((item) => item.menteeId === userId) ?? [];
   const mentees = current?.mentorships?.filter((item) => item.mentorId === userId) ?? [];
 
@@ -119,9 +118,6 @@ export function ConnectionsPage() {
     const unavailableMember = !request.requester || !request.recipient;
     const mentoringPaused = request.kind === "mentoring" && request.recipient?.offersMentoring !== true;
     const cannotAccept = unavailableMember || mentoringPaused;
-    const activeMentorship = request.kind === "mentoring" && current?.mentorships?.some(
-      (item) => item.mentorId === request.recipientId && item.menteeId === request.requesterId,
-    );
     return (
       <li className="connection-card" key={request.id}>
         <div className="connection-card__heading">
@@ -159,9 +155,6 @@ export function ConnectionsPage() {
         {request.status === "pending" && !incoming && (
           <div className="connection-card__actions"><Button size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => void performAction(request.id, () => withdrawConnectionRequest(request.id), "Votre demande a été retirée.")}>Retirer ma demande</Button></div>
         )}
-        {request.status === "accepted" && request.kind === "mentoring" && <p className="connection-card__note">{activeMentorship ? "Vous avez actuellement un mentorat en cours avec ce membre." : "Vous n’avez plus de mentorat en cours avec ce membre."}</p>}
-        {request.status === "accepted" && request.kind !== "mentoring" && <p className="connection-card__note">Votre conversation privée est ouverte. Vous pouvez poursuivre l’échange dans la messagerie.</p>}
-        {request.status === "accepted" && <div className="connection-card__actions"><ButtonLink size="sm" to={`/espace/messages/${request.id}`}>Ouvrir la conversation</ButtonLink>{member && <ButtonLink size="sm" variant="outline" to={`/alumni/${member.id}`}>Voir le profil</ButtonLink>}</div>}
       </li>
     );
   };
@@ -202,7 +195,7 @@ export function ConnectionsPage() {
 
   return (
     <div className="connections-page page-shell">
-      <Link to="/espace" className="back-link"><ArrowLeft size={17} aria-hidden="true" /> Retour à mon espace</Link>
+      <Link to={`/alumni/${userId}`} className="back-link"><ArrowLeft size={17} aria-hidden="true" /> Retour à mon profil</Link>
       <header className="connections-page__header">
         <RouteStop>Des parcours qui se rencontrent</RouteStop>
         <h1>Mes relations et demandes</h1>
