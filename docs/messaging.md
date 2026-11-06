@@ -39,9 +39,11 @@ Les alertes sont différées d'au moins cinq minutes, annulées après lecture e
 
 Les fonctions réservent au plus 180 alertes par jour UTC. Le quota Brevo Free de 300 envois/jour est partagé avec les e-mails Auth : la marge restante n'est pas un quota réservé. Aucun service payant supplémentaire n'est créé : Vault, pgcrypto et les canaux privés Realtime font partie de l'offre gratuite de Supabase. Sources : [limites Brevo Free](https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan), [runners standards gratuits pour les dépôts publics](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
 
-Le workflow GitHub appelle l'API Render toutes les cinq minutes. L'appel utilise un jeton HMAC dérivé de la clé Brevo, comparé en temps constant. Cet endpoint ne permet de choisir ni destinataire ni contenu et ne renvoie que des compteurs. La clé Supabase serveur reste uniquement sur Render. Les notifications utilisent des réservations et l'idempotence Brevo ; les reprises sont bornées à moins de 30 minutes.
+Un e-mail de demande, reçue ou acceptée, part dès qu'il entre dans la file : la base appelle aussitôt l'API Render avec pg_net. Le workflow GitHub appelle aussi l'API, en principe toutes les cinq minutes, pour les alertes de messages et les reprises. Les deux appels présentent le même jeton HMAC dérivé de la clé Brevo, comparé en temps constant ; la base le lit dans Vault (`messaging_scheduler_token`). Cet endpoint ne permet de choisir ni destinataire ni contenu et ne renvoie que des compteurs. Il lance au plus 20 tournées par minute, et un appel sans jeton valide n'entame pas ce quota. La clé Supabase serveur reste uniquement sur Render. Les notifications utilisent des réservations et l'idempotence Brevo ; les reprises sont bornées à moins de 30 minutes.
 
-Le planificateur GitHub peut retarder ou omettre une exécution ; les workflows publics peuvent être désactivés après 60 jours d'inactivité. Le service Render gratuit peut démarrer à froid. La lecture et l'envoi de messages ne passent pas par l'API Render et ne subissent donc pas ce démarrage. Voir les [limites des workflows planifiés](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+Un membre ne peut pas inonder les autres d'e-mails. Un même demandeur n'annonce une demande au même membre qu'une fois par jour, et à dix membres par jour au plus ; les demandes suivantes restent visibles sur le site, sans e-mail. Retirer puis renvoyer une demande n'envoie donc pas de nouvel e-mail. Les e-mails de demande restent en outre plafonnés à 60 par jour UTC. Personne ne peut envoyer ni accepter une demande au nom d'un autre membre, et les membres ne peuvent pas exécuter les fonctions de pg_net.
+
+Le planificateur GitHub peut retarder ou omettre une exécution : en pratique, il ne passe que trois à six fois par jour. Les workflows publics peuvent être désactivés après 60 jours d'inactivité. Le service Render gratuit peut démarrer à froid. La lecture et l'envoi de messages ne passent pas par l'API Render et ne subissent donc pas ce démarrage. Voir les [limites des workflows planifiés](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 
 ## Configuration
 
@@ -49,13 +51,19 @@ Le planificateur GitHub peut retarder ou omettre une exécution ; les workflows 
 2. Déployer le site juste après la dernière migration : l'ancien site appelle des fonctions qui n'existent plus.
 3. Render API : conserver `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `FRONTEND_ORIGINS`. Pour les alertes, ajouter `BREVO_API_KEY`, `MESSAGING_FROM_EMAIL`, `MESSAGING_SITE_URL=https://lsnb-alumni-web.onrender.com`, `MESSAGING_EMAIL_ENABLED=true`. Ne jamais utiliser de préfixe `VITE_` pour un secret.
 4. GitHub Actions : secret `BREVO_API_KEY` seulement ; variables `MESSAGING_API_URL=https://lsnb-alumni-api.onrender.com` et `MESSAGING_EMAIL_ENABLED=true`. Le workflow refuse de tourner si le dépôt devient privé.
-5. Supabase Auth : SMTP Brevo (`smtp-relay.brevo.com`, port 587), identifiant du compte et clé SMTP dédiée dans le champ mot de passe. Activer la confirmation d'e-mail, conserver le changement sécurisé d'e-mail et configurer les URL de redirection du site. Appliquer le sujet et le contenu de `supabase-confirmation-config.json`. Éviter la réécriture des liens d'authentification par le fournisseur.
-6. Fusionner le workflow dans `main`, puis lancer un `workflow_dispatch` pour vérifier les compteurs. Les tests automatisés utilisent une base isolée et un transport simulé ; ils n'envoient pas de vrais e-mails.
+5. Supabase Vault : ranger le jeton de déclenchement, calculé par la base à partir de la clé Brevo, dans l'éditeur SQL du projet, puis supprimer cette requête de l'historique de l'éditeur, car elle contient la clé :
+   ```sql
+   select vault.create_secret(encode(extensions.hmac('lsnb-messaging-scheduler-v1', '<clé Brevo>', 'sha256'), 'hex'),
+     'messaging_scheduler_token', 'Déclenchement des e-mails LSNB Alumni');
+   ```
+   Sans ce jeton, la base n'appelle pas l'API et les e-mails de demande attendent le workflow. Après un changement de clé Brevo, le remplacer avec `vault.update_secret`.
+6. Supabase Auth : SMTP Brevo (`smtp-relay.brevo.com`, port 587), identifiant du compte et clé SMTP dédiée dans le champ mot de passe. Activer la confirmation d'e-mail, conserver le changement sécurisé d'e-mail et configurer les URL de redirection du site. Appliquer le sujet et le contenu de `supabase-confirmation-config.json`. Éviter la réécriture des liens d'authentification par le fournisseur.
+7. Fusionner le workflow dans `main`, puis lancer un `workflow_dispatch` pour vérifier les compteurs. Les tests automatisés utilisent une base isolée et un transport simulé ; ils n'envoient pas de vrais e-mails.
 
 ## Exploitation et validation
 
 Les logs n'exposent ni clés, ni adresses, ni textes privés. Une erreur d'e-mail ne supprime pas les messages du site. En cas d'envoi incertain, vérifier les journaux du fournisseur avant de relancer manuellement. Pour suspendre les alertes, passer `MESSAGING_EMAIL_ENABLED=false` sur Render et GitHub. Ne jamais supprimer ni régénérer le secret Vault : les messages existants deviendraient illisibles. Un changement de clé passe par une nouvelle version (`messaging_message_key_v2`) et une migration.
 
-Renouveler les accès Brevo avant leur expiration et actualiser les deux coffres pour la clé API. Les clés créées ont une échéance d'un an et peuvent expirer après 90 jours d'inactivité selon la politique Brevo.
+Renouveler les accès Brevo avant leur expiration : actualiser la clé API sur Render et dans GitHub, puis le jeton dans Vault. Les clés créées ont une échéance d'un an et peuvent expirer après 90 jours d'inactivité selon la politique Brevo.
 
 Validation : `npm run typecheck`, `npm run build`, `npm run build:hub`, `npm run typecheck:api`, `npm run test:api`, `npm run build:api`. Les tests couvrent notamment l'isolation des participants, l'absence de texte en clair dans la base, le refus d'un jeton sans clé d'appareil, la fenêtre de dix minutes, les preuves expirées ou détournées, la révocation, l'intégrité des chiffrés, l'idempotence et les autorisations du planificateur.
