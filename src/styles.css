@@ -23,6 +23,8 @@
   --indigo-soft: #1b4167;
   --banco: #c27d38;
   --banco-light: #e7b77d;
+  /* Ochre dark enough for small text on paper and sand (AA). */
+  --banco-deep: #9c5b24;
   --mango: #2e5a36;
   --mango-light: #7fa185;
   --paper: #faf8f3;
@@ -30,6 +32,33 @@
   --sand: #eadac6;
   --line: rgba(12, 41, 72, 0.16);
   --shadow-short: 0 12px 0 rgba(7, 29, 51, 0.08);
+
+  /* One scale for the whole site: every new rule picks from these. */
+  --text-fine: 0.75rem;
+  --text-label: 0.8125rem;
+  --text-small: 0.875rem;
+  --text-body: 1rem;
+  --text-lead: 1.125rem;
+  --text-h3: 1.375rem;
+  --text-h2: clamp(2rem, 3.4vw, 3rem);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --radius-control: 4px;
+  --radius-card: 10px;
+  /* Large blocks: the profile hero, its request form and side panels. */
+  --radius-panel: 18px;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration: 240ms;
+  --header-height: 88px;
+  --header-height-compact: 68px;
 }
 
 * {
@@ -138,9 +167,9 @@ textarea:focus-visible {
 .eyebrow {
   margin-bottom: 18px;
   color: #b9d2bf;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -148,8 +177,129 @@ textarea:focus-visible {
   color: var(--mango);
 }
 
+/* A section opens on a stop of the route that runs down the page. The stop
+   leads its section, so the section's top edge is one --section-pad above it:
+   the dashed line comes down from that edge to the stop. Outside a section
+   (page heroes) --section-pad is unset, the line has no height and the stop
+   keeps its point only. */
+.route-stop {
+  --route-color: var(--banco);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-6);
+  color: var(--ink);
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.route-stop::before {
+  position: absolute;
+  top: calc(-1 * var(--section-pad, 0px));
+  bottom: calc(50% + 13px);
+  left: 6px;
+  width: 2px;
+  background: linear-gradient(var(--route-color) 60%, transparent 0) 0 0 / 2px 10px repeat-y;
+  content: "";
+  opacity: 0.8;
+  transform-origin: top;
+}
+
+.route-stop__node {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--route-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--route-color) 24%, transparent);
+}
+
+.route-stop--light {
+  --route-color: var(--banco-light);
+  color: var(--chalk);
+}
+
+/* Where the browser can tie it to scrolling, the line draws itself as its
+   section arrives; elsewhere it is simply there. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .route-stop::before {
+      animation: route-arrive linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+  }
+}
+
+@keyframes route-arrive {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* A process drawn as a route: numbered stops joined by the dashed line. */
+.route-steps {
+  --step-color: var(--banco);
+  --step-number: var(--banco-deep);
+  --step-fill: var(--paper);
+  display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  counter-reset: route-step;
+}
+
+.route-steps > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  padding-bottom: var(--space-6);
+  counter-increment: route-step;
+}
+
+.route-steps > li:last-child {
+  padding-bottom: 0;
+}
+
+.route-steps > li::before {
+  content: counter(route-step);
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--step-color);
+  border-radius: 50%;
+  background: var(--step-fill);
+  color: var(--step-number);
+  font-size: var(--text-fine);
+  font-weight: 750;
+}
+
+.route-steps > li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 32px;
+  bottom: 4px;
+  left: 13px;
+  width: 2px;
+  background: linear-gradient(var(--step-color) 60%, transparent 0) 0 0 / 2px 10px repeat-y;
+  opacity: 0.75;
+}
+
+.route-steps--light {
+  --step-color: var(--banco-light);
+  --step-number: var(--banco-light);
+  --step-fill: transparent;
+}
+
 .section {
-  padding-block: clamp(88px, 10vw, 150px);
+  --section-pad: clamp(88px, 10vw, 150px);
+  padding-block: var(--section-pad);
 }
 
 .section-heading--split {
@@ -180,32 +330,50 @@ textarea:focus-visible {
   display: block;
 }
 
+/* A heading split into lines that each wrap, and balance, on their own. */
+.heading-line {
+  display: block;
+}
+
 .section-heading__mobile-break {
   display: none;
 }
 
 .demo-note {
   color: #7a6551;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
   font-weight: 600;
 }
 
 /* Brand and navigation */
 
+/* Stays in reach on long pages; it compacts once the reader leaves the top. */
 .site-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 50;
   background: var(--ink);
   color: var(--chalk);
   border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+  transition: box-shadow var(--duration) var(--ease-out), background-color var(--duration) var(--ease-out);
+}
+
+.site-header[data-scrolled="true"] {
+  background: var(--ink-deep);
+  box-shadow: 0 10px 24px -18px rgba(7, 29, 51, 0.9);
 }
 
 .site-header__inner {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  min-height: 88px;
+  min-height: var(--header-height);
   gap: 28px;
+  transition: min-height var(--duration) var(--ease-out);
+}
+
+.site-header[data-scrolled="true"] .site-header__inner {
+  min-height: var(--header-height-compact);
 }
 
 .brand-mark {
@@ -288,11 +456,11 @@ textarea:focus-visible {
 .site-header__link,
 .site-header__login {
   color: rgba(255, 253, 248, 0.78);
-  font-size: 0.82rem;
   font-weight: 650;
-  transition: color 180ms ease, border-color 180ms ease;
+  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 
+/* Each page is a framed tab; the current one is outlined in the route's ochre. */
 .site-header__link {
   display: inline-flex;
   align-items: center;
@@ -300,12 +468,54 @@ textarea:focus-visible {
   padding: 0 18px;
   border: 1px solid rgba(255, 253, 248, 0.2);
   border-radius: 12px;
+  font-size: var(--text-label);
   white-space: nowrap;
+}
+
+.site-header__login {
+  font-size: 0.9375rem;
 }
 
 .site-header__link:hover,
 .site-header__login:hover {
   color: var(--chalk);
+}
+
+.site-header__signout,
+.site-header__mobile-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  color: rgba(255, 253, 248, 0.78);
+  background: none;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.site-header__signout {
+  min-height: 40px;
+  padding: 0;
+  font-size: 0.82rem;
+}
+
+.site-header__mobile-signout {
+  padding: 13px 16px;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.site-header__signout:hover,
+.site-header__mobile-signout:hover {
+  color: var(--chalk);
+}
+
+.site-header__signout:disabled,
+.site-header__mobile-signout:disabled {
+  cursor: progress;
+  opacity: 0.7;
 }
 
 .site-header__link:hover {
@@ -339,6 +549,22 @@ textarea:focus-visible {
   gap: 22px;
 }
 
+/* Header labels stay on one line; the breakpoints decide what fits. */
+.site-header__actions .button,
+.site-header__signout {
+  white-space: nowrap;
+}
+
+/* A member's actions are wider than the brand: the tabs take the middle
+   space between them instead of the page's centre. */
+.site-header--member .site-header__inner {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.site-header--member .site-header__desktop-nav {
+  justify-content: center;
+}
+
 .site-header__menu-button {
   position: relative;
   display: none;
@@ -350,6 +576,23 @@ textarea:focus-visible {
   background: transparent;
   color: var(--chalk);
   cursor: pointer;
+}
+
+/* A member's header holds two more tabs, the space and sign-out: below
+   1340 px they no longer fit, so members get the menu of tiles sooner. */
+@media (max-width: 1340px) {
+  .site-header--member .site-header__inner {
+    grid-template-columns: 1fr auto;
+  }
+
+  .site-header--member .site-header__desktop-nav,
+  .site-header--member .site-header__actions {
+    display: none;
+  }
+
+  .site-header--member .site-header__menu-button {
+    display: grid;
+  }
 }
 
 .site-header__menu-dot {
@@ -371,25 +614,98 @@ textarea:focus-visible {
   transition: max-height 280ms ease;
 }
 
+/* Never taller than the screen: a longer menu scrolls inside it. */
 .site-header__mobile-panel.is-open {
-  max-height: 440px;
+  max-height: calc(100dvh - var(--header-height-compact));
+  overflow-y: auto;
 }
 
 .site-header__mobile-panel nav {
   display: grid;
   gap: 8px;
-  padding-block: 18px 28px;
+  padding-block: 12px 18px;
 }
 
-.site-header__mobile-panel .site-header__link {
-  min-height: 52px;
-  font-size: 0.95rem;
+/* The pages as rectangles across the whole width (Fitts: wide targets;
+   Hick: two columns read at a glance), the account actions on one row. */
+.site-header__mobile-tiles,
+.site-header__mobile-account {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.site-header__mobile-login {
-  padding: 13px 18px;
-  color: rgba(255, 253, 248, 0.78);
-  font-size: 0.95rem;
+.site-header__tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 12px 16px;
+  color: rgba(255, 253, 248, 0.74);
+  border: 1px solid rgba(255, 253, 248, 0.2);
+  border-radius: 14px;
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+.site-header__tile > svg {
+  flex: 0 0 auto;
+  color: var(--banco-light);
+}
+
+.site-header__tile-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.site-header__tile-text b {
+  color: var(--chalk);
+  font-size: var(--text-body);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.site-header__tile-text small {
+  font-size: var(--text-label);
+  line-height: 1.3;
+}
+
+.site-header__tile:hover {
+  border-color: rgba(255, 253, 248, 0.42);
+}
+
+.site-header__tile.is-active {
+  border-color: var(--banco-light);
+  background: rgba(231, 183, 125, 0.08);
+}
+
+.site-header__tile .site-header__count,
+.site-header__tile .message-unread-count {
+  margin-left: auto;
+}
+
+.site-header__mobile-account > * {
+  min-height: 48px;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+
+/* On small phones the two actions keep one line in their half of the row. */
+@media (max-width: 420px) {
+  .site-header__mobile-account > * {
+    font-size: var(--text-small);
+  }
+}
+
+.site-header__mobile-login,
+.site-header__mobile-account .site-header__mobile-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 253, 248, 0.82);
+  border: 1px solid rgba(255, 253, 248, 0.24);
+  border-radius: var(--radius-control);
+  font-size: 0.9375rem;
   font-weight: 650;
 }
 
@@ -402,12 +718,12 @@ textarea:focus-visible {
   justify-content: center;
   gap: 10px;
   border: 1px solid transparent;
-  border-radius: 3px;
-  font-size: 0.82rem;
+  border-radius: var(--radius-control);
+  font-size: 0.9375rem;
   font-weight: 750;
   line-height: 1;
   cursor: pointer;
-  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
 .button:disabled {
@@ -421,13 +737,13 @@ textarea:focus-visible {
 }
 
 .button--md {
-  min-height: 46px;
-  padding: 0 20px;
+  min-height: 48px;
+  padding: 0 22px;
 }
 
 .button--lg {
-  min-height: 54px;
-  padding: 0 24px;
+  min-height: 56px;
+  padding: 0 28px;
 }
 
 .button--primary {
@@ -478,10 +794,27 @@ textarea:focus-visible {
 .text-link {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   color: var(--ink);
-  font-size: 0.86rem;
+  font-size: 0.9375rem;
   font-weight: 750;
+}
+
+/* A secondary action next to a button: a link, sized as a target. */
+.text-link--action {
+  min-height: 44px;
+}
+
+.text-link--light {
+  color: var(--chalk);
+}
+
+.text-link--light svg {
+  color: var(--banco-light);
+}
+
+.text-link--light:hover {
+  color: var(--banco-light);
 }
 
 .text-link svg {
@@ -538,7 +871,7 @@ textarea:focus-visible {
   gap: 18px;
   margin-bottom: 30px;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 0.66rem;
+  font-size: var(--text-label);
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -586,7 +919,7 @@ textarea:focus-visible {
 .hero__actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 14px 32px;
   flex-wrap: wrap;
 }
 
@@ -666,14 +999,14 @@ textarea:focus-visible {
   background: rgba(7, 29, 51, 0.82);
   color: rgba(255, 255, 255, 0.78);
   border-left: 2px solid var(--banco-light);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 650;
   letter-spacing: 0.05em;
 }
 
 .trajectory-field__label b {
   color: var(--banco-light);
-  font-size: 0.52rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -729,7 +1062,7 @@ textarea:focus-visible {
   padding: 2px 0 3px 16px;
   color: rgba(255, 255, 255, 0.55);
   border-left: 1px solid rgba(168, 209, 177, 0.58);
-  font-size: 0.62rem;
+  font-size: var(--text-fine);
   line-height: 1.4;
   letter-spacing: 0.12em;
   text-align: left;
@@ -783,12 +1116,12 @@ textarea:focus-visible {
   gap: 9px;
   margin: 0;
   color: #687581;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
 }
 
 .hero-search__meta-copy strong {
   color: var(--ink);
-  font-size: 0.76rem;
+  font-size: var(--text-small);
 }
 
 .hero-search__route-mark {
@@ -826,7 +1159,7 @@ textarea:focus-visible {
   gap: 7px;
   padding: 0 7px;
   color: #596a79;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -843,7 +1176,7 @@ textarea:focus-visible {
   background: var(--ink);
   color: var(--chalk);
   border-radius: 50%;
-  font-size: 0.62rem;
+  font-size: var(--text-fine);
 }
 
 .hero-search__field {
@@ -955,14 +1288,14 @@ textarea:focus-visible {
 
 .hero-search__filter-heading span {
   color: #6e7983;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
 }
 
 .hero-search__filter-panel > label {
   display: grid;
   gap: 7px;
   color: #526271;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -975,7 +1308,7 @@ textarea:focus-visible {
   padding: 0 38px 0 13px;
   background: var(--paper);
   color: var(--ink);
-  font-size: 0.76rem;
+  font-size: 1rem;
 }
 
 .hero-search__filter-actions {
@@ -992,7 +1325,7 @@ textarea:focus-visible {
   min-height: 36px;
   padding: 0 8px;
   color: #667581;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 
@@ -1026,9 +1359,9 @@ textarea:focus-visible {
 .network-ribbon__route {
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: #5b6670;
-  font-size: 0.65rem;
+  gap: 14px;
+  color: #4d5b67;
+  font-size: var(--text-label);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1037,24 +1370,28 @@ textarea:focus-visible {
 .network-ribbon__stop {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   white-space: nowrap;
 }
 
-.network-ribbon__stop i {
+/* One leg of a journey: the dashed ochre route that ends on a stop. The home
+   ribbon and the directory cards draw their journeys with it. */
+.route-leg {
   position: relative;
-  width: 34px;
-  height: 1px;
-  background: rgba(12, 41, 72, 0.3);
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--leg-length, 44px);
+  height: 2px;
+  background: linear-gradient(90deg, var(--banco) 60%, transparent 0) 0 0 / 10px 2px repeat-x;
 }
 
-.network-ribbon__stop i::after {
+.route-leg::after {
   content: "";
   position: absolute;
-  top: -2px;
-  right: 0;
-  width: 5px;
-  height: 5px;
+  top: -3px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--banco);
 }
@@ -1168,13 +1505,13 @@ textarea:focus-visible {
   max-width: 440px;
   margin: 0;
   color: #536371;
-  font-size: 0.96rem;
+  font-size: var(--text-body);
 }
 
 .highlights-edition {
   margin-bottom: 22px;
   color: var(--mango);
-  font-size: 0.83rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -1223,7 +1560,7 @@ textarea:focus-visible {
 
 .highlight-portrait__promotion {
   color: var(--mango);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -1247,7 +1584,7 @@ textarea:focus-visible {
 .highlight-portrait__location {
   margin-top: 3px;
   color: #647078;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .highlight-portrait h3 {
@@ -1301,19 +1638,19 @@ textarea:focus-visible {
 
 .highlight-portrait__footer > span {
   color: #647078;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
 }
 
 .highlight-portrait__source {
   margin: 0 0 8px;
   color: #647078;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 .highlights-source-note {
   margin: 36px 0 0;
   color: #647078;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .highlights-state {
@@ -1355,7 +1692,7 @@ textarea:focus-visible {
   padding-left: 16px;
   color: #536371;
   border-left: 2px solid var(--mango);
-  font-size: 0.74rem;
+  font-size: var(--text-small);
   line-height: 1.7;
 }
 
@@ -1526,7 +1863,7 @@ textarea:focus-visible {
   background: var(--chalk);
   color: var(--ink);
   border-radius: 7px;
-  font-size: 0.65rem;
+  font-size: var(--text-fine);
   font-weight: 750;
 }
 
@@ -1541,9 +1878,9 @@ textarea:focus-visible {
 }
 
 .alumni-card__domain {
-  margin: 0 0 7px;
+  margin: 0 0 8px;
   color: var(--mango);
-  font-size: 0.63rem;
+  font-size: var(--text-label);
   font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1557,24 +1894,44 @@ textarea:focus-visible {
 }
 
 .alumni-card__role {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   color: #465866;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   line-height: 1.5;
 }
 
+/* The card's journey: from Sya, along one dashed leg, to where the member is.
+   It flows as text, so a long place wraps after the leg instead of leaving it. */
 .alumni-card__location {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
   margin: 0;
-  color: #596976;
-  font-size: 0.72rem;
+  color: #4d5b67;
+  font-size: var(--text-small);
+  line-height: 1.6;
 }
 
-.alumni-card__location svg {
-  flex: 0 0 auto;
+.alumni-card__origin {
+  margin-right: 8px;
+  color: var(--banco-deep);
+  font-size: var(--text-fine);
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.alumni-card__leg {
+  --leg-length: 30px;
+  margin-right: 12px;
+  vertical-align: middle;
+}
+
+.alumni-card__home {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--banco);
+  vertical-align: middle;
 }
 
 .alumni-card__inline-promotion {
@@ -1591,11 +1948,11 @@ textarea:focus-visible {
 }
 
 .alumni-card__specialties li {
-  padding: 4px 8px;
+  padding: 4px 9px;
   background: #f2f1e9;
   color: #4c5c5a;
   border-radius: 5px;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 
@@ -1612,13 +1969,13 @@ textarea:focus-visible {
 .alumni-card__invitation {
   display: grid;
   gap: 4px;
-  color: #596976;
-  font-size: 0.67rem;
+  color: #536371;
+  font-size: var(--text-label);
 }
 
 .alumni-card__invitation b {
   color: var(--ink);
-  font-size: 0.78rem;
+  font-size: 0.9375rem;
 }
 
 .alumni-card__mentor {
@@ -1731,7 +2088,7 @@ textarea:focus-visible {
   margin-bottom: 28px;
 }
 
-.discovery-section__intro > p:not(.eyebrow) {
+.discovery-section__intro > p:not(.route-stop) {
   max-width: 520px;
   margin-bottom: 34px;
   color: rgba(255, 255, 255, 0.7);
@@ -1764,7 +2121,7 @@ textarea:focus-visible {
 
 .discovery-path__index {
   color: #b6d0bc;
-  font-size: 0.64rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -1776,22 +2133,22 @@ textarea:focus-visible {
 }
 
 .discovery-path p {
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   color: #b6d0bc;
-  font-size: 0.64rem;
+  font-size: var(--text-label);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .discovery-path h3 {
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   font-size: clamp(1.5rem, 2.4vw, 2.2rem);
 }
 
 .discovery-path div > span {
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: var(--text-small);
 }
 
 .discovery-path__arrow {
@@ -1842,50 +2199,30 @@ textarea:focus-visible {
   bottom: 18px;
   z-index: 1;
   margin: 0;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.63rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--text-fine);
 }
 
-.mentoring-section__copy > p:not(.eyebrow) {
+.mentoring-section__copy > p:not(.route-stop) {
   max-width: 560px;
   margin: 28px 0 40px;
   color: #536371;
 }
 
 .mentoring-steps {
-  display: grid;
-  gap: 0;
-  padding: 0;
-  margin: 0 0 38px;
-  list-style: none;
-  border-top: 1px solid var(--line);
-}
-
-.mentoring-steps li {
-  display: grid;
-  grid-template-columns: 54px 1fr;
-  gap: 16px;
-  padding-block: 19px;
-  border-bottom: 1px solid var(--line);
-}
-
-.mentoring-steps li > span {
-  color: var(--banco);
-  font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  margin-bottom: 38px;
 }
 
 .mentoring-steps b {
   color: var(--ink);
   font-family: "Bricolage Grotesque", sans-serif;
-  font-size: 1rem;
+  font-size: var(--text-lead);
 }
 
 .mentoring-steps p {
-  margin: 2px 0 0;
-  color: #687581;
-  font-size: 0.78rem;
+  margin: 4px 0 0;
+  color: #536371;
+  font-size: var(--text-small);
 }
 
 .mentoring-section__actions {
@@ -1910,6 +2247,11 @@ textarea:focus-visible {
   align-items: end;
   justify-content: space-between;
   margin-bottom: 64px;
+}
+
+/* The stop keeps the top of the row, where the route comes in. */
+.roots-section__headline > .route-stop {
+  align-self: flex-start;
 }
 
 .roots-section__gallery {
@@ -1950,11 +2292,12 @@ textarea:focus-visible {
   filter: saturate(0.95) contrast(1.03);
 }
 
+/* Dark enough under the caption for its small ochre label, even over a pale wall. */
 .roots-photo::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 42%, rgba(7, 29, 51, 0.82));
+  background: linear-gradient(180deg, transparent 34%, rgba(7, 29, 51, 0.62) 62%, rgba(7, 29, 51, 0.92));
   pointer-events: none;
 }
 
@@ -1969,7 +2312,7 @@ textarea:focus-visible {
 
 .roots-photo span {
   color: var(--banco-light);
-  font-size: 0.62rem;
+  font-size: var(--text-label);
   font-weight: 750;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1986,8 +2329,8 @@ textarea:focus-visible {
 }
 
 .roots-photo a {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: var(--text-fine);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -2019,23 +2362,18 @@ textarea:focus-visible {
   stroke-width: 1.4;
 }
 
+/* The last stop rises over the section before it, its top rounded like the
+   arches of the portraits. */
 .join-cta {
+  --section-pad: clamp(78px, 9vw, 128px);
+  --arch-radius: clamp(28px, 5vw, 72px);
   position: relative;
-  padding-block: clamp(78px, 9vw, 128px);
+  margin-top: calc(-1 * var(--arch-radius));
+  padding-block: var(--section-pad);
   overflow: hidden;
+  border-radius: var(--arch-radius) var(--arch-radius) 0 0;
   background: var(--ink);
   color: var(--chalk);
-}
-
-.join-cta::after {
-  content: "";
-  position: absolute;
-  right: -110px;
-  bottom: -170px;
-  width: 520px;
-  height: 520px;
-  border: 1px solid rgba(231, 183, 125, 0.28);
-  border-radius: 50% 50% 0 0;
 }
 
 .join-cta__inner {
@@ -2043,12 +2381,27 @@ textarea:focus-visible {
   z-index: 1;
   display: grid;
   grid-template-columns: 1.25fr 0.75fr;
-  align-items: end;
+  /* Top-aligned, so the stop leads the section and its line meets the edge. */
+  align-items: start;
   gap: 90px;
 }
 
+/* The way in: an arch, like the portrait frames, opens around the last
+   action; its sides run down to the section's edge. */
 .join-cta__inner > div:last-child {
+  position: relative;
   max-width: 460px;
+  padding: 112px 44px 8px;
+}
+
+.join-cta__inner > div:last-child::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 calc(-1 * var(--section-pad));
+  border: 1px solid rgba(231, 183, 125, 0.36);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
 }
 
 .join-cta__inner > div:last-child p {
@@ -2123,15 +2476,15 @@ textarea:focus-visible {
 .directory-hero h1 {
   max-width: 760px;
   margin-bottom: 30px;
-  font-size: clamp(3.2rem, 5.5vw, 6.1rem);
-  line-height: 0.9;
+  font-size: clamp(2.9rem, 5vw, 5.4rem);
+  line-height: 0.94;
 }
 
 .directory-hero__copy > p:last-child {
   max-width: 520px;
   margin-bottom: 0;
-  color: rgba(255, 255, 255, 0.67);
-  font-size: 0.94rem;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: var(--text-body);
 }
 
 .directory-constellation {
@@ -2210,7 +2563,7 @@ textarea:focus-visible {
   gap: 10px;
   transform: translate(-50%, -50%);
   color: rgba(255,255,255,0.68);
-  font-size: 0.56rem;
+  font-size: 0.75rem;
 }
 
 .directory-constellation__origin i {
@@ -2231,7 +2584,7 @@ textarea:focus-visible {
 
 .directory-constellation__origin b {
   color: var(--banco-light);
-  font-size: 0.5rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -2243,7 +2596,7 @@ textarea:focus-visible {
   align-items: flex-end;
   gap: 10px;
   color: rgba(255,255,255,0.68);
-  font-size: 0.52rem;
+  font-size: 0.6875rem;
   line-height: 1.25;
 }
 
@@ -2334,12 +2687,13 @@ textarea:focus-visible {
 
 .directory-filters__titleline {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px 16px;
   margin-bottom: 28px;
   color: #b7d8bf;
-  font-size: 0.57rem;
+  font-size: var(--text-fine);
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2353,7 +2707,7 @@ textarea:focus-visible {
 
 .directory-filters__titleline b {
   color: var(--banco-light);
-  font-size: 0.55rem;
+  font-size: var(--text-fine);
 }
 
 .directory-filters__title h2 {
@@ -2369,7 +2723,7 @@ textarea:focus-visible {
   max-width: 260px;
   margin: 0;
   color: rgba(255,255,255,0.58);
-  font-size: 0.67rem;
+  font-size: var(--text-label);
 }
 
 .directory-filters__controls {
@@ -2393,7 +2747,7 @@ textarea:focus-visible {
 
 .directory-filter-field > span:first-child {
   color: #435669;
-  font-size: 0.62rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -2407,7 +2761,7 @@ textarea:focus-visible {
   color: var(--ink);
   border: 1px solid rgba(12, 41, 72, 0.2);
   border-radius: 2px;
-  font-size: 0.76rem;
+  font-size: 1rem;
   outline: none;
 }
 
@@ -2471,14 +2825,14 @@ textarea:focus-visible {
 
 .directory-filter-switch > span:last-child {
   display: grid;
-  color: #71808b;
-  font-size: 0.59rem;
+  color: #5b6a76;
+  font-size: var(--text-label);
   line-height: 1.35;
 }
 
 .directory-filter-switch b {
   color: var(--ink);
-  font-size: 0.69rem;
+  font-size: 0.9375rem;
 }
 
 .directory-filters__reset.button {
@@ -2493,7 +2847,7 @@ textarea:focus-visible {
 
 .field-group > span:first-child {
   color: var(--ink);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -2508,7 +2862,7 @@ textarea:focus-visible {
   color: var(--ink);
   border: 1px solid rgba(12, 41, 72, 0.24);
   border-radius: 2px;
-  font-size: 0.78rem;
+  font-size: 1rem;
   outline: none;
 }
 
@@ -2518,7 +2872,7 @@ textarea:focus-visible {
 
 .field-group small {
   color: #6d7882;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .input-with-icon {
@@ -2561,14 +2915,14 @@ textarea:focus-visible {
 .form-check span {
   display: grid;
   color: #6a747c;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
   line-height: 1.45;
 }
 
 .filter-check b,
 .form-check b {
   color: var(--ink);
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .directory-results__bar {
@@ -2594,7 +2948,7 @@ textarea:focus-visible {
 
 .directory-results__bar > span {
   color: #826a52;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .directory-grid {
@@ -2694,7 +3048,7 @@ textarea:focus-visible {
   gap: 8px;
   margin-bottom: 32px;
   color: #52616e;
-  font-size: 0.74rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -2709,6 +3063,12 @@ textarea:focus-visible {
     radial-gradient(circle at 84% 50%, rgba(46, 90, 54, 0.26), transparent 36%),
     var(--ink);
   color: var(--chalk);
+  border-radius: var(--radius-panel);
+}
+
+/* The request form opens under the hero, as its lower part. */
+.profile-hero:has(+ .profile-request-form) {
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
 }
 
 .profile-hero__main {
@@ -2740,7 +3100,7 @@ textarea:focus-visible {
 .profile-hero__domain {
   margin-bottom: 6px;
   color: var(--banco-light);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 750;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2772,7 +3132,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 7px;
   color: rgba(255,255,255,0.7);
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .profile-hero__facts li.is-mentoring {
@@ -2791,7 +3151,13 @@ textarea:focus-visible {
   flex-basis: 100%;
   max-width: 520px;
   color: rgba(255,255,255,0.68);
-  font-size: 0.74rem;
+  font-size: var(--text-small);
+}
+
+.profile-hero__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .profile-request-form {
@@ -2802,6 +3168,7 @@ textarea:focus-visible {
   padding: 30px;
   background: #efe5d8;
   border-bottom: 1px solid rgba(12, 41, 72, 0.2);
+  border-radius: 0 0 var(--radius-panel) var(--radius-panel);
 }
 
 .profile-request-form h2 {
@@ -2837,7 +3204,8 @@ textarea:focus-visible {
 /* Keeps what the member can share in view while a long story is read. */
 .profile-aside {
   position: sticky;
-  top: 28px;
+  /* Below the pinned header, which is compact once the page scrolls. */
+  top: calc(var(--header-height-compact) + 24px);
   display: grid;
   align-content: start;
   gap: 18px;
@@ -2846,12 +3214,13 @@ textarea:focus-visible {
 .profile-aside > section {
   padding: 26px;
   background: #efe5d8;
+  border-radius: var(--radius-panel);
 }
 
 .profile-aside > section > p:first-child {
   margin-bottom: 14px;
   color: var(--ink);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2884,7 +3253,8 @@ textarea:focus-visible {
   background: var(--chalk);
   color: var(--ink);
   border: 1px solid var(--line);
-  font-size: 0.68rem;
+  border-radius: 6px;
+  font-size: var(--text-label);
   font-weight: 650;
 }
 
@@ -2909,14 +3279,14 @@ textarea:focus-visible {
   padding-left: 18px;
   margin: 0 0 22px;
   color: rgba(255,255,255,0.75);
-  font-size: 0.76rem;
+  font-size: var(--text-small);
 }
 
 .profile-mentoring-card > span {
   display: block;
   margin-bottom: 20px;
   color: rgba(255,255,255,0.72);
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .profile-mentoring-card > p {
@@ -2924,7 +3294,7 @@ textarea:focus-visible {
   padding-top: 14px;
   color: #c7dccb;
   border-top: 1px solid rgba(255,255,255,0.2);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 700;
 }
 
@@ -2941,7 +3311,7 @@ textarea:focus-visible {
 
 .profile-demo-notice p {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
 }
 
 .profile-related {
@@ -2982,12 +3352,12 @@ textarea:focus-visible {
 .profile-related a > span {
   display: grid;
   color: #6a747d;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
 }
 
 .profile-related a b {
   color: var(--ink);
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .profile-next-action {
@@ -3120,7 +3490,7 @@ textarea:focus-visible {
   display: grid;
   min-width: 0;
   color: #5e6e7b;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .connection-card__person b {
@@ -3138,7 +3508,7 @@ a.connection-card__person:hover b {
   padding: 4px 8px;
   background: var(--sand);
   color: var(--ink);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -3157,14 +3527,14 @@ a.connection-card__person:hover b {
 .connection-card__kind {
   margin: 18px 0 8px;
   color: var(--mango);
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
 .connection-card__offer {
   margin: -4px 0 10px;
   color: #465866;
-  font-size: 0.78rem;
+  font-size: var(--text-small);
   overflow-wrap: anywhere;
 }
 
@@ -3189,7 +3559,7 @@ a.connection-card__person:hover b {
 .connection-card__note,
 .connection-card time {
   color: #5e6e7b;
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .connection-card__note {
@@ -3198,7 +3568,7 @@ a.connection-card__person:hover b {
 
 .connection-card .form-check,
 .profile-request-form .form-check {
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .connection-confirm {
@@ -3257,7 +3627,7 @@ a.connection-card__person:hover b {
   align-items: center;
   gap: 7px;
   color: #596976;
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .profile-network > p {
@@ -3364,13 +3734,13 @@ a.connection-card__person:hover b {
 
 .mentorship-person__info > span {
   color: #465866;
-  font-size: 0.79rem;
+  font-size: var(--text-small);
   line-height: 1.5;
 }
 
 .mentorship-person__info small {
   color: #596976;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 
@@ -3437,14 +3807,14 @@ a.connection-card__person:hover b {
   gap: 4px 12px;
   padding-left: 84px;
   color: #596976;
-  font-size: 0.74rem;
+  font-size: var(--text-small);
 }
 
 .mentorship-row__details .button {
   min-height: 44px;
   padding: 8px 0;
   color: #596976;
-  font-size: 0.74rem;
+  font-size: var(--text-small);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -3474,6 +3844,12 @@ a.connection-card__person:hover b {
 
   .profile-hero__action {
     min-width: 0;
+  }
+
+  /* Both actions span the width, within reach of the thumb. */
+  .profile-hero__buttons,
+  .profile-hero__buttons > * {
+    width: 100%;
   }
 
   .profile-network__people {
@@ -3517,7 +3893,7 @@ a.connection-card__person:hover b {
 
 .account-story {
   position: sticky;
-  top: 34px;
+  top: calc(var(--header-height-compact) + 24px);
   padding-top: 30px;
 }
 
@@ -3528,7 +3904,7 @@ a.connection-card__person:hover b {
   line-height: 0.94;
 }
 
-.account-story > p:not(.eyebrow) {
+.account-story > p:not(.eyebrow, .route-stop) {
   max-width: 520px;
   color: #64717c;
 }
@@ -3546,7 +3922,7 @@ a.connection-card__person:hover b {
   padding-block: 18px;
   color: #687581;
   border-bottom: 1px solid var(--line);
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 .account-story__principles svg {
@@ -3585,7 +3961,7 @@ a.connection-card__person:hover b {
 
 .account-form-wrap__header span {
   color: var(--mango);
-  font-size: 0.65rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -3650,7 +4026,7 @@ a.connection-card__person:hover b {
   align-items: center;
   gap: 14px;
   color: #5f6c77;
-  font-size: 0.73rem;
+  font-size: var(--text-small);
   line-height: 1.5;
   text-align: center;
 }
@@ -3673,7 +4049,7 @@ a.connection-card__person:hover b {
 .account-google > p {
   margin: 0;
   color: #5f6c77;
-  font-size: 0.78rem;
+  font-size: var(--text-small);
   line-height: 1.6;
   text-align: center;
 }
@@ -3697,7 +4073,7 @@ a.connection-card__person:hover b {
   grid-column: 1 / -1;
   margin-bottom: 6px;
   color: var(--ink);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 750;
 }
 
@@ -3733,7 +4109,7 @@ a.connection-card__person:hover b {
 
 .role-picker span {
   color: #697580;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .photo-upload {
@@ -3774,12 +4150,12 @@ a.connection-card__person:hover b {
 .photo-upload > span:last-child {
   display: grid;
   color: #6a7680;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .photo-upload b {
   color: var(--ink);
-  font-size: 0.76rem;
+  font-size: var(--text-small);
 }
 
 .form-check {
@@ -3801,7 +4177,7 @@ a.connection-card__person:hover b {
 
 .form-consent {
   color: #687581;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
 }
 
 .form-consent a {
@@ -3816,7 +4192,7 @@ a.connection-card__person:hover b {
   align-items: flex-start;
   gap: 10px;
   padding: 13px 15px;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   line-height: 1.5;
 }
 
@@ -3857,10 +4233,27 @@ a.connection-card__person:hover b {
   text-decoration: underline;
 }
 
+.profile-draft-notice {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-draft-notice > span {
+  flex: 1 1 260px;
+}
+
+.profile-draft-hint {
+  margin: -6px 0 0;
+  color: #6d7882;
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+
 .account-form__login {
   margin: 0;
   color: #6b7680;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
   text-align: center;
 }
 
@@ -3952,7 +4345,7 @@ a.connection-card__person:hover b {
 .profile-editor-preview p {
   overflow: hidden;
   color: var(--banco-light);
-  font-size: 0.58rem;
+  font-size: var(--text-fine);
   font-weight: 760;
   letter-spacing: 0.09em;
   text-overflow: ellipsis;
@@ -3972,7 +4365,7 @@ a.connection-card__person:hover b {
   margin-top: 5px;
   overflow: hidden;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3984,7 +4377,7 @@ a.connection-card__person:hover b {
   padding-top: 15px;
   color: rgba(255, 255, 255, 0.48);
   border-top: 1px solid rgba(255, 255, 255, 0.14);
-  font-size: 0.58rem;
+  font-size: var(--text-fine);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -4031,7 +4424,7 @@ a.connection-card__person:hover b {
   display: grid;
   min-width: 0;
   color: #687581;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .profile-editor-photo__copy b {
@@ -4067,7 +4460,7 @@ a.connection-card__person:hover b {
   background: var(--ink);
   color: var(--chalk);
   border: 1px solid var(--ink);
-  font-size: 0.7rem;
+  font-size: var(--text-label);
   font-weight: 740;
 }
 
@@ -4183,7 +4576,7 @@ a.connection-card__person:hover b {
   line-height: 0.95;
 }
 
-.login-page__heading > p:not(.eyebrow) {
+.login-page__heading > p:not(.eyebrow, .route-stop) {
   margin-bottom: 26px;
   color: #67737d;
   font-size: 0.84rem;
@@ -4200,7 +4593,7 @@ a.connection-card__person:hover b {
   background: none;
   color: #5f6c77;
   border: 0;
-  font-size: 0.68rem;
+  font-size: var(--text-label);
   cursor: pointer;
 }
 
@@ -4269,10 +4662,79 @@ a.connection-card__person:hover b {
   line-height: 0.95;
 }
 
-.auth-state-page > p:not(.eyebrow) {
+.auth-state-page > p:not(.eyebrow, .route-stop) {
   max-width: 620px;
   margin: 0 0 10px;
   color: #63717d;
+}
+
+.profile-gate {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.profile-gate p {
+  max-width: 560px;
+  margin: 0;
+  color: #63717d;
+  line-height: 1.6;
+}
+
+.profile-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.profile-gate-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  /* The CSS reset removes the browser's auto margin that centres a modal dialog. */
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--chalk);
+  box-shadow: 0 24px 60px rgba(7, 29, 51, 0.35);
+}
+
+.profile-gate-dialog::backdrop {
+  background: rgba(7, 29, 51, 0.62);
+}
+
+.profile-gate-dialog__panel {
+  position: relative;
+  padding: 44px 28px 32px;
+}
+
+.profile-gate-dialog h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  line-height: 1.15;
+}
+
+.profile-gate-dialog__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.profile-gate-dialog__close:hover {
+  background: var(--sand);
 }
 
 .member-page {
@@ -4297,7 +4759,7 @@ a.connection-card__person:hover b {
   line-height: 0.82;
 }
 
-.member-page__intro > p:not(.eyebrow) {
+.member-page__intro > p:not(.eyebrow, .route-stop) {
   max-width: 660px;
   color: #61707c;
   font-size: clamp(0.92rem, 1.4vw, 1.08rem);
@@ -4327,7 +4789,7 @@ a.connection-card__person:hover b {
   padding: 12px 14px;
   background: #e5efe7;
   color: #24502f;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 .member-card__confirmed svg,
@@ -4392,12 +4854,12 @@ a.connection-card__person:hover b {
 .member-card__photo > span {
   display: grid;
   color: #6a7680;
-  font-size: 0.66rem;
+  font-size: var(--text-label);
 }
 
 .member-card__photo b {
   color: var(--ink);
-  font-size: 0.75rem;
+  font-size: var(--text-fine);
 }
 
 .member-card__identity p,
@@ -4408,7 +4870,7 @@ a.connection-card__person:hover b {
 
 .member-card__identity p {
   color: var(--mango);
-  font-size: 0.64rem;
+  font-size: var(--text-label);
   font-weight: 780;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4421,7 +4883,7 @@ a.connection-card__person:hover b {
 
 .member-card__identity div > span {
   color: #6a7680;
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 .member-card__status {
@@ -4435,12 +4897,12 @@ a.connection-card__person:hover b {
 .member-card__status span {
   display: grid;
   color: #6a7680;
-  font-size: 0.7rem;
+  font-size: var(--text-label);
 }
 
 .member-card__status b {
   color: var(--ink);
-  font-size: 0.78rem;
+  font-size: var(--text-small);
 }
 
 .member-card > .button {
@@ -4464,7 +4926,7 @@ a.connection-card__person:hover b {
   line-height: 0.94;
 }
 
-.simple-page > p:not(.eyebrow),
+.simple-page > p:not(.eyebrow, .route-stop),
 .legal-page > p {
   max-width: 760px;
   color: #5f6d78;
@@ -4482,21 +4944,21 @@ a.connection-card__person:hover b {
 }
 
 .site-footer {
-  padding-block: 74px 26px;
+  padding-block: 80px 28px;
   background: var(--ink-deep);
   color: var(--chalk);
 }
 
 .site-footer__grid {
   display: grid;
-  grid-template-columns: 1.4fr 0.65fr 0.65fr 0.9fr;
-  gap: 50px;
-  padding-bottom: 60px;
+  grid-template-columns: 1.4fr 0.7fr 0.7fr;
+  gap: 48px;
+  padding-bottom: 64px;
 }
 
 .site-footer__statement {
   margin: 36px 0 0;
-  color: rgba(255,255,255,0.67);
+  color: rgba(255,255,255,0.74);
   font-family: "Bricolage Grotesque", sans-serif;
   font-size: 1.25rem;
   font-weight: 560;
@@ -4507,49 +4969,50 @@ a.connection-card__person:hover b {
 .site-footer__nav {
   display: grid;
   align-content: start;
-  gap: 10px;
 }
 
 .site-footer__nav p {
-  margin-bottom: 10px;
+  margin: 0 0 12px;
   color: var(--banco-light);
-  font-size: 0.64rem;
+  font-size: var(--text-label);
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .site-footer__nav a {
+  display: inline-flex;
+  align-items: center;
   width: max-content;
-  color: rgba(255,255,255,0.7);
-  font-size: 0.74rem;
+  min-height: 36px;
+  color: rgba(255,255,255,0.76);
+  font-size: var(--text-small);
 }
 
 .site-footer__nav a:hover {
   color: var(--chalk);
 }
 
-.site-footer__school-link {
-  display: flex;
-  align-self: start;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 14px 0;
-  color: rgba(255,255,255,0.68);
-  border-top: 1px solid rgba(255,255,255,0.18);
-  border-bottom: 1px solid rgba(255,255,255,0.18);
-  font-size: 0.7rem;
-}
-
 .site-footer__bottom {
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  padding-top: 22px;
-  color: rgba(255,255,255,0.42);
+  padding-top: 24px;
+  color: rgba(255,255,255,0.62);
   border-top: 1px solid rgba(255,255,255,0.12);
-  font-size: 0.62rem;
+  font-size: var(--text-fine);
+}
+
+.site-footer__bottom a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.site-footer__bottom a:hover {
+  color: var(--chalk);
 }
 
 @media (max-width: 1080px) {
@@ -4570,8 +5033,14 @@ a.connection-card__person:hover b {
     gap: 13px;
   }
 
-  .site-header__login {
-    display: none;
+  /* Icon only on narrower desktops; the label stays available to screen readers. */
+  .site-header__signout .site-header__signout-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .hero__copy {
@@ -4844,8 +5313,9 @@ a.connection-card__person:hover b {
     grid-template-columns: 1.4fr 1fr 1fr;
   }
 
-  .site-footer__school-link {
-    grid-column: 1 / -1;
+  /* The image comes first here, so this stop no longer leads its section. */
+  .mentoring-section .route-stop::before {
+    display: none;
   }
 }
 
@@ -4924,23 +5394,19 @@ a.connection-card__person:hover b {
   .hero__actions .button {
     width: 100%;
     justify-content: space-between;
-    font-size: 0.82rem;
   }
 
   .hero__actions .button--light {
-    min-height: 54px;
+    min-height: 56px;
     padding-inline: 18px;
   }
 
-  .hero__actions .button--ghost {
-    min-height: 46px;
-    justify-content: flex-start;
+  .hero__actions .text-link {
+    min-height: 52px;
     padding-inline: 3px;
-    color: rgba(255, 255, 255, 0.78);
-    border-color: transparent;
   }
 
-  .hero__actions .button--ghost svg {
+  .hero__actions .text-link svg {
     margin-left: auto;
   }
 
@@ -4955,12 +5421,12 @@ a.connection-card__person:hover b {
     max-width: 92px;
     padding: 5px 7px;
     background: rgba(7, 29, 51, 0.9);
-    font-size: 0.53rem;
+    font-size: 0.6875rem;
     line-height: 1.2;
   }
 
   .trajectory-field__label b {
-    font-size: 0.45rem;
+    font-size: 0.625rem;
   }
 
   .trajectory-field__label--west {
@@ -5076,7 +5542,7 @@ a.connection-card__person:hover b {
     padding-left: 20px;
   }
 
-  .network-ribbon__stop i {
+  .network-ribbon__stop .route-leg {
     display: none;
   }
 
@@ -5102,7 +5568,7 @@ a.connection-card__person:hover b {
   }
 
   .section {
-    padding-block: 86px;
+    --section-pad: 86px;
   }
 
   .section-path-backdrop--profiles {
@@ -5191,6 +5657,10 @@ a.connection-card__person:hover b {
     gap: 32px;
   }
 
+  .join-cta__inner > div:last-child {
+    padding: 88px 28px 4px;
+  }
+
   .directory-content {
     padding-top: 38px;
   }
@@ -5223,7 +5693,7 @@ a.connection-card__person:hover b {
   }
 
   .directory-constellation__profile b {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .directory-constellation__profile--north {
@@ -5428,8 +5898,7 @@ a.connection-card__person:hover b {
     grid-template-columns: 1fr 1fr;
   }
 
-  .site-footer__grid > div:first-child,
-  .site-footer__school-link {
+  .site-footer__grid > div:first-child {
     grid-column: 1 / -1;
   }
 
@@ -5486,8 +5955,7 @@ a.connection-card__person:hover b {
 }
 
 .directory-grid--list .alumni-card__inline-promotion {
-  display: inline;
-  margin-left: 4px;
+  display: block;
   color: var(--mango);
 }
 

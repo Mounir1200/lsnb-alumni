@@ -13,6 +13,7 @@ import {
 } from "../components/offers/OfferStates";
 import { isOfferHidden, offerKindPluralLabels } from "../components/offers/OfferTags";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import { useOfferAccess } from "../hooks/useOfferAccess";
 import { useOffers } from "../hooks/useOffers";
 import { isOfferExpired, OFFER_KINDS, todayIsoDate, type Offer, type PublisherStatus } from "../lib/offerRepository";
@@ -47,7 +48,7 @@ function PublishPanel({ publisher, isDemo }: { publisher: PublisherStatus | null
     );
   }
   return (
-    <ol className="offers-hero__steps" aria-label="Comment utiliser les offres">
+    <ol className="offers-hero__steps route-steps route-steps--light" aria-label="Comment utiliser les offres">
       <li><b>Les mentors partagent</b>Stages, bourses et admissions qu’ils connaissent de près.</li>
       <li><b>Vous comparez</b>Type, lieu et date limite sont visibles d’un coup d’œil.</li>
       <li><b>Vous posez vos questions</b>{isDemo ? "En démonstration, aucun message n’est envoyé." : "Directement à la personne qui partage l’offre."}</li>
@@ -121,7 +122,7 @@ export function OffersPage() {
       <header className="offers-hero">
         <div className="page-shell offers-hero__inner">
           <div className="offers-hero__copy">
-            <p className="eyebrow">Offres du réseau</p>
+            <RouteStop tone="light">Offres du réseau</RouteStop>
             <h1>Des portes ouvertes par ceux qui sont passés avant vous.</h1>
             <p>
               Stages, bourses et admissions universitaires repérés par les mentors alumni du LSNB.

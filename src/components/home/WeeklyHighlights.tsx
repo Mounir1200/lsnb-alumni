@@ -7,6 +7,7 @@ import type { HighlightArticle } from "../../lib/highlightRepository";
 import { buildHighlightPreviews } from "../../lib/highlightPreview";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
+import { RouteStop } from "../visual/RouteStop";
 import { SectionPathBackdrop } from "../visual/SectionPathBackdrop";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", {
@@ -98,7 +99,7 @@ export function WeeklyHighlights() {
       <div className="page-shell">
         <div className="highlights-heading">
           <div>
-            <p className="eyebrow eyebrow--dark">Highlight · Les alumni à l’honneur</p>
+            <RouteStop>Highlight de la semaine</RouteStop>
             <h2 id="highlights-title">Deux parcours.<br />Une semaine à la une.</h2>
           </div>
           <p>
@@ -156,7 +157,7 @@ export function WeeklyHighlights() {
         </div>
 
         <div className="section-link-row">
-          <Link to="/annuaire" className="text-link">
+          <Link to="/annuaire" className="text-link text-link--action">
             Parcourir tous les profils <ArrowRight size={18} aria-hidden="true" />
           </Link>
         </div>

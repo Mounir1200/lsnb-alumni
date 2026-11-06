@@ -6,6 +6,7 @@ import { resolveCallbackUser } from "../lib/authCallback";
 import { uploadPendingAvatar } from "../lib/avatarRepository";
 import { loadOnboardingProfile } from "../lib/onboardingRepository";
 import { createLinkAuth, supabase } from "../lib/supabase";
+import { RouteStop } from "../components/visual/RouteStop";
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export function AuthCallbackPage() {
   return (
     <div className="auth-state-page" role={error ? "alert" : "status"}>
       {error ? <AlertTriangle aria-hidden="true" /> : confirmation ? <UserRound aria-hidden="true" /> : <LoaderCircle className="spin" aria-hidden="true" />}
-      <p className="eyebrow">Connexion au réseau</p>
+      <RouteStop>Connexion au réseau</RouteStop>
       <h1>{error ? "La connexion n’a pas abouti." : confirmation ? "Est-ce bien votre compte ?" : "Un dernier passage."}</h1>
       <p>{error ?? (confirmation ? "Ce lien ouvre le compte ci-dessous. Continuez uniquement si cette adresse vous appartient." : "Ouverture de votre session…")}</p>
       {confirmation && <>

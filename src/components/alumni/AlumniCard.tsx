@@ -1,8 +1,25 @@
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { AlumniProfile } from "../../data/alumni";
 import { cn } from "../../lib/cn";
+import { livesAtOrigin } from "../../lib/trajectory";
 import { Avatar } from "../ui/Avatar";
+
+/** A place breaks after its comma, never inside "Burkina Faso". */
+const keepPlaceNamesWhole = (location: string) => location.replace(/(?<!,) /g, "\u00a0");
+
+/** Where the member's path led from Sya; a member still in Bobo-Dioulasso stays at the start. */
+function CardJourney({ location, atOrigin }: { location: string; atOrigin: boolean }) {
+  const place = keepPlaceNamesWhole(location);
+  if (atOrigin) return <><i className="alumni-card__home" aria-hidden="true" /><span>{place}</span></>;
+  return (
+    <>
+      <span className="alumni-card__origin" aria-hidden="true">Sya</span>
+      <i className="route-leg alumni-card__leg" aria-hidden="true" />
+      <span><span className="sr-only">De Sya à </span>{place}</span>
+    </>
+  );
+}
 
 type AlumniCardProps = {
   profile: AlumniProfile;
@@ -42,7 +59,7 @@ export function AlumniCard({ profile, featured = false }: AlumniCardProps) {
             <p className="alumni-card__role">{profile.currentRole}</p>
             {(location || profile.graduationYear > 0) && (
               <p className="alumni-card__location">
-                {location && <><MapPin size={14} aria-hidden="true" /><span>{location}</span></>}
+                {location && <CardJourney location={location} atOrigin={livesAtOrigin(profile.city, profile.country)} />}
                 {profile.graduationYear > 0 && <span className="alumni-card__inline-promotion">Promo {profile.graduationYear}</span>}
               </p>
             )}

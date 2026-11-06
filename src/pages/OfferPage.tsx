@@ -7,6 +7,7 @@ import { OfferOwnerPanel } from "../components/offers/OfferOwnerPanel";
 import { OfferAccessState, OfferNotice, OffersLoadError } from "../components/offers/OfferStates";
 import { formatOfferDate, OfferDeadline, OfferKindTag } from "../components/offers/OfferTags";
 import { ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import { useOfferAccess } from "../hooks/useOfferAccess";
 import { useOffer } from "../hooks/useOffers";
 import "../components/offers/Offers.css";
@@ -22,7 +23,7 @@ export function OfferPage() {
   if (offerState.status === "loading") {
     return (
       <section className="simple-page page-shell" aria-live="polite">
-        <p className="eyebrow eyebrow--dark">Chargement</p>
+        <RouteStop>Chargement</RouteStop>
         <h1>Nous ouvrons cette offre.</h1>
       </section>
     );

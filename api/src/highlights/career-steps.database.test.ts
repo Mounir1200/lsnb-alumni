@@ -85,6 +85,26 @@ describe('Profile career steps', { concurrency: false }, () => {
     assert.deepEqual(await stepsOf(member), [])
   })
 
+  it('accepts optional start and end months and rejects inconsistent ones', async () => {
+    const member = await signUp()
+    const withMonths = [{ ...prepa, start_month: 9, end_month: 6 }, { ...job, start_month: 1 }]
+    assert.equal((await saveSteps(member, withMonths)).rows.length, 1)
+    assert.deepEqual(await stepsOf(member), withMonths)
+    const invalid: unknown[] = [
+      [{ ...prepa, start_month: 0 }],
+      [{ ...prepa, start_month: 13 }],
+      [{ ...prepa, start_month: 2.5 }],
+      [{ ...prepa, start_month: '9' }],
+      [{ ...prepa, end_month: null }],
+      [{ ...job, end_month: 6 }],
+      [{ ...prepa, end_year: 2020, start_month: 9, end_month: 6 }],
+    ]
+    for (const steps of invalid) {
+      await assert.rejects(saveSteps(member, steps), /profiles_career_steps_check/, JSON.stringify(steps))
+    }
+    assert.deepEqual(await stepsOf(member), withMonths)
+  })
+
   it('keeps email sign-up steps from the metadata and ignores invalid ones without blocking sign-up', async () => {
     const withSteps = await signUp({ career_steps: [prepa, job] })
     assert.deepEqual(await stepsOf(withSteps), [prepa, job])

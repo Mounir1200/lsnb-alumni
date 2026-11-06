@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
 import { Button } from "../components/ui/Button";
 import { BrandMark } from "../components/ui/BrandMark";
+import { RouteStop } from "../components/visual/RouteStop";
 import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { CONFIRMATION_RESEND_SUCCESS, getLoginError, resendSignupConfirmation } from "../lib/emailConfirmation";
 import { createEmailSignupAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
@@ -70,7 +71,7 @@ export function LoginPage() {
       <div className="login-page__panel">
         <BrandMark className="login-page__brand" />
         <div className="login-page__heading">
-          <p className="eyebrow eyebrow--dark">Espace membre</p>
+          <RouteStop>Espace membre</RouteStop>
           <h1>Retrouver le réseau.</h1>
           <p>Connectez-vous pour consulter les contacts et gérer votre profil.</p>
         </div>

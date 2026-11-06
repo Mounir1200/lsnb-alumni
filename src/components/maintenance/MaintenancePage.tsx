@@ -1,4 +1,5 @@
 import { ArrowUpRight, RefreshCw } from "lucide-react";
+import { SITE_NAME } from "../../lib/site";
 import type { SiteStatus } from "../../lib/siteAvailability";
 import { CounterLoader } from "./CounterLoader";
 import "./Maintenance.css";
@@ -90,7 +91,7 @@ export function MaintenancePage({
             Accès à l’équipe <ArrowUpRight size={14} aria-hidden="true" />
           </a>
         )}
-        <span>LSNB · Alumni de Sya</span>
+        <span>{SITE_NAME}</span>
       </footer>
     </div>
   );

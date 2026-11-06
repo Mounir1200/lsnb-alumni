@@ -1,27 +1,42 @@
 import { ArrowRight } from "lucide-react";
-import { BOBO_DIOULASSO, findPlace, isNearSchool } from "../../data/places";
+import { Fragment } from "react";
+import type { AlumniProfile } from "../../data/alumni";
+import { findPlace, isNearSchool } from "../../data/places";
+import { SCHOOL_STOP, toTrajectoryStops } from "../../lib/trajectory";
 import { TrajectoryGlobe } from "../visual/TrajectoryGlobe";
 
-/** Hero globe: the route from the LSNB to where the member lives today. */
-export function ProfileTrajectory({ city, country }: { city: string; country: string }) {
-  const place = findPlace(city, country);
-  const isAtSchool = place ? isNearSchool(place.coordinates) : false;
-  const destination = place && !isAtSchool ? place.coordinates : undefined;
-  const destinationName = place?.precision === "city" ? city : country;
+type ProfileTrajectoryProps = Pick<AlumniProfile, "city" | "country" | "careerSteps">;
 
-  const caption = destination ? (
+/** Hero globe: the route from the LSNB through each place of the member's path. */
+export function ProfileTrajectory({ city, country, careerSteps }: ProfileTrajectoryProps) {
+  const stops = toTrajectoryStops(careerSteps, city, country);
+  const currentPlace = findPlace(city, country);
+  const isAtSchool = currentPlace ? isNearSchool(currentPlace.coordinates) : false;
+
+  const caption = stops.length > 0 ? (
     <>
       <span className="trajectory-globe__route">
-        Bobo-Dioulasso <ArrowRight size={15} aria-hidden="true" /><span className="sr-only">vers</span> {destinationName}
+        {SCHOOL_STOP.name}
+        {stops.map((stop, index) => (
+          <Fragment key={`${stop.name}-${index}`}>
+            <ArrowRight size={15} aria-hidden="true" /><span className="sr-only">vers</span> {stop.name}
+          </Fragment>
+        ))}
       </span>
       <span className="trajectory-globe__note">Du LSNB à aujourd’hui</span>
     </>
   ) : (
     <>
-      <span className="trajectory-globe__route">Bobo-Dioulasso</span>
+      <span className="trajectory-globe__route">{SCHOOL_STOP.name}</span>
       <span className="trajectory-globe__note">{isAtSchool ? "Toujours dans la ville du LSNB" : "Point de départ : le LSNB"}</span>
     </>
   );
 
-  return <TrajectoryGlobe origin={BOBO_DIOULASSO} destination={destination} caption={caption} />;
+  return (
+    <TrajectoryGlobe
+      origin={SCHOOL_STOP.coordinates}
+      destinations={stops.map((stop) => stop.coordinates)}
+      caption={caption}
+    />
+  );
 }

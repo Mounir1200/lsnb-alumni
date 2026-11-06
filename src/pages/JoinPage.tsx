@@ -4,11 +4,13 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { Button } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository";
 import { normalizeCareerSteps, toCareerStepRows, type CareerStepDraft } from "../lib/careerSteps";
 import { savePendingAvatar } from "../lib/pendingAvatarStore";
 import { normalizeProfileLink } from "../lib/profileLinks";
+import { SITE_NAME } from "../lib/site";
 import { registerEmailAccount } from "../lib/emailConfirmation";
 import { createEmailSignupAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
 
@@ -143,7 +145,7 @@ export function JoinPage() {
     <div className="account-page">
       <div className="page-shell account-page__grid">
         <aside className="account-story">
-          <p className="eyebrow">Rejoindre le réseau</p>
+          <RouteStop>Rejoindre le réseau</RouteStop>
           <h1>Votre parcours peut devenir le repère de quelqu’un.</h1>
           <p>
             Créez un profil utile et précis. Vous décidez quelles coordonnées sont visibles et
@@ -287,7 +289,7 @@ export function JoinPage() {
 
             <label className="form-consent">
               <input type="checkbox" required />
-              <span>J’accepte que ces informations soient utilisées pour mon profil LSNB Réseau. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span>
+              <span>J’accepte que ces informations soient utilisées pour mon profil dans l’{SITE_NAME}. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span>
             </label>
 
             {role === "alumni" && (

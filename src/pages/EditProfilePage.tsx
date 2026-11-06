@@ -14,7 +14,9 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { DraftHint, DraftResumeNotice, PublicListingField, useProfileDraftAutosave } from "../components/profile/ProfileDraft";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import {
   deleteAvatar,
   getAvatarValidationError,
@@ -26,28 +28,9 @@ import {
   type EditableProfile,
   type ProfileGender,
 } from "../lib/profileRepository";
-import { normalizeCareerSteps, toCareerStepDrafts, type CareerStepDraft } from "../lib/careerSteps";
+import { normalizeCareerSteps, toCareerStepDrafts } from "../lib/careerSteps";
+import { loadProfileDraft, resumableDraft, type EditorForm } from "../lib/profileDraft";
 import { normalizeProfileLink } from "../lib/profileLinks";
-
-type EditorForm = {
-  firstName: string;
-  lastName: string;
-  memberRole: "alumni" | "student";
-  gender: ProfileGender;
-  graduationYear: string;
-  specialty: string;
-  domain: string;
-  specialties: string;
-  city: string;
-  country: string;
-  experience: string;
-  careerSteps: CareerStepDraft[];
-  linkedinUrl: string;
-  portfolioUrl: string;
-  offersMentoring: boolean;
-  mentoringTopics: string;
-  contactVisible: boolean;
-};
 
 type SaveStatus = {
   kind: "idle" | "loading" | "success" | "warning" | "error";
@@ -76,6 +59,7 @@ function toEditorForm(profile: EditableProfile): EditorForm {
     offersMentoring: profile.offersMentoring,
     mentoringTopics: profile.mentoringTopics.join("\n"),
     contactVisible: profile.contactVisible,
+    listedPublicly: profile.listedPublicly,
   };
 }
 
@@ -91,6 +75,9 @@ function parseList(value: string) {
 export function EditProfilePage() {
   const { user } = useAuth();
   const [form, setForm] = useState<EditorForm>();
+  // What the server holds: the draft is the difference between it and `form`.
+  const [savedForm, setSavedForm] = useState<EditorForm>();
+  const [restoredDraftAt, setRestoredDraftAt] = useState<Date>();
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string>();
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>();
@@ -109,7 +96,11 @@ export function EditProfilePage() {
     void loadEditableProfile(user.id)
       .then((profile) => {
         if (!active) return;
-        setForm(toEditorForm(profile));
+        const loaded = toEditorForm(profile);
+        const draft = resumableDraft(loadProfileDraft(user.id), loaded);
+        setSavedForm(loaded);
+        setForm(draft?.form ?? loaded);
+        setRestoredDraftAt(draft?.savedAt);
         setCurrentPhotoUrl(profile.photoUrl);
         setPhoto(null);
         setRemovePhoto(false);
@@ -129,6 +120,9 @@ export function EditProfilePage() {
     };
   }, [reloadKey, user?.id]);
 
+  // Every change is kept on this device until it is saved or discarded.
+  const hasUnsavedChanges = useProfileDraftAutosave(user?.id, form, savedForm);
+
   useEffect(() => {
     if (!photo) {
       setPhotoPreview(undefined);
@@ -143,6 +137,12 @@ export function EditProfilePage() {
 
   const updateField = <Key extends keyof EditorForm>(key: Key, value: EditorForm[Key]) => {
     setForm((current) => current ? { ...current, [key]: value } : current);
+    setStatus({ kind: "idle" });
+  };
+
+  const discardDraft = () => {
+    setForm(savedForm);
+    setRestoredDraftAt(undefined);
     setStatus({ kind: "idle" });
   };
 
@@ -207,8 +207,12 @@ export function EditProfilePage() {
         offersMentoring: form.memberRole === "alumni" && form.offersMentoring,
         mentoringTopics: parseList(form.mentoringTopics),
         contactVisible: form.contactVisible,
+        listedPublicly: form.listedPublicly,
         email: user.email ?? "",
       });
+      // The profile now holds these values: the draft effect clears what remains.
+      setSavedForm(form);
+      setRestoredDraftAt(undefined);
 
       let nextPhotoUrl = currentPhotoUrl;
       let photoWarning: string | undefined;
@@ -276,7 +280,7 @@ export function EditProfilePage() {
           <Link to="/espace" className="back-link">
             <ArrowLeft size={17} aria-hidden="true" /> Retour à mon espace
           </Link>
-          <p className="eyebrow eyebrow--dark">Profil personnel</p>
+          <RouteStop>Profil personnel</RouteStop>
           <h1>Un parcours vivant reste à jour.</h1>
           <p>
             Ajustez les informations qui aident les élèves et les autres alumni à comprendre
@@ -309,6 +313,7 @@ export function EditProfilePage() {
           </div>
 
           <form className="account-form" onSubmit={handleSubmit}>
+            {restoredDraftAt && <DraftResumeNotice savedAt={restoredDraftAt} onDiscard={discardDraft} />}
             <fieldset className="role-picker">
               <legend>Mon statut dans le réseau</legend>
               <label className={form.memberRole === "alumni" ? "is-selected" : ""}>
@@ -568,6 +573,10 @@ export function EditProfilePage() {
               </span>
             </label>
 
+            {form.memberRole === "alumni" && (
+              <PublicListingField checked={form.listedPublicly} onChange={(checked) => updateField("listedPublicly", checked)} />
+            )}
+
             <label className="field-group">
               <span>Adresse e-mail du compte</span>
               <input value={user.email ?? ""} readOnly aria-readonly="true" />
@@ -592,6 +601,7 @@ export function EditProfilePage() {
                 {status.kind === "loading" ? "Enregistrement…" : "Enregistrer les modifications"}
               </Button>
             </div>
+            {hasUnsavedChanges && status.kind !== "loading" && <DraftHint />}
 
             {form.memberRole === "alumni" && (
               <p className="highlight-disclosure">

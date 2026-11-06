@@ -7,13 +7,15 @@ import {
   Microscope,
   Orbit,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Hero } from "../components/home/Hero";
 import { WeeklyHighlights } from "../components/home/WeeklyHighlights";
 import { Reveal } from "../components/motion/Reveal";
 import { ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import { SectionPathBackdrop } from "../components/visual/SectionPathBackdrop";
+import { pickHomePhotos, type HomePhoto } from "../data/homePhotos";
 
 const discoveryPaths = [
   {
@@ -39,8 +41,16 @@ const discoveryPaths = [
   },
 ];
 
+function PhotoCredit({ credit }: { credit: HomePhoto["credit"] }) {
+  return credit.href
+    ? <a href={credit.href} target="_blank" rel="noreferrer">{credit.label}</a>
+    : <>{credit.label}</>;
+}
+
 export function HomePage() {
   const location = useLocation();
+  // Drawn once per visit, so a photo never changes while it is being looked at.
+  const [photos] = useState(() => pickHomePhotos());
 
   useEffect(() => {
     if (!location.hash) return;
@@ -57,9 +67,9 @@ export function HomePage() {
         <div className="page-shell network-ribbon__inner">
           <p>Un annuaire construit autour des parcours, pas des titres.</p>
           <div aria-hidden="true" className="network-ribbon__route">
-            <span className="network-ribbon__stop">Bobo-Dioulasso<i /></span>
-            <span className="network-ribbon__stop">Ouagadougou<i /></span>
-            <span className="network-ribbon__stop">Dakar<i /></span>
+            <span className="network-ribbon__stop">Bobo-Dioulasso<i className="route-leg" /></span>
+            <span className="network-ribbon__stop">Ouagadougou<i className="route-leg" /></span>
+            <span className="network-ribbon__stop">Dakar<i className="route-leg" /></span>
             <span className="network-ribbon__stop">Le monde</span>
           </div>
         </div>
@@ -70,7 +80,7 @@ export function HomePage() {
       <section className="section discovery-section" aria-labelledby="discovery-title">
         <div className="page-shell discovery-section__layout">
           <Reveal className="discovery-section__intro">
-            <p className="eyebrow">Trouver le bon point de contact</p>
+            <RouteStop tone="light">Trouver le bon point de contact</RouteStop>
             <h2 id="discovery-title">Chercher par ce qui compte vraiment.</h2>
             <p>
               Une recherche directe par spécialité, domaine, pays ou disponibilité au mentorat.
@@ -107,41 +117,34 @@ export function HomePage() {
         <div className="page-shell mentoring-section__grid">
           <Reveal className="mentoring-section__image-wrap">
             <img
-              src="/images/mentoring-lab.jpg"
-              alt="Illustration éditoriale de trois jeunes Burkinabè échangeant dans un laboratoire scolaire"
+              src={photos.mentoring.src}
+              alt={photos.mentoring.alt}
+              width={photos.mentoring.width}
+              height={photos.mentoring.height}
               className="mentoring-section__image"
             />
-            <p className="mentoring-section__image-note">Visuel original généré pour le projet</p>
+            <p className="mentoring-section__image-note"><PhotoCredit credit={photos.mentoring.credit} /></p>
           </Reveal>
 
           <Reveal className="mentoring-section__copy" delay={80}>
-            <p className="eyebrow eyebrow--dark">Mentorat volontaire</p>
+            <RouteStop>Mentorat volontaire</RouteStop>
             <h2 id="mentoring-title">Des conseils.<br />Pas des promesses.</h2>
             <p>
               Un élève peut demander un échange à un ancien qui s’est déclaré disponible. Le but
               est simple&nbsp;: comprendre une filière, préparer un choix et éviter d’avancer seul.
             </p>
 
-            <ol className="mentoring-steps">
-              <li>
-                <span>01</span>
-                <div><b>Découvrir</b><p>Lire un parcours et ses spécialités.</p></div>
-              </li>
-              <li>
-                <span>02</span>
-                <div><b>Demander</b><p>Expliquer en quelques lignes ce dont on a besoin.</p></div>
-              </li>
-              <li>
-                <span>03</span>
-                <div><b>Échanger</b><p>Le mentor accepte selon sa disponibilité.</p></div>
-              </li>
+            <ol className="mentoring-steps route-steps">
+              <li><div><b>Découvrir</b><p>Lire un parcours et ses spécialités.</p></div></li>
+              <li><div><b>Demander</b><p>Expliquer en quelques lignes ce dont on a besoin.</p></div></li>
+              <li><div><b>Échanger</b><p>Le mentor accepte selon sa disponibilité.</p></div></li>
             </ol>
 
             <div className="mentoring-section__actions">
               <ButtonLink to="/annuaire?mentor=true">
                 Trouver un mentor <MessageCircle size={18} aria-hidden="true" />
               </ButtonLink>
-              <Link to="/rejoindre?mentorat=true" className="text-link text-link--dark">
+              <Link to="/rejoindre?mentorat=true" className="text-link text-link--action">
                 Devenir mentor <ArrowRight size={17} aria-hidden="true" />
               </Link>
             </div>
@@ -153,49 +156,39 @@ export function HomePage() {
         <SectionPathBackdrop variant="roots" />
         <div className="page-shell">
           <Reveal className="roots-section__headline">
-            <p className="eyebrow">Notre point commun</p>
+            <RouteStop>Notre point commun</RouteStop>
             <h2 id="roots-title">La science pour élan.<br />Sya pour ancrage.</h2>
           </Reveal>
 
           <div className="roots-section__gallery">
             <Reveal className="roots-photo roots-photo--school">
               <img
-                src="https://www.lobspaalga.com/wp-content/uploads/2023/07/IMG-20210921-WA0003-840x480-1-780x470.jpg"
-                alt="Entrée du Lycée Scientifique National de Bobo-Dioulasso"
+                src={photos.school.src}
+                alt={photos.school.alt}
+                width={photos.school.width}
+                height={photos.school.height}
                 loading="lazy"
               />
               <div>
                 <span>Le point de départ</span>
                 <p>Lycée Scientifique National de Bobo-Dioulasso</p>
-                <a
-                  href="https://www.lobspaalga.com/2023/07/02/lycee-scientifique-de-bobo-pas-de-frais-de-scolarite-pour-les-eleves/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Photo&nbsp;: L’Obs Paalga
-                </a>
+                <PhotoCredit credit={photos.school.credit} />
               </div>
             </Reveal>
 
             <Reveal className="roots-photo roots-photo--city" delay={90}>
               <img
-                src="/images/bobo-grand-mosque.jpg"
-                alt="Grande Mosquée de Bobo-Dioulasso, exemple d’architecture soudano-sahélienne"
+                src={photos.city.src}
+                alt={photos.city.alt}
                 loading="lazy"
                 decoding="async"
-                width="1280"
-                height="960"
+                width={photos.city.width}
+                height={photos.city.height}
               />
               <div>
                 <span>L’identité de Sya</span>
                 <p>Ocre du banco, indigo, vert manguier et lumière blanche.</p>
-                <a
-                  href="https://commons.wikimedia.org/wiki/File:BoboDioulasso-GrandMosqueN.JPG"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Photo&nbsp;: Semiliki · CC BY-SA 3.0
-                </a>
+                <PhotoCredit credit={photos.city.credit} />
               </div>
             </Reveal>
           </div>
@@ -214,13 +207,13 @@ export function HomePage() {
       <section className="join-cta">
         <div className="page-shell join-cta__inner">
           <div>
-            <p className="eyebrow">Élève ou alumni</p>
+            <RouteStop tone="light">Prochaine escale : vous</RouteStop>
             <h2>Ajoutez votre trajectoire<br />à la carte.</h2>
           </div>
           <div>
             <p>
-              Créez un profil clair, partagez votre parcours et choisissez librement si vous
-              souhaitez proposer du mentorat.
+              Élève ou alumni, créez un profil clair, partagez votre parcours et choisissez
+              librement si vous souhaitez proposer du mentorat.
             </p>
             <ButtonLink to="/rejoindre" variant="light" size="lg">
               Créer mon profil <ArrowRight size={18} aria-hidden="true" />

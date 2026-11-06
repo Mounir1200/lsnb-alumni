@@ -31,8 +31,8 @@ function toLongitudeLatitude({ latitude, longitude }: Coordinates): [number, num
   return [longitude, latitude];
 }
 
-/** Countries drawn as a map texture, the school's country and the destination's highlighted. */
-export async function createWorldTexture(origin: Coordinates, destination?: Coordinates) {
+/** Countries drawn as a map texture, the school's country and every destination's highlighted. */
+export async function createWorldTexture(origin: Coordinates, destinations: Coordinates[] = []) {
   const countries = await loadCountries();
   const canvas = document.createElement("canvas");
   canvas.width = TEXTURE_WIDTH;
@@ -55,9 +55,9 @@ export async function createWorldTexture(origin: Coordinates, destination?: Coor
   context.stroke();
 
   const originPoint = toLongitudeLatitude(origin);
-  const destinationPoint = destination ? toLongitudeLatitude(destination) : undefined;
+  const destinationPoints = destinations.map(toLongitudeLatitude);
   for (const country of countries) {
-    const isDestination = destinationPoint !== undefined && geoContains(country, destinationPoint);
+    const isDestination = destinationPoints.some((point) => geoContains(country, point));
     const isOrigin = geoContains(country, originPoint);
     context.beginPath();
     path(country);

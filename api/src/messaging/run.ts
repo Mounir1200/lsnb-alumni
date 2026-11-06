@@ -1,10 +1,12 @@
 import "dotenv/config";
-import { createNotificationSender, createNotificationStore, deliverNotifications, loadNotificationConfig, NotificationError } from "./notifications.js";
+import { runNotificationRound } from "../notifications/delivery.js";
+import { loadNotificationConfig, NotificationError } from "./notifications.js";
+import { notificationChannels } from "./scheduler.js";
 
 try {
   // Validate everything before claiming jobs, including before any delivery attempt.
   const config = loadNotificationConfig();
-  const result = await deliverNotifications(createNotificationStore(config), createNotificationSender(config));
+  const result = { event: "messaging.notifications", ...await runNotificationRound(notificationChannels(config)) };
   console.info(JSON.stringify(result));
   if (result.failed) process.exitCode = 1;
 } catch (error) {

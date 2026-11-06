@@ -1,8 +1,10 @@
 import { ArrowUpRight, Camera, CheckCircle2, LoaderCircle, LogOut, Network, PencilLine, UserRound } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { useSignOut } from "../auth/useSignOut";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import {
   getAvatarValidationError,
   uploadAvatar,
@@ -23,9 +25,8 @@ type MemberIdentity = {
 
 export function MemberPage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { signOut: handleSignOut, isSigningOut } = useSignOut();
   const [searchParams] = useSearchParams();
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string>();
   const [identity, setIdentity] = useState<MemberIdentity>();
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>({ kind: "idle" });
@@ -119,18 +120,11 @@ export function MemberPage() {
     }
   };
 
-  const handleSignOut = async () => {
-    if (!supabase) return;
-    setIsSigningOut(true);
-    await supabase.auth.signOut();
-    navigate("/", { replace: true });
-  };
-
   return (
     <div className="member-page">
       <div className="page-shell member-page__grid">
         <section className="member-page__intro">
-          <p className="eyebrow">Espace membre</p>
+          <RouteStop>Espace membre</RouteStop>
           <h1>Bonjour,<br />{firstName}.</h1>
           <p>
             Votre session est active. Vous pouvez maintenant parcourir l’annuaire et consulter les profils du réseau.

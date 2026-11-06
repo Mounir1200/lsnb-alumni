@@ -48,7 +48,7 @@ type ConversationSummaryRow = {
 type DeviceRow = { session_id: string; user_agent: string | null; created_at: string; last_used_at: string; is_current: boolean };
 
 type InboxRequestRow = {
-  id: string; requester_id: string; recipient_id: string; request_kind: "contact" | "mentoring";
+  id: string; requester_id: string; recipient_id: string; request_kind: "contact" | "mentoring" | "connection";
   created_at: string; responded_at: string | null; offer_id: string | null;
   requester: MemberRow | null; recipient: MemberRow | null; offer: { id: string; title: string } | null;
 };

@@ -10,6 +10,8 @@ import { createGlowTexture } from "./glowTexture";
 const ARC_SEGMENTS = 96;
 const ARC_WIDTH_PIXELS = 2.4;
 const ARC_REVEAL_SECONDS = 1.6;
+// A long path draws its legs faster, so the whole route still appears within this time.
+const MAX_PATH_REVEAL_SECONDS = 3.2;
 const PULSE_PERIOD_SECONDS = 4.5;
 // Lifts markers and route ends just off the map so they never flicker into it.
 const SURFACE_OFFSET = 1.006;
@@ -74,17 +76,24 @@ function journeyPoints(start: THREE.Vector3, end: THREE.Vector3, angle: number) 
 
 type TrajectoryGlobeProps = {
   origin: Coordinates;
-  destination?: Coordinates;
+  /** The places after the origin, in the order they were reached. */
+  destinations: Coordinates[];
   caption: ReactNode;
 };
 
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+const toKey = (points: Coordinates[]) => points.map(({ latitude, longitude }) => `${latitude},${longitude}`).join(";");
+const fromKey = (key: string): Coordinates[] => (key ? key.split(";").map((pair) => {
+  const [latitude = 0, longitude = 0] = pair.split(",").map(Number);
+  return { latitude, longitude };
+}) : []);
+
 /** Earth globe tracing a member's path from the school; the caption carries the information. */
-export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlobeProps) {
+export function TrajectoryGlobe({ origin, destinations, caption }: TrajectoryGlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reducedMotion = useReducedMotion();
-  const { latitude: originLatitude, longitude: originLongitude } = origin;
-  const destinationLatitude = destination?.latitude;
-  const destinationLongitude = destination?.longitude;
+  // Places are compared by value so a re-render with the same path keeps the scene.
+  const pathKey = toKey([origin, ...destinations]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -100,10 +109,7 @@ export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlob
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    const originPoint: Coordinates = { latitude: originLatitude, longitude: originLongitude };
-    const destinationPoint: Coordinates | undefined = destinationLatitude !== undefined && destinationLongitude !== undefined
-      ? { latitude: destinationLatitude, longitude: destinationLongitude }
-      : undefined;
+    const [originPoint = { latitude: 0, longitude: 0 }, ...destinationPoints] = fromKey(pathKey);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
@@ -160,8 +166,8 @@ export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlob
     halo.lookAt(start.clone().multiplyScalar(2));
     world.add(halo);
 
-    const buildJourney = (end: THREE.Vector3, angle: number) => {
-      const points = journeyPoints(start, end, angle);
+    const buildJourney = (from: THREE.Vector3, end: THREE.Vector3, angle: number) => {
+      const points = journeyPoints(from, end, angle);
       const geometry = track(new LineGeometry());
       geometry.setPositions(points.flatMap((point) => [point.x, point.y, point.z]));
       const material = track(new LineMaterial({ color: colors.arc, linewidth: ARC_WIDTH_PIXELS, transparent: true, opacity: 0.95 }));
@@ -177,13 +183,20 @@ export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlob
       return { end, geometry, material, line, destinationGlow, pulse, curve: new THREE.CatmullRomCurve3(points) };
     };
 
-    const end = destinationPoint ? toPosition(destinationPoint).normalize() : undefined;
-    const journeyAngle = end ? start.angleTo(end) : 0;
-    const journey = end && journeyAngle > MIN_JOURNEY_RADIANS ? buildJourney(end, journeyAngle) : undefined;
+    // One leg per move, each starting where the previous one ended.
+    const stops = [start, ...destinationPoints.map((point) => toPosition(point).normalize())];
+    const journeys = stops.slice(1).flatMap((end, index) => {
+      const from = stops[index]!;
+      const angle = from.angleTo(end);
+      return angle > MIN_JOURNEY_RADIANS ? [buildJourney(from, end, angle)] : [];
+    });
+    const legSeconds = journeys.length ? Math.min(ARC_REVEAL_SECONDS, MAX_PATH_REVEAL_SECONDS / journeys.length) : 0;
+    const pathRevealSeconds = legSeconds * journeys.length;
 
-    // Face the middle of the journey (or the school) with north kept up.
-    const focus = journey ? start.clone().add(journey.end).normalize() : start.clone();
-    const baseYaw = Math.atan2(-focus.x, focus.z) + (journey ? VIEW_YAW_OFFSET_RADIANS : 0);
+    // Face the middle of the path (or the school) with north kept up.
+    const centre = stops.reduce((sum, stop) => sum.add(stop), new THREE.Vector3());
+    const focus = journeys.length && centre.length() > MIN_JOURNEY_RADIANS ? centre.normalize() : start.clone();
+    const baseYaw = Math.atan2(-focus.x, focus.z) + (journeys.length ? VIEW_YAW_OFFSET_RADIANS : 0);
     const horizontal = Math.hypot(focus.x, focus.z);
     world.rotation.set(Math.atan2(focus.y, horizontal) - VIEW_TILT_RADIANS, baseYaw, 0);
 
@@ -196,7 +209,7 @@ export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlob
       renderer.setSize(width, height, false);
       camera.aspect = cssWidth / cssHeight;
       camera.updateProjectionMatrix();
-      if (journey) {
+      for (const journey of journeys) {
         journey.material.resolution.set(width, height);
         journey.material.linewidth = ARC_WIDTH_PIXELS * pixelRatio;
       }
@@ -212,7 +225,6 @@ export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlob
 
     const render = (time = startedAt) => {
       const elapsed = Math.max(0, (time - startedAt) / 1000);
-      const reveal = reducedMotion ? 1 : Math.min(1, elapsed / ARC_REVEAL_SECONDS);
       if (!reducedMotion) {
         world.rotation.y = baseYaw + Math.sin(elapsed * 0.22) * 0.1;
         const breathing = 1 + Math.sin(elapsed * 2.6) * 0.18;
@@ -220,16 +232,17 @@ export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlob
         haloMaterial.opacity = 0.42 + Math.sin(elapsed * 2.6) * 0.2;
         originGlow.scale.setScalar(0.3 * (0.92 + Math.sin(elapsed * 1.9) * 0.1));
       }
-      if (journey) {
+      // Legs are drawn one after the other; then a single pulse travels the whole path.
+      const travelling = !reducedMotion && journeys.length > 0 && elapsed >= pathRevealSeconds;
+      const position = travelling ? ((elapsed - pathRevealSeconds) / PULSE_PERIOD_SECONDS) % journeys.length : -1;
+      journeys.forEach((journey, index) => {
+        const reveal = reducedMotion ? 1 : clamp01((elapsed - index * legSeconds) / legSeconds);
         journey.line.visible = reveal > 0;
         journey.geometry.instanceCount = Math.max(1, Math.floor(reveal * ARC_SEGMENTS));
         journey.destinationGlow.visible = reveal >= 1;
-        journey.pulse.visible = !reducedMotion && reveal >= 1;
-        if (journey.pulse.visible) {
-          const progress = ((elapsed - ARC_REVEAL_SECONDS) / PULSE_PERIOD_SECONDS) % 1;
-          journey.pulse.position.copy(journey.curve.getPointAt(progress));
-        }
-      }
+        journey.pulse.visible = travelling && Math.floor(position) === index;
+        if (journey.pulse.visible) journey.pulse.position.copy(journey.curve.getPointAt(position - index));
+      });
       renderer.render(scene, camera);
       if (!reducedMotion && visible && document.visibilityState === "visible") {
         frame = window.requestAnimationFrame(render);
@@ -238,7 +251,7 @@ export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlob
 
     // The globe shows its ocean at once; the map code and data load only with a globe.
     import("./worldTexture")
-      .then(({ createWorldTexture }) => createWorldTexture(originPoint, journey ? destinationPoint : undefined))
+      .then(({ createWorldTexture }) => createWorldTexture(originPoint, journeys.length ? destinationPoints : []))
       .then((texture) => {
         if (disposed) {
           texture.dispose();
@@ -271,8 +284,7 @@ export function TrajectoryGlobe({ origin, destination, caption }: TrajectoryGlob
       disposables.forEach((resource) => resource.dispose());
       renderer.dispose();
     };
-    // Coordinates are compared by value so a re-render with the same place keeps the scene.
-  }, [originLatitude, originLongitude, destinationLatitude, destinationLongitude, reducedMotion]);
+  }, [pathKey, reducedMotion]);
 
   return (
     <figure className="trajectory-globe">
