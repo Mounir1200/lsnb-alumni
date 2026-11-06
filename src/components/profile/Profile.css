@@ -51,7 +51,7 @@
   background: none;
   color: var(--ink);
   cursor: pointer;
-  font-size: 0.86rem;
+  font-size: 0.9375rem;
   font-weight: 750;
   text-decoration: underline;
   text-decoration-color: var(--banco);
@@ -71,7 +71,8 @@
   color: #596976;
 }
 
-/* Milestones: the school (banco), the steps, today (mango), as on the globe. */
+/* Milestones: the member's route. Each step is a stop on the dashed ochre
+   line; the school (banco) and today (mango) stand out, as on the globe. */
 
 .profile-milestones ol {
   padding: 0;
@@ -80,21 +81,23 @@
 }
 
 .profile-milestones li {
+  --stop-color: var(--banco);
   position: relative;
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
-  gap: 18px;
-  padding: 0 0 28px 30px;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 20px;
+  padding: 0 0 32px 36px;
 }
 
 .profile-milestones li::before {
   content: "";
   position: absolute;
-  top: 6px;
-  left: 4px;
-  width: 11px;
-  height: 11px;
-  border: 2px solid #b5c0c8;
+  z-index: 1;
+  top: 4px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--stop-color);
   border-radius: 50%;
   background: var(--paper);
 }
@@ -103,10 +106,11 @@
   content: "";
   position: absolute;
   top: 22px;
-  bottom: 2px;
-  left: 9px;
-  width: 1px;
-  background: var(--line);
+  bottom: -2px;
+  left: 8px;
+  width: 2px;
+  background: linear-gradient(var(--banco) 60%, transparent 0) 0 0 / 2px 10px repeat-y;
+  opacity: 0.7;
 }
 
 .profile-milestones li:last-child {
@@ -117,29 +121,28 @@
   display: none;
 }
 
-.profile-milestones li.is-origin::before {
-  border-color: var(--banco);
-  background: var(--banco);
+.profile-milestones li:is(.is-origin, .is-now)::before {
+  background: var(--stop-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--stop-color) 22%, transparent);
 }
 
-.profile-milestones li.is-now::before {
-  border-color: var(--mango);
-  background: var(--mango);
+.profile-milestones li.is-now {
+  --stop-color: var(--mango);
 }
 
 .profile-milestones__label {
   display: grid;
   align-content: start;
   gap: 2px;
-  padding-top: 2px;
-  color: var(--banco);
-  font-size: 0.74rem;
+  padding-top: 1px;
+  color: var(--banco-deep);
+  font-size: var(--text-small);
   font-weight: 750;
 }
 
 .profile-milestones__label small {
-  color: #6b7884;
-  font-size: 0.66rem;
+  color: #5b6a76;
+  font-size: var(--text-label);
   font-weight: 650;
 }
 
@@ -149,14 +152,15 @@
 
 .profile-milestones b {
   color: var(--ink);
-  font-size: 0.95rem;
+  font-size: var(--text-lead);
+  line-height: 1.35;
   overflow-wrap: anywhere;
 }
 
 .profile-milestones li p {
-  margin: 3px 0 0;
-  color: #5e6e7b;
-  font-size: 0.8rem;
+  margin: 4px 0 0;
+  color: #536371;
+  font-size: var(--text-small);
   overflow-wrap: anywhere;
 }
 
@@ -205,7 +209,7 @@
 
 .trajectory-globe__note {
   color: rgba(255, 255, 255, 0.62);
-  font-size: 0.72rem;
+  font-size: var(--text-label);
 }
 
 @media (max-width: 620px) {

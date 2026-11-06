@@ -3715,6 +3715,12 @@ a.connection-card__person:hover b {
     min-width: 0;
   }
 
+  /* Both actions span the width, within reach of the thumb. */
+  .profile-hero__buttons,
+  .profile-hero__buttons > * {
+    width: 100%;
+  }
+
   .profile-network__people {
     grid-template-columns: 1fr;
   }
