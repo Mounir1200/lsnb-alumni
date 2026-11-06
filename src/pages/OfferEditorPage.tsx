@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import type { OfferNoticeState } from "../components/offers/OfferStates";
 import { offerKindLabels } from "../components/offers/OfferTags";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import {
   createOffer,
   getOfferErrorMessage,
@@ -263,7 +264,7 @@ export function OfferEditorPage() {
           <Link to={offer ? `/offres/${offer.id}` : "/offres"} className="back-link">
             <ArrowLeft size={17} aria-hidden="true" /> {offer ? "Retour à l’offre" : "Retour aux offres"}
           </Link>
-          <p className="eyebrow eyebrow--dark">{offer ? "Modifier une offre" : "Nouvelle offre"}</p>
+          <RouteStop>{offer ? "Modifier une offre" : "Nouvelle offre"}</RouteStop>
           <h1>Partagez une porte que vous connaissez.</h1>
           <p>Une offre utile dit clairement ce qui est proposé, pour qui, et avant quelle date.</p>
           <div className="account-story__principles">

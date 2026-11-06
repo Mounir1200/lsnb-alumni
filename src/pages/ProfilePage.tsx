@@ -18,6 +18,7 @@ import { ProfileTrajectory } from "../components/profile/ProfileTrajectory";
 import "../components/profile/Profile.css";
 import { Avatar } from "../components/ui/Avatar";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import { alumniProfiles, getAlumniProfile, type AlumniProfile } from "../data/alumni";
 import { loadProfile } from "../lib/profileRepository";
 import { getProfileCompletionPath } from "../lib/auth";
@@ -116,7 +117,7 @@ export function ProfilePage() {
   if (loading || authLoading || (profile && profile.id !== profileId)) {
     return (
       <section className="simple-page page-shell" aria-live="polite">
-        <p className="eyebrow eyebrow--dark">Chargement</p>
+        <RouteStop>Chargement</RouteStop>
         <h1>Nous retrouvons ce parcours.</h1>
       </section>
     );

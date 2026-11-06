@@ -16,6 +16,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { DraftHint, DraftResumeNotice, PublicListingField, useProfileDraftAutosave } from "../components/profile/ProfileDraft";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import {
   deleteAvatar,
   getAvatarValidationError,
@@ -279,7 +280,7 @@ export function EditProfilePage() {
           <Link to="/espace" className="back-link">
             <ArrowLeft size={17} aria-hidden="true" /> Retour à mon espace
           </Link>
-          <p className="eyebrow eyebrow--dark">Profil personnel</p>
+          <RouteStop>Profil personnel</RouteStop>
           <h1>Un parcours vivant reste à jour.</h1>
           <p>
             Ajustez les informations qui aident les élèves et les autres alumni à comprendre

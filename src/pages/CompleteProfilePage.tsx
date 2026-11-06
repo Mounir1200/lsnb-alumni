@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { Button } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import { getPostAuthPath } from "../lib/auth";
 import { SITE_NAME } from "../lib/site";
 import { normalizeCareerSteps, type CareerStepDraft } from "../lib/careerSteps";
@@ -79,7 +80,7 @@ export function CompleteProfilePage() {
     <div className="account-page">
       <div className="page-shell account-page__grid">
         <aside className="account-story">
-          <p className="eyebrow">Bienvenue dans le réseau</p>
+          <RouteStop>Bienvenue dans le réseau</RouteStop>
           <h1>Votre identité est confirmée.<br />Racontez votre parcours.</h1>
           <p>Choisissez votre statut et ajoutez les repères utiles aux autres membres. Votre profil apparaîtra dans l’annuaire une fois cette étape terminée.</p>
           <div className="account-story__principles"><span><UserRound aria-hidden="true" /><b>Un profil qui vous ressemble</b>Vérifiez votre nom et partagez vos expériences.</span></div>

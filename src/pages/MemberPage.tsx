@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useSignOut } from "../auth/useSignOut";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import {
   getAvatarValidationError,
   uploadAvatar,
@@ -123,7 +124,7 @@ export function MemberPage() {
     <div className="member-page">
       <div className="page-shell member-page__grid">
         <section className="member-page__intro">
-          <p className="eyebrow">Espace membre</p>
+          <RouteStop>Espace membre</RouteStop>
           <h1>Bonjour,<br />{firstName}.</h1>
           <p>
             Votre session est active. Vous pouvez maintenant parcourir l’annuaire et consulter les profils du réseau.

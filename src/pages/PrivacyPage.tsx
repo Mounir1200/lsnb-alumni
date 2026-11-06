@@ -1,7 +1,9 @@
+import { RouteStop } from "../components/visual/RouteStop";
+
 export function PrivacyPage() {
   return (
     <article className="legal-page page-shell">
-      <p className="eyebrow eyebrow--dark">Confidentialité</p>
+      <RouteStop>Confidentialité</RouteStop>
       <h1>Comprendre comment votre parcours est partagé.</h1>
       <p>
         Ce prototype sépare les informations de profil des coordonnées personnelles. Seuls les

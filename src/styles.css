@@ -3108,7 +3108,8 @@ textarea:focus-visible {
 /* Keeps what the member can share in view while a long story is read. */
 .profile-aside {
   position: sticky;
-  top: 28px;
+  /* Below the pinned header, which is compact once the page scrolls. */
+  top: calc(var(--header-height-compact) + 24px);
   display: grid;
   align-content: start;
   gap: 18px;
@@ -3794,7 +3795,7 @@ a.connection-card__person:hover b {
 
 .account-story {
   position: sticky;
-  top: 34px;
+  top: calc(var(--header-height-compact) + 24px);
   padding-top: 30px;
 }
 
@@ -3805,7 +3806,7 @@ a.connection-card__person:hover b {
   line-height: 0.94;
 }
 
-.account-story > p:not(.eyebrow) {
+.account-story > p:not(.eyebrow, .route-stop) {
   max-width: 520px;
   color: #64717c;
 }
@@ -4477,7 +4478,7 @@ a.connection-card__person:hover b {
   line-height: 0.95;
 }
 
-.login-page__heading > p:not(.eyebrow) {
+.login-page__heading > p:not(.eyebrow, .route-stop) {
   margin-bottom: 26px;
   color: #67737d;
   font-size: 0.84rem;
@@ -4563,7 +4564,7 @@ a.connection-card__person:hover b {
   line-height: 0.95;
 }
 
-.auth-state-page > p:not(.eyebrow) {
+.auth-state-page > p:not(.eyebrow, .route-stop) {
   max-width: 620px;
   margin: 0 0 10px;
   color: #63717d;
@@ -4660,7 +4661,7 @@ a.connection-card__person:hover b {
   line-height: 0.82;
 }
 
-.member-page__intro > p:not(.eyebrow) {
+.member-page__intro > p:not(.eyebrow, .route-stop) {
   max-width: 660px;
   color: #61707c;
   font-size: clamp(0.92rem, 1.4vw, 1.08rem);
@@ -4827,7 +4828,7 @@ a.connection-card__person:hover b {
   line-height: 0.94;
 }
 
-.simple-page > p:not(.eyebrow),
+.simple-page > p:not(.eyebrow, .route-stop),
 .legal-page > p {
   max-width: 760px;
   color: #5f6d78;

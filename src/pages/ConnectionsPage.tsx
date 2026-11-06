@@ -7,6 +7,7 @@ import { MemberConnectionRow } from "../components/mentoring/MemberConnectionRow
 import { MentorshipPerson } from "../components/mentoring/MentorshipPerson";
 import { usePendingRequests } from "../components/mentoring/PendingRequestsProvider";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import {
   answerConnectionRequest,
   endMentorship,
@@ -203,7 +204,7 @@ export function ConnectionsPage() {
     <div className="connections-page page-shell">
       <Link to="/espace" className="back-link"><ArrowLeft size={17} aria-hidden="true" /> Retour à mon espace</Link>
       <header className="connections-page__header">
-        <p className="eyebrow eyebrow--dark">Des parcours qui se rencontrent</p>
+        <RouteStop>Des parcours qui se rencontrent</RouteStop>
         <h1>Mes relations et demandes</h1>
         <p>Retrouvez vos connexions, les demandes de connexion, d’échange et de mentorat, puis choisissez les relations que vous souhaitez faire vivre.</p>
       </header>

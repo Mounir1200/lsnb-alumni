@@ -6,6 +6,7 @@ import { MessagingNavigation } from "../components/messaging/MessagingNavigation
 import { useMessaging, type MessagingAccess } from "../components/messaging/MessagingProvider";
 import { Avatar } from "../components/ui/Avatar";
 import { Button, ButtonLink } from "../components/ui/Button";
+import { RouteStop } from "../components/visual/RouteStop";
 import {
   getMessagingError, loadConversations, loadDevices, loadEmailNotifications, loadMessagePage, loadMessagesSince,
   markConversationRead, revokeDevice, saveEmailNotifications, sendMessage,
@@ -293,7 +294,7 @@ function MessagesWorkspace({ userId }: { userId: string }) {
   const selected = conversations?.find((conversation) => conversation.id === conversationId);
   return <div className="messages-page page-shell">
     <MessagingNavigation />
-    <header className="messages-heading"><div><p className="eyebrow eyebrow--dark">Messagerie privée</p><h1>Mes messages</h1><p>Échangez avec les membres qui ont accepté votre demande.</p></div>
+    <header className="messages-heading"><div><RouteStop>Messagerie privée</RouteStop><h1>Mes messages</h1><p>Échangez avec les membres qui ont accepté votre demande.</p></div>
       <div className="messages-heading__actions"><Button variant="outline" size="sm" onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Actualiser</Button></div>
     </header>
     <p className="messages-encryption-note">Les présentations initiales des demandes restent accessibles dans <Link to="/espace/relations">Mes relations</Link>.</p>
