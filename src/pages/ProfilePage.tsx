@@ -262,9 +262,7 @@ export function ProfilePage() {
         {requestOpen && !isRequestUnavailable(requestOpen) && (
           <form key={`${requestScope}:${requestOpen}`} className="profile-request-form" onSubmit={handleRequestSubmit}>
             <div>
-              <p className="eyebrow eyebrow--dark">
-                {requestOpen === "mentoring" ? "Demande de mentorat" : "Demande de connexion"}
-              </p>
+              <RouteStop>{requestOpen === "mentoring" ? "Demande de mentorat" : "Demande de connexion"}</RouteStop>
               <h2>
                 {requestOpen === "mentoring"
                   ? `Présentez votre question à ${profile.firstName}.`

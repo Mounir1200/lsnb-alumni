@@ -3160,12 +3160,13 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+/* The heading and its explanation sit at the top, level with the field they introduce. */
 .profile-request-form {
   display: grid;
   grid-template-columns: 0.8fr 1.2fr;
-  gap: 26px 44px;
-  align-items: end;
-  padding: 30px;
+  gap: 24px 56px;
+  align-items: start;
+  padding: 32px 36px;
   background: #efe5d8;
   border-bottom: 1px solid rgba(12, 41, 72, 0.2);
   border-radius: 0 0 var(--radius-panel) var(--radius-panel);
@@ -3178,8 +3179,16 @@ textarea:focus-visible {
   line-height: 1.08;
 }
 
-.profile-request-form .eyebrow {
-  margin-bottom: 9px;
+.profile-request-form .route-stop {
+  margin-bottom: 14px;
+}
+
+.profile-request-form > div:first-child > p:not(.route-stop) {
+  max-width: 42ch;
+  margin: 12px 0 0;
+  color: #536371;
+  font-size: var(--text-body);
+  line-height: 1.6;
 }
 
 .profile-request-form .form-status,
@@ -3810,13 +3819,20 @@ a.connection-card__person:hover b {
   font-size: var(--text-small);
 }
 
-.mentorship-row__details .button {
+/* The quiet actions (remove, end) read as links; "Écrire" stays a real button. */
+.mentorship-row__details .button--ghost {
   min-height: 44px;
   padding: 8px 0;
   color: #596976;
   font-size: var(--text-small);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.mentorship-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .mentorship-row__unavailable {
