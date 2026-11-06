@@ -4,8 +4,11 @@ import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
 
-/** A local Postgres with Supabase's roles and auth stubs, then every migration in order. */
-export async function createMigratedDatabase() {
+/**
+ * A local Postgres with Supabase's roles and auth stubs, then every migration in
+ * order, or only those before `before` to test what a migration does to data.
+ */
+export async function createMigratedDatabase({ before }: { before?: string } = {}) {
   const db = new PGlite({ extensions: { pgcrypto } })
   await db.exec(`
     create role anon; create role authenticated; create role service_role bypassrls;
@@ -21,11 +24,15 @@ export async function createMigratedDatabase() {
     create function storage.foldername(text) returns text[] language sql as 'select string_to_array($1, ''/'')';
   `)
   for (const file of (await readdir(migrationsUrl)).filter((name) => name.endsWith('.sql')).sort()) {
-    await db.exec(await readFile(new URL(file, migrationsUrl), 'utf8'))
+    if (before === undefined || file < before) await applyMigration(db, file)
   }
   // Supabase grants table access by default; RLS and the triggers still apply.
   await db.exec('grant select, insert, update on public.profiles, public.profile_contacts to authenticated')
   return db
+}
+
+export async function applyMigration(db: PGlite, file: string) {
+  await db.exec(await readFile(new URL(file, migrationsUrl), 'utf8'))
 }
 
 export type MemberOptions = { student?: boolean; mentor?: boolean; inactive?: boolean; email?: string; firstName?: string }

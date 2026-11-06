@@ -32,6 +32,22 @@ describe('Email notifications for requests and acceptances', { concurrency: fals
     assert.deepEqual(await claim(), [])
   })
 
+  it('sends one email for a mentoring request, though it also asks to connect', async () => {
+    const awa = await seedMember(db, { email: 'awa@example.test' })
+    const mentor = await seedMember(db, { mentor: true, email: 'mentor@example.test' })
+    await sendRequest(db, awa, mentor, 'mentoring')
+    assert.deepEqual(summary(await claim()), ['received mentoring mentor@example.test'])
+  })
+
+  it('sends one acceptance email when the accepted mentoring also connects the members', async () => {
+    const awa = await seedMember(db, { email: 'awa@example.test' })
+    const mentor = await seedMember(db, { mentor: true, email: 'mentor@example.test' })
+    const mentoring = await sendRequest(db, awa, mentor, 'mentoring')
+    for (const job of await claim()) await finish(job)
+    await answerRequest(db, mentor, mentoring.id)
+    assert.deepEqual(summary(await claim()), ['accepted mentoring awa@example.test'])
+  })
+
   it('tells the requester once their request is accepted, not when it is declined', async () => {
     const awa = await seedMember(db, { email: 'awa@example.test' })
     const binta = await seedMember(db, { email: 'binta@example.test' })

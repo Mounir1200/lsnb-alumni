@@ -75,9 +75,10 @@ describe('Mentoring requests, consent and member network', { concurrency: false 
     assert.equal(sent.status, 'pending'); assert.equal(sent.responded_at, null)
     assert.equal(sent.message, 'Un message suffisamment long pour un mentor.')
     assert.ok(new Date(sent.created_at).getFullYear() > 1999)
+    // The mentoring request also asks to connect: both members see the two requests.
     for (const actor of [junior, mentor]) {
-      const rows = await asUser(actor, () => db.query('select id from public.connection_requests'))
-      assert.equal(rows.rows.length, 1)
+      const rows = await asUser(actor, () => db.query<{ request_kind: string }>('select request_kind from public.connection_requests'))
+      assert.deepEqual(rows.rows.map((row) => row.request_kind).sort(), ['connection', 'mentoring'])
     }
     assert.equal((await asUser(observer, () => db.query('select id from public.connection_requests'))).rows.length, 0)
     assert.equal((await relations(observer)).length, 0)
