@@ -3,36 +3,29 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { useAuth } from "../../auth/AuthProvider";
 import {
   getConnectionErrorMessage,
+  loadMemberConnections,
   loadMentorshipNetwork,
-  type MentorshipNetwork,
 } from "../../lib/mentorshipRepository";
+import { initialNetworkGroup, networkGroups, type NetworkData, type NetworkGroup } from "../../lib/profileNetwork";
+import { nextTabIndex } from "../../lib/tabs";
 import { Button } from "../ui/Button";
 import { MentorshipPerson } from "./MentorshipPerson";
 
-function NetworkMembers({ network }: { network: MentorshipNetwork }) {
+function NetworkMembers({ groups, initial }: { groups: NetworkGroup[]; initial: string }) {
   const id = useId();
-  const mentors = network.mentors.flatMap((item) => item.mentor ? [item.mentor] : []);
-  const mentees = network.mentees.flatMap((item) => item.mentee ? [item.mentee] : []);
-  const [selected, setSelected] = useState<"mentors" | "mentees">(mentees.length ? "mentees" : "mentors");
+  const [selected, setSelected] = useState(initial);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const groups = [
-    { key: "mentors" as const, label: "Mentors", members: mentors, description: "Les personnes qui l’accompagnent.", empty: "Aucun mentor pour le moment.", detail: "Les mentorats acceptés apparaîtront ici." },
-    { key: "mentees" as const, label: "Mentorés", members: mentees, description: "Les personnes accompagnées dans leur parcours.", empty: "Aucun mentoré pour le moment.", detail: "Les accompagnements acceptés apparaîtront ici." },
-  ];
   const selectWithKeyboard = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    let next: number;
-    if (event.key === "ArrowRight" || event.key === "ArrowLeft") next = 1 - index;
-    else if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = 1;
-    else return;
+    const next = nextTabIndex(event.key, index, groups.length);
+    if (next === undefined) return;
     event.preventDefault();
-    setSelected(next === 0 ? "mentors" : "mentees");
+    setSelected(groups[next]!.key);
     tabs.current[next]?.focus();
   };
 
   return (
     <>
-      <div className="profile-network__tabs" role="tablist" aria-label="Relations de mentorat">
+      <div className="profile-network__tabs" role="tablist" aria-label="Relations">
         {groups.map((group, index) => (
           <button key={group.key} ref={(element) => { tabs.current[index] = element; }} type="button" role="tab"
             id={`${id}-${group.key}-tab`} aria-controls={`${id}-${group.key}-panel`}
@@ -61,6 +54,11 @@ function NetworkMembers({ network }: { network: MentorshipNetwork }) {
   );
 }
 
+function ProfileNetworkContent({ data, isOwnProfile }: { data: NetworkData; isOwnProfile: boolean }) {
+  const groups = networkGroups(data, isOwnProfile);
+  return <NetworkMembers groups={groups} initial={initialNetworkGroup(groups, isOwnProfile)} />;
+}
+
 export function ProfileMentorshipNetwork({ profileId, firstName, isDemo = false }: {
   profileId: string;
   firstName: string;
@@ -68,25 +66,26 @@ export function ProfileMentorshipNetwork({ profileId, firstName, isDemo = false 
 }) {
   const { user, isLoading: authLoading } = useAuth();
   const [reload, setReload] = useState(0);
+  const isOwnProfile = !isDemo && user?.id === profileId;
   const scope = `${user?.id ?? ""}:${profileId}`;
-  const [state, setState] = useState<{ scope: string; data?: MentorshipNetwork; error?: string }>();
+  const [state, setState] = useState<{ scope: string; data?: NetworkData; error?: string }>();
 
   useEffect(() => {
     if (!user || isDemo) return;
     let active = true;
     setState({ scope });
-    void loadMentorshipNetwork(profileId)
-      .then((data) => { if (active) setState({ scope, data }); })
+    void Promise.all([loadMentorshipNetwork(profileId), isOwnProfile ? loadMemberConnections(user.id) : undefined])
+      .then(([mentorships, connections]) => { if (active) setState({ scope, data: { mentorships, connections } }); })
       .catch((error: unknown) => { if (active) setState({ scope, error: getConnectionErrorMessage(error) }); });
     return () => { active = false; };
-  }, [user?.id, profileId, isDemo, reload, scope]);
+  }, [user?.id, profileId, isDemo, isOwnProfile, reload, scope]);
 
   const current = state?.scope === scope ? state : undefined;
   return (
-    <section className="profile-network" aria-label={`Réseau de mentorat de ${firstName}`}>
+    <section className="profile-network" aria-label={isOwnProfile ? "Mon réseau" : `Réseau de mentorat de ${firstName}`}>
       <div className="profile-network__heading">
-        <h2>Son réseau de mentorat</h2>
-        <span><LockKeyhole size={14} aria-hidden="true" /> Visible par les membres connectés</span>
+        <h2>{isOwnProfile ? "Mon réseau" : "Son réseau de mentorat"}</h2>
+        <span><LockKeyhole size={14} aria-hidden="true" /> {isOwnProfile ? "Mentorats visibles par les membres connectés" : "Visible par les membres connectés"}</span>
       </div>
       {isDemo ? (
         <p>Démonstration : aucun lien de mentorat réel n’est associé à ce profil fictif.</p>
@@ -102,7 +101,7 @@ export function ProfileMentorshipNetwork({ profileId, firstName, isDemo = false 
       ) : !current?.data ? (
         <p className="connections-loading" role="status"><LoaderCircle className="spin" aria-hidden="true" /> Chargement du réseau…</p>
       ) : (
-        <NetworkMembers key={scope} network={current.data} />
+        <ProfileNetworkContent key={scope} data={current.data} isOwnProfile={isOwnProfile} />
       )}
     </section>
   );
