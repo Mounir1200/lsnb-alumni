@@ -1,21 +1,46 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import type { PGlite } from '@electric-sql/pglite'
-import { answerRequest, asMember, createMigratedDatabase, seedMember, sendRequest } from './testDatabase.ts'
+import { createNotificationScheduler } from '../messaging/scheduler.js'
+import { INTRODUCTION, answerRequest, asMember, createMigratedDatabase, seedMember, sendRequest } from './testDatabase.ts'
 
 let db: PGlite
 type Job = { job_id: string; lease_token: string; request_id: string; event: string; request_kind: string; email: string }
+type RoundCall = { url: string; authorization: string; body: unknown; timeout_milliseconds: number }
+
+const TOKEN = 'a'.repeat(64)
+const ROUND_CALL: RoundCall = { url: 'https://lsnb-alumni-api.onrender.com/messaging/notifications/run',
+  authorization: `Bearer ${TOKEN}`, body: {}, timeout_milliseconds: 120000 }
+/** pg_net and Vault as Supabase provides them, reduced to what the request queue uses. */
+const SUPABASE_STUBS = `
+  create schema net;
+  create table net.calls (url text, headers jsonb, body jsonb, timeout_milliseconds integer);
+  create function net.http_post(url text, body jsonb default '{}', params jsonb default '{}',
+    headers jsonb default '{}', timeout_milliseconds integer default 5000) returns bigint
+    language sql as 'insert into net.calls values ($1, $4, $2, $5); select 1::bigint';
+  create schema vault;
+  create table vault.decrypted_secrets (name text primary key, decrypted_secret text);`
 
 const claim = () => asMember(db, null, async () =>
   (await db.query<Job>('select * from public.request_claim_notifications(20)')).rows, 'service_role')
 const finish = (job: Job, success = true, token = job.lease_token) => asMember(db, null, () =>
   db.query('select public.request_finish_notification($1, $2, $3)', [job.job_id, token, success]), 'service_role')
 const summary = (jobs: Job[]) => jobs.map((job) => `${job.event} ${job.request_kind} ${job.email}`).sort()
+const storeToken = (token: string) => db.query(`insert into vault.decrypted_secrets values ('messaging_scheduler_token', $1)
+  on conflict (name) do update set decrypted_secret = excluded.decrypted_secret`, [token])
+const roundCalls = async () => (await db.query<RoundCall>(
+  "select url, headers->>'Authorization' as authorization, body, timeout_milliseconds from net.calls")).rows
+const withdraw = (requester: string, requestId: string) =>
+  asMember(db, requester, () => db.query('delete from public.connection_requests where id = $1', [requestId]))
 
 describe('Email notifications for requests and acceptances', { concurrency: false }, () => {
-  before(async () => { db = await createMigratedDatabase() })
+  before(async () => {
+    db = await createMigratedDatabase()
+    await db.exec(SUPABASE_STUBS)
+  })
   beforeEach(async () => {
-    await db.exec('truncate public.weekly_highlights, auth.users cascade; update private.hub_maintenance set enabled = false, ends_at = null')
+    await db.exec('truncate public.weekly_highlights, auth.users, net.calls cascade; update private.hub_maintenance set enabled = false, ends_at = null')
+    await storeToken(TOKEN)
   })
   after(async () => { await db?.close() })
 
@@ -120,5 +145,75 @@ describe('Email notifications for requests and acceptances', { concurrency: fals
     const awa = await seedMember(db)
     await asMember(db, awa, () => assert.rejects(db.query('select * from public.request_claim_notifications(5)'), /permission denied/))
     await asMember(db, awa, () => assert.rejects(db.query('select * from private.request_email_queue'), /permission denied/))
+  })
+
+  it('asks the API for a round as soon as an email is queued, once Vault holds its token', async () => {
+    const awa = await seedMember(db, { email: 'awa@example.test' })
+    const binta = await seedMember(db, { email: 'binta@example.test' })
+    const chris = await seedMember(db, { email: 'chris@example.test' })
+    await storeToken('not-a-token')
+    const waiting = await sendRequest(db, awa, chris)
+    assert.equal(waiting.status, 'pending', 'the request goes through without a token')
+    assert.deepEqual(await roundCalls(), [], 'and its email waits for the scheduled round')
+    await storeToken(TOKEN)
+    const request = await sendRequest(db, awa, binta)
+    await answerRequest(db, binta, request.id)
+    assert.deepEqual(await roundCalls(), [ROUND_CALL, ROUND_CALL])
+  })
+
+  it('computes in the database, from the Brevo key, the token that the API accepts', async () => {
+    const brevoKey = 'test-brevo-key-never-log'
+    const computed = await db.query<{ token: string }>(
+      "select encode(extensions.hmac('lsnb-messaging-scheduler-v1', $1, 'sha256'), 'hex') as token", [brevoKey])
+    const scheduler = createNotificationScheduler(brevoKey, async () => ({ claimed: 0, delivered: 0, failed: 0 }))
+    assert.ok(scheduler.authorize(computed.rows[0]!.token))
+    assert.ok(!scheduler.authorize(TOKEN))
+  })
+
+  it('emails a member once a day per requester, so withdrawing and asking again sends nothing more', async () => {
+    const awa = await seedMember(db, { email: 'awa@example.test' })
+    const binta = await seedMember(db, { email: 'binta@example.test' })
+    const first = await sendRequest(db, awa, binta)
+    for (const job of await claim()) await finish(job)
+    await withdraw(awa, first.id)
+    const again = await sendRequest(db, awa, binta)
+    assert.equal(again.status, 'pending', 'the new request is still made')
+    assert.deepEqual(await claim(), [])
+    assert.equal((await roundCalls()).length, 1)
+    await db.exec("update private.request_announcements set announced_at = announced_at - interval '1 day'")
+    await withdraw(awa, again.id)
+    await sendRequest(db, awa, binta)
+    assert.deepEqual(summary(await claim()), ['received connection binta@example.test'], 'a day later, it is announced again')
+  })
+
+  it('emails ten members a day at most for one requester; later requests stay on the site', async () => {
+    const awa = await seedMember(db, { email: 'awa@example.test' })
+    for (let index = 0; index < 11; index++) {
+      await sendRequest(db, awa, await seedMember(db, { email: `member${index}@example.test` }))
+    }
+    assert.equal((await claim()).length, 10)
+    assert.equal((await roundCalls()).length, 10)
+    const requests = await db.query('select id from public.connection_requests where requester_id = $1', [awa])
+    assert.equal(requests.rows.length, 11)
+  })
+
+  it('lets nobody send or accept a request in another member’s name', async () => {
+    const awa = await seedMember(db, { email: 'awa@example.test' })
+    const binta = await seedMember(db, { email: 'binta@example.test' })
+    const intruder = await seedMember(db, { email: 'intruder@example.test' })
+    await assert.rejects(asMember(db, intruder, () => db.query(
+      'insert into public.connection_requests (requester_id, recipient_id, request_kind, message) values ($1, $2, $3, $4)',
+      [awa, binta, 'connection', INTRODUCTION])), /Only the requester can send a request/)
+    const request = await sendRequest(db, awa, binta)
+    for (const job of await claim()) await finish(job)
+    await answerRequest(db, intruder, request.id)
+    assert.deepEqual(await claim(), [])
+    const status = await db.query<{ status: string }>('select status from public.connection_requests where id = $1', [request.id])
+    assert.equal(status.rows[0]?.status, 'pending')
+  })
+
+  it('keeps the log of who asked whom away from members', async () => {
+    const awa = await seedMember(db)
+    await asMember(db, awa, () => assert.rejects(db.query('select * from private.request_announcements'), /permission denied/))
   })
 })
