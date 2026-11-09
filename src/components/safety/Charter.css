@@ -1,12 +1,46 @@
-/* The code of conduct page. */
+/*
+ * The code of conduct page. main.tsx loads styles.css after the pages' own
+ * styles, so every rule that changes a .legal-page rule repeats .charter-page
+ * to outrank it instead of relying on the loading order.
+ */
 
-/* Outranks `.legal-page > ul`, which would add list padding and the 760px text measure. */
+.charter-page.legal-page {
+  padding-block: var(--space-12) var(--space-16);
+}
+
+.charter-page.legal-page h1 {
+  margin-bottom: var(--space-4);
+  font-size: clamp(2.5rem, 4.6vw, 4.4rem);
+}
+
+.charter-page.legal-page h2 {
+  max-width: none;
+  margin: var(--space-8) 0 var(--space-3);
+  scroll-margin-top: calc(var(--header-height) + var(--space-4));
+}
+
+.charter-page__intro > p:last-child {
+  margin: 0;
+  color: #5f6d78;
+}
+
+.charter-main > p {
+  margin: 0 0 var(--space-3);
+  color: #5f6d78;
+}
+
+/* The summary: four cards, then a shortcut to what to do when something goes wrong. */
+.charter-aside {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
 .charter-page .charter-essentials {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: var(--space-3);
-  max-width: 1040px;
-  margin: var(--space-8) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -45,13 +79,31 @@
   line-height: 1.6;
 }
 
-.charter-rules {
-  max-width: 760px;
-  margin-top: var(--space-6);
+.charter-page .charter-aside__help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--ink);
+  font-size: var(--text-small);
+  font-weight: 700;
 }
 
-.charter-rules h3 {
-  margin: 2px 0 6px;
+.charter-aside__help svg {
+  width: 16px;
+  height: 16px;
+  color: var(--banco-deep);
+}
+
+/* Each rule's title sits on the line of its number: both are 28px high. */
+.charter-page .charter-rules > li > div {
+  padding-bottom: 2px;
+}
+
+.charter-page.legal-page .charter-rules h3 {
+  max-width: none;
+  margin: 0 0 var(--space-1);
+  line-height: 28px;
 }
 
 .charter-rules p,
@@ -66,7 +118,7 @@
 .charter-rules ul {
   display: grid;
   gap: var(--space-2);
-  margin: var(--space-3) 0 0;
+  margin: var(--space-2) 0 0;
   padding-left: 1.2em;
   list-style: disc;
 }
@@ -78,20 +130,19 @@
 .charter-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
-  max-width: 1040px;
-  margin: var(--space-6) 0 0;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
 }
 
 .charter-actions > div {
-  padding: var(--space-6);
+  padding: var(--space-4) var(--space-6);
   border-left: 3px solid var(--banco);
   border-radius: 0 var(--radius-card) var(--radius-card) 0;
   background: var(--chalk);
 }
 
 .charter-actions dt {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
   color: var(--ink);
   font-family: var(--font-display);
   font-size: var(--text-h3);
@@ -101,24 +152,43 @@
 .charter-actions dd {
   margin: 0;
   color: #5f6d78;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
-.charter-page__version {
-  margin-top: var(--space-12);
-  padding-top: var(--space-6);
+.charter-page .charter-page__version {
+  margin: var(--space-6) 0 0;
+  padding-top: var(--space-4);
   border-top: 1px solid var(--line);
   font-size: var(--text-small);
 }
 
-@media (max-width: 960px) {
-  .charter-page .charter-essentials {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/* Wide screens: the rules keep a readable measure, the summary fills the width beside them. */
+@media (min-width: 900px) {
+  .charter-page.legal-page {
+    display: grid;
+    grid-template-columns: minmax(0, 760px) minmax(260px, 1fr);
+    grid-template-areas: "intro aside" "main aside";
+    align-items: start;
+    column-gap: clamp(32px, 4vw, 56px);
+  }
+
+  .charter-page__intro {
+    grid-area: intro;
+  }
+
+  .charter-main {
+    grid-area: main;
+  }
+
+  .charter-aside {
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-6));
+    grid-area: aside;
+    margin-top: 0;
   }
 }
 
 @media (max-width: 640px) {
-  .charter-page .charter-essentials,
   .charter-actions {
     grid-template-columns: minmax(0, 1fr);
   }
