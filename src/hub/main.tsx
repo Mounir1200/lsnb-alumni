@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   ChevronRight,
   ExternalLink,
+  Flag,
   LayoutDashboard,
   LoaderCircle,
   LogOut,
@@ -35,11 +36,12 @@ import {
   ServerLogs,
   Team,
 } from "./screens";
+import { Reports } from "./reports";
 import { ErrorState, Loading, Status } from "./ui";
 import "./styles.css";
 
 type Screen =
-  "overview" | "members" | "team" | "maintenance" | "audit" | "logs";
+  "overview" | "members" | "reports" | "team" | "maintenance" | "audit" | "logs";
 const nav = [
   {
     id: "overview",
@@ -48,6 +50,7 @@ const nav = [
     admin: false,
   },
   { id: "members", label: "Membres & promotions", icon: Users, admin: false },
+  { id: "reports", label: "Signalements", icon: Flag, admin: false },
   { id: "team", label: "Équipe & accès", icon: Shield, admin: true },
   { id: "maintenance", label: "Maintenance", icon: Wrench, admin: true },
   { id: "audit", label: "Journal de modération", icon: Activity, admin: false },
@@ -298,9 +301,9 @@ function Hub({
       </div>
       <nav aria-label="Navigation du hub">
         <span className="hub-nav-caption">Le réseau</span>
-        {allowed.map((item, i) => (
+        {allowed.map((item) => (
           <div key={item.id}>
-            {i === 3 && context.role === "admin" && (
+            {item.id === "maintenance" && (
               <span className="hub-nav-caption">Pilotage</span>
             )}
             <button
@@ -447,6 +450,9 @@ function Hub({
               revision={revision}
               initialPromotion={promotion}
             />
+          )}
+          {screen === "reports" && (
+            <Reports context={context} revision={revision} />
           )}
           {screen === "team" && context.role === "admin" && (
             <Team context={context} revision={revision} />

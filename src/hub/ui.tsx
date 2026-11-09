@@ -153,6 +153,7 @@ export function Confirm({
   label,
   danger,
   requireReason = false,
+  reasonPlaceholder = "Ex. Ce membre n’appartient pas à la promotion indiquée.",
   onConfirm,
   onClose,
 }: {
@@ -161,6 +162,7 @@ export function Confirm({
   label: string;
   danger?: boolean;
   requireReason?: boolean;
+  reasonPlaceholder?: string;
   onConfirm: (reason: string) => Promise<void>;
   onClose: () => void;
 }) {
@@ -221,7 +223,7 @@ export function Confirm({
             minLength={10}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Ex. Ce membre n’appartient pas à la promotion indiquée."
+            placeholder={reasonPlaceholder}
           />
           <small>
             De 10 à 500 caractères. Ce motif sera conservé dans le journal.
