@@ -1,0 +1,66 @@
+/* Native modal dialog, same look as the profile gate. */
+
+.modal-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  /* The CSS reset removes the browser's auto margin that centres a modal dialog. */
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--chalk);
+  box-shadow: 0 24px 60px rgba(7, 29, 51, 0.35);
+}
+
+.modal-dialog::backdrop {
+  background: rgba(7, 29, 51, 0.62);
+}
+
+.modal-dialog__panel {
+  position: relative;
+  display: grid;
+  gap: var(--space-4);
+  padding: 40px 28px 28px;
+}
+
+.modal-dialog h2 {
+  margin: 0;
+  padding-right: 32px;
+  color: var(--ink);
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  line-height: 1.15;
+}
+
+.modal-dialog p {
+  margin: 0;
+  color: #536371;
+  line-height: 1.6;
+}
+
+.modal-dialog__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.modal-dialog__close:hover {
+  background: var(--sand);
+}
+
+.modal-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}

@@ -124,6 +124,14 @@ test("a rejected device asks for a new sign-in, while other errors stay generic"
   assert.doesNotMatch(repo.getMessagingError({ code: "XX000", message: "private diagnostic" }), /private diagnostic/);
 });
 
+test("a message between a blocked pair says the conversation is closed, without saying who blocked whom", () => {
+  const repo = repository(() => json(null));
+  const message = repo.getMessagingError({ code: "LS423", message: "One of these members has blocked the other" });
+  assert.match(message, /ne pouvez plus écrire dans cette conversation/);
+  assert.doesNotMatch(message, /bloqu/);
+  assert.equal(needsReconnect({ code: "LS423" }), false);
+});
+
 const token = (claims: Record<string, unknown>) => `header.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.signature`;
 const rawKey = Buffer.alloc(32, 7).toString("base64");
 

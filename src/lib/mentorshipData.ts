@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mapMemberSummary as mapMember, memberColumns, type MemberRow, type MemberSummary } from "./memberSummary";
 import { collectRowsById as collectRows, isUuid } from "./pagedRows";
+import { BLOCKED_PAIR } from "./safety";
 
 export type { MemberSummary };
 export type ConnectionKind = "contact" | "mentoring" | "connection";
@@ -251,6 +252,7 @@ export function createMentorshipRepository(supabase: SupabaseClient | null) {
       return "Ce membre vous a déjà envoyé une demande de connexion : répondez-y dans Mes relations.";
     }
     if (code === "23505") return "Une demande ou une relation existe déjà avec cette personne. Actualisez la liste.";
+    if (code === BLOCKED_PAIR) return "Vous ne pouvez pas envoyer de demande à ce membre.";
     if (code === "42501") return "Cette action n’est pas autorisée. Vérifiez votre connexion et votre profil.";
     if (code === "23514" || code === "22023" || code === "P0001") {
       return "Cette demande ne peut plus être traitée. Vérifiez le message et la disponibilité du membre, puis actualisez.";
