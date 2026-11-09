@@ -28,10 +28,11 @@ export function legacyCallbackPath(landing: URL, current: URL): string | null {
 }
 
 export function callbackError(url: URL): string | null {
-  const hash = new URLSearchParams(url.hash.slice(1));
-  const error = url.searchParams.get("error") ?? hash.get("error");
-  const description = url.searchParams.get("error_description") ?? hash.get("error_description");
-  if (!error && !description) return null;
+  const params = callbackParameters(url);
+  const error = params.get("error");
+  if (!error && !params.get("error_description")) return null;
+  // Supabase reports an expired or reused email link as a refusal; say what happened instead.
+  if (params.get("error_code") === "otp_expired") return "Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau.";
   if (error === "access_denied") return "La connexion a été annulée ou refusée. Vous pouvez réessayer.";
   return "La connexion n’a pas abouti. Réessayez depuis la page de connexion.";
 }

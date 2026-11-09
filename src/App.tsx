@@ -22,6 +22,9 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { CompleteProfilePage } from "./pages/CompleteProfilePage";
 import { ConnectionsPage } from "./pages/ConnectionsPage";
 import { MessagesPage } from "./pages/MessagesPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { NewPasswordPage } from "./pages/NewPasswordPage";
+import { FORGOT_PASSWORD_PATH, NEW_PASSWORD_PATH } from "./lib/passwordRecovery";
 
 function PostConfirmationRedirect() {
   const navigate = useNavigate();
@@ -70,6 +73,8 @@ export function App() {
             <Route path="/alumni/:profileId" element={<ProfilePage />} />
             <Route path="/rejoindre" element={<JoinPage />} />
             <Route path="/connexion" element={<LoginPage />} />
+            <Route path={FORGOT_PASSWORD_PATH} element={<ForgotPasswordPage />} />
+            <Route path={NEW_PASSWORD_PATH} element={<RequireAuth><NewPasswordPage /></RequireAuth>} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/completer-profil" element={<RequireAuth allowIncomplete><CompleteProfilePage /></RequireAuth>} />
             <Route
