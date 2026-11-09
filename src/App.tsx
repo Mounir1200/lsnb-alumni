@@ -25,6 +25,8 @@ import { MessagesPage } from "./pages/MessagesPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { NewPasswordPage } from "./pages/NewPasswordPage";
 import { FORGOT_PASSWORD_PATH, NEW_PASSWORD_PATH } from "./lib/passwordRecovery";
+import { CharterPage } from "./pages/CharterPage";
+import { CHARTER_PATH } from "./lib/site";
 
 function PostConfirmationRedirect() {
   const navigate = useNavigate();
@@ -102,6 +104,7 @@ export function App() {
               }
             />
             <Route path="/confidentialite" element={<PrivacyPage />} />
+            <Route path={CHARTER_PATH} element={<CharterPage />} />
             <Route path="/espace/messages" element={<RequireAuth><MessagesPage /></RequireAuth>} />
             <Route path="/espace/messages/:conversationId" element={<RequireAuth><MessagesPage /></RequireAuth>} />
             <Route path="*" element={<NotFoundPage />} />

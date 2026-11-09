@@ -1,6 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { SITE_NAME } from "../../lib/site";
+import { CHARTER_PATH, SITE_NAME } from "../../lib/site";
 import { BrandMark } from "../ui/BrandMark";
 
 export function SiteFooter() {
@@ -27,6 +27,7 @@ export function SiteFooter() {
           <p>À propos</p>
           <Link to="/#reseau">Le réseau</Link>
           <a href="mailto:contact@lsnb-reseau.org">Nous écrire</a>
+          <Link to={CHARTER_PATH}>Charte de conduite</Link>
           <Link to="/confidentialite">Confidentialité</Link>
         </nav>
       </div>

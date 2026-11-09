@@ -1,0 +1,125 @@
+/* The code of conduct page. */
+
+/* Outranks `.legal-page > ul`, which would add list padding and the 760px text measure. */
+.charter-page .charter-essentials {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  max-width: 1040px;
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.charter-page .charter-essentials li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-content: start;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--chalk);
+}
+
+.charter-essentials svg {
+  grid-row: 1 / span 2;
+  width: 26px;
+  height: 26px;
+  color: var(--banco-deep);
+  stroke-width: 1.7;
+}
+
+.charter-essentials b {
+  color: var(--ink);
+  font-size: var(--text-body);
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.charter-essentials span {
+  color: #536371;
+  font-size: var(--text-small);
+  line-height: 1.6;
+}
+
+.charter-rules {
+  max-width: 760px;
+  margin-top: var(--space-6);
+}
+
+.charter-rules h3 {
+  margin: 2px 0 6px;
+}
+
+.charter-rules p,
+.charter-rules li li {
+  color: #5f6d78;
+}
+
+.charter-rules p {
+  margin: 0;
+}
+
+.charter-rules ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding-left: 1.2em;
+  list-style: disc;
+}
+
+.charter-rules ul li::marker {
+  color: var(--banco);
+}
+
+.charter-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  max-width: 1040px;
+  margin: var(--space-6) 0 0;
+}
+
+.charter-actions > div {
+  padding: var(--space-6);
+  border-left: 3px solid var(--banco);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background: var(--chalk);
+}
+
+.charter-actions dt {
+  margin-bottom: var(--space-2);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 650;
+}
+
+.charter-actions dd {
+  margin: 0;
+  color: #5f6d78;
+  line-height: 1.7;
+}
+
+.charter-page__version {
+  margin-top: var(--space-12);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-small);
+}
+
+@media (max-width: 960px) {
+  .charter-page .charter-essentials {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .charter-page .charter-essentials,
+  .charter-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
