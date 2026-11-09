@@ -100,6 +100,95 @@
   color: var(--banco-deep);
 }
 
+.offer-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0 0 var(--space-2) var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #536371;
+  font-size: var(--text-small);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.offer-report:hover,
+.offer-report:focus-visible {
+  color: var(--ink);
+}
+
+.offer-report svg {
+  width: 15px;
+  height: 15px;
+}
+
+.report-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.report-form fieldset {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.report-form legend {
+  margin-bottom: var(--space-2);
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.report-form__reason {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  color: var(--ink);
+  font-size: var(--text-small);
+  cursor: pointer;
+}
+
+.report-form__reason:has(input:checked) {
+  border-color: var(--banco);
+  background: #fbf3e9;
+}
+
+.report-form__reason input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--banco-deep);
+}
+
+.report-form__charter {
+  font-size: var(--text-small);
+}
+
+.report-form__charter a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.safety-hint--urgent {
+  border-left-color: var(--banco);
+  color: #754716;
+  font-weight: 650;
+}
+
 .safety-hint {
   padding-left: var(--space-4);
   border-left: 2px solid var(--mango);

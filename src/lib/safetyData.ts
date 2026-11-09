@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { errorCode } from "./errorCode";
 import { mapMemberSummary, memberColumns, type MemberRow, type MemberSummary } from "./memberSummary";
+import { DeviceAccessError } from "./messagingDevice";
 import { isUuid } from "./pagedRows";
-import { SELF_TARGETED } from "./safety";
+import { reportProblem, SELF_TARGETED, type ReportReason } from "./safety";
 
 /** A member the signed-in member blocked. `member` is null once that profile is no longer visible. */
 export type BlockedMember = { memberId: string; blockedAt: string; member: MemberSummary | null };
@@ -11,10 +12,19 @@ export class SafetyActionError extends Error {}
 
 type BlockRow = { blocked_id: string; created_at: string; blocked: MemberRow | null };
 
+const RECONNECT_TO_REPORT = "Reconnectez-vous sur cet appareil pour signaler cette conversation.";
+
 const SAFETY_ERRORS: Record<string, string> = {
   P0002: "Ce membre est introuvable.",
   "42501": "Cette action n’est pas autorisée. Vérifiez votre connexion et l’état de votre compte.",
   [SELF_TARGETED]: "Vous ne pouvez pas vous signaler ni vous bloquer vous-même.",
+  "23505": "Vous avez déjà signalé ce membre : l’équipe de modération examine votre signalement.",
+  "54000": "Vous avez envoyé beaucoup de signalements aujourd’hui. Réessayez demain, ou écrivez-nous si c’est urgent.",
+  "22023": "Vérifiez le motif et la description du signalement.",
+  // A conversation report is signed with the device key, like any messaging call.
+  LS401: RECONNECT_TO_REPORT,
+  LS403: RECONNECT_TO_REPORT,
+  LS428: RECONNECT_TO_REPORT,
 };
 
 export function createSafetyRepository(supabase: SupabaseClient | null) {
@@ -57,10 +67,18 @@ export function createSafetyRepository(supabase: SupabaseClient | null) {
     }));
   }
 
+  async function reportMember(memberId: string, reason: ReportReason, details: string) {
+    const id = checkedId(memberId);
+    const problem = reportProblem(reason, details);
+    if (problem) throw new SafetyActionError(problem);
+    const { error } = await client().rpc("report_member", { p_member_id: id, p_reason: reason, p_details: details.trim() });
+    if (error) throw error;
+  }
+
   function getSafetyErrorMessage(error: unknown): string {
-    if (error instanceof SafetyActionError) return error.message;
+    if (error instanceof SafetyActionError || error instanceof DeviceAccessError) return error.message;
     return SAFETY_ERRORS[errorCode(error)] ?? "L’action n’a pas abouti. Réessayez dans un instant.";
   }
 
-  return { blockMember, unblockMember, hasBlocked, loadBlockedMembers, getSafetyErrorMessage };
+  return { blockMember, unblockMember, hasBlocked, loadBlockedMembers, reportMember, getSafetyErrorMessage };
 }

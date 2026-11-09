@@ -1,16 +1,23 @@
-import { Ban } from "lucide-react";
+import { Ban, Flag } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getSafetyErrorMessage, hasBlocked, unblockMember } from "../../lib/safetyRepository";
 import { FormStatus, type FormStatusValue } from "../ui/FormStatus";
 import { BlockMemberDialog } from "./BlockMemberDialog";
+import { ReportMemberDialog } from "./ReportMemberDialog";
 import "./Safety.css";
 
-type MemberSafetyProps = { memberId: string; firstName: string; onBlockedChange: (blocked: boolean) => void };
+type MemberSafetyProps = {
+  memberId: string;
+  firstName: string;
+  /** In a conversation, a report also hands its latest messages to the moderators. */
+  conversationId?: string;
+  onBlockedChange: (blocked: boolean) => void;
+};
 
-/** Blocking from a member's profile, kept apart from the profile page's own logic. */
-export function MemberSafety({ memberId, firstName, onBlockedChange }: MemberSafetyProps) {
+/** Reporting and blocking a member, kept apart from the profile and messaging pages' own logic. */
+export function MemberSafety({ memberId, firstName, conversationId, onBlockedChange }: MemberSafetyProps) {
   const [blocked, setBlocked] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialog, setDialog] = useState<"report" | "block" | null>(null);
   const [status, setStatus] = useState<FormStatusValue>({ kind: "idle" });
   const notify = useRef(onBlockedChange);
   notify.current = onBlockedChange;
@@ -46,18 +53,20 @@ export function MemberSafety({ memberId, firstName, onBlockedChange }: MemberSaf
     <div className="member-safety">
       {blocked && <p className="member-safety__notice"><Ban aria-hidden="true" /> Vous avez bloqué {firstName}. Aucun de vous deux ne peut écrire à l’autre.</p>}
       <div className="member-safety__actions">
+        <button type="button" onClick={() => setDialog("report")}><Flag aria-hidden="true" /> Signaler</button>
         {blocked
           ? <button type="button" onClick={() => void unblock()} disabled={status.kind === "loading"}>Débloquer</button>
-          : <button type="button" onClick={() => setDialogOpen(true)}><Ban aria-hidden="true" /> Bloquer</button>}
+          : <button type="button" onClick={() => setDialog("block")}><Ban aria-hidden="true" /> Bloquer</button>}
       </div>
       <FormStatus status={status} />
+      <ReportMemberDialog open={dialog === "report"} memberId={memberId} firstName={firstName} conversationId={conversationId} onClose={() => setDialog(null)} />
       <BlockMemberDialog
-        open={dialogOpen}
+        open={dialog === "block"}
         memberId={memberId}
         firstName={firstName}
-        onClose={() => setDialogOpen(false)}
+        onClose={() => setDialog(null)}
         onBlocked={() => {
-          setDialogOpen(false);
+          setDialog(null);
           changeBlocked(true, `Blocage enregistré. Vos liens avec ${firstName} ont pris fin.`);
         }}
       />

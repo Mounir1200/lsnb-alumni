@@ -67,6 +67,28 @@ test("blocked members are listed newest first, even when their profile is no lon
   assert.match(calls[0]?.params.get("select") ?? "", /blocked:profiles!member_blocks_blocked_id_fkey\(id,first_name,/);
 });
 
+test("reporting a member sends the reason and the trimmed description", async () => {
+  const { repo, calls } = repository();
+  await repo.reportMember(blocked, "scam", "  Il demande de l’argent.  ");
+  assert.deepEqual(calls.map(({ method, path, body }) => [method, path, body]), [
+    ["POST", "/rest/v1/rpc/report_member", { p_member_id: blocked, p_reason: "scam", p_details: "Il demande de l’argent." }],
+  ]);
+});
+
+test("a report the form would refuse never reaches the database", async () => {
+  const { repo, calls } = repository();
+  await assert.rejects(repo.reportMember(blocked, "other", "court"), /10 caractères/);
+  assert.equal(calls.length, 0);
+});
+
+test("report errors say what to do next", () => {
+  const { repo } = repository();
+  assert.match(repo.getSafetyErrorMessage({ code: "23505" }), /déjà signalé/);
+  assert.match(repo.getSafetyErrorMessage({ code: "54000" }), /demain/);
+  assert.match(repo.getSafetyErrorMessage({ code: "22023" }), /motif/);
+  for (const code of ["LS401", "LS403", "LS428"]) assert.match(repo.getSafetyErrorMessage({ code }), /Reconnectez-vous/);
+});
+
 test("an identifier that is not a member id never reaches the database", async () => {
   const { repo, calls } = repository();
   for (const action of [repo.blockMember, repo.unblockMember, repo.hasBlocked]) {

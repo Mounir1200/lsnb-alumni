@@ -1,6 +1,9 @@
 import { ArrowUpRight } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { RouteStop } from "../components/visual/RouteStop";
+import { REPORTED_MESSAGE_COUNT } from "../lib/safety";
+import { CHARTER_PATH } from "../lib/site";
 
 function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
   return (
@@ -69,7 +72,8 @@ export function PrivacyPage() {
         Après acceptation d’une demande, les deux personnes peuvent poursuivre leur échange
         dans la messagerie. Le texte des messages et leur état de lecture sont réservés aux
         participants. Les autres membres, administrateurs et modérateurs n’y accèdent pas
-        depuis le site. Les messages sont chiffrés dans notre base de données avec une clé
+        depuis le site, sauf si l’un des deux participants signale la conversation
+        (voir <a href="#signalements">Blocages et signalements</a>). Les messages sont chiffrés dans notre base de données avec une clé
         conservée à part, dans le coffre à secrets de notre hébergeur de base de données
         (Supabase). Ce n’est pas un chiffrement de bout en bout : les personnes qui administrent
         techniquement ce service pourraient y accéder. La base conserve le contenu chiffré, les
@@ -177,7 +181,8 @@ export function PrivacyPage() {
         <li>
           Dans l’espace d’administration, un modérateur voit les membres de sa promotion : nom,
           promotion, statut, ville, pays, date d’inscription et état du compte. Il ne voit ni les
-          adresses e-mail, ni les coordonnées, ni les messages.
+          adresses e-mail, ni les coordonnées. Des messages, il ne voit que ceux d’une conversation
+          signalée qui concerne un membre de sa promotion.
         </li>
         <li>
           Il peut suspendre l’accès d’un membre de sa promotion en indiquant un motif. Seuls les
@@ -194,6 +199,25 @@ export function PrivacyPage() {
         Chaque décision est inscrite dans un journal : son auteur, le membre concerné, la promotion,
         le motif et la date. Ce journal est réservé à l’équipe ; un modérateur n’y voit que les
         décisions concernant sa promotion.
+      </p>
+      <h2 id="signalements">Blocages et signalements</h2>
+      <p>
+        Bloquer un membre ne prévient personne. Le blocage est enregistré avec sa date et vous seul
+        le voyez, dans «&nbsp;Mes relations&nbsp;», où vous pouvez le lever.
+      </p>
+      <p>
+        Un signalement contient votre nom, celui du membre signalé, le motif, votre description et
+        la date. Si vous signalez depuis une conversation, ses {REPORTED_MESSAGE_COUNT} derniers messages, les vôtres compris,
+        sont copiés dans le signalement et chiffrés comme les messages. Les signalements sont lus par
+        les administrateurs et par les modérateurs de la promotion du membre signalé ; un signalement
+        qui vise un membre de l’équipe n’est lu que par les administrateurs. Le membre signalé ne voit
+        ni le signalement, ni son auteur.
+      </p>
+      <p>
+        Le traitement d’un signalement (résolu ou classé, avec une note) est inscrit dans le journal de
+        modération. Un signalement est conservé tant que le compte du membre signalé existe. Si vous
+        supprimez votre compte, vos signalements restent, sans votre nom. Les règles que l’équipe fait
+        respecter sont dans la <Link to={CHARTER_PATH}>charte de conduite</Link>.
       </p>
       <h2>Statistiques d’utilisation</h2>
       <p>

@@ -248,7 +248,7 @@ function ConversationThread({ conversation, userId }: { conversation: Conversati
       </div>
       <span className="message-thread__connection" title={connected ? "Réception en temps réel" : "Actualisation régulière en cours"}>{connected ? "En direct" : "Synchronisation"}</span>
     </header>
-    {peer && <div className="message-thread__safety"><MemberSafety memberId={peer.id} firstName={peer.firstName} onBlockedChange={setBlockedByMe} /></div>}
+    {peer && <div className="message-thread__safety"><MemberSafety memberId={peer.id} firstName={peer.firstName} conversationId={conversationId} onBlockedChange={setBlockedByMe} /></div>}
     {error && <div className="messages-error" role="alert">{error} <Button size="sm" variant="outline" onClick={refresh}>Réessayer</Button></div>}
     <div className="message-thread__history" ref={list} onScroll={measureBottom} role="log" aria-label="Historique des messages" aria-live="polite" aria-relevant="additions" tabIndex={0}>
       {messages === undefined ? <p className="messages-empty" role="status"><LoaderCircle className="spin" size={20} aria-hidden="true" /> Chargement des messages…</p>
