@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ConnectionRequest } from "./mentorshipData";
 import { mapMemberSummary, memberColumns, type MemberRow } from "./memberSummary";
 import { collectRowsById, isUuid } from "./pagedRows";
-import { errorCode, needsReconnect, DeviceAccessError, type MessagingProof } from "./messagingDevice";
+import { errorCode } from "./errorCode";
+import { needsReconnect, DeviceAccessError, type MessagingProof } from "./messagingDevice";
 
 export type ConversationMessage = {
   id: string;

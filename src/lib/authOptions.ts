@@ -16,10 +16,11 @@ export const linkAuthOptions = {
   storageKey: "lsnb-link-confirmation",
 } as const;
 
-// Keep existing ConfirmationURL emails usable on another device. This client
-// only issues signups; URL sessions are still never detected or persisted.
-export const emailSignupAuthOptions = {
+// Keep ConfirmationURL emails (sign-up confirmation, password reset) usable on
+// another device. This client only sends those emails; URL sessions are still
+// never detected or persisted.
+export const emailLinkAuthOptions = {
   ...linkAuthOptions,
   flowType: "implicit",
-  storageKey: "lsnb-email-signup",
+  storageKey: "lsnb-email-link",
 } as const;

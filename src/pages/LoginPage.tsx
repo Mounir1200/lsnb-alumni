@@ -7,7 +7,7 @@ import { BrandMark } from "../components/ui/BrandMark";
 import { RouteStop } from "../components/visual/RouteStop";
 import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { CONFIRMATION_RESEND_SUCCESS, getLoginError, resendSignupConfirmation } from "../lib/emailConfirmation";
-import { createEmailSignupAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
+import { createEmailLinkAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type LoginStatus = { kind: "idle" | "loading" | "success" | "error"; message?: string };
 
@@ -58,7 +58,7 @@ export function LoginPage() {
 
     setStatus({ kind: "loading", message: "Envoi d’un nouveau lien…" });
     try {
-      await resendSignupConfirmation(createEmailSignupAuth(), email, getAuthCallbackUrl(searchParams.has("next") ? nextPath : null));
+      await resendSignupConfirmation(createEmailLinkAuth(), email, getAuthCallbackUrl(searchParams.has("next") ? nextPath : null));
       setResendCooldown(60);
       setStatus({ kind: "success", message: CONFIRMATION_RESEND_SUCCESS });
     } catch (error) {

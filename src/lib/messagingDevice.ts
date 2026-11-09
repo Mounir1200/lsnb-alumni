@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { errorCode } from "./errorCode";
 
 /** This browser's right to use messaging for one sign-in. The page can use the key but never read it. */
 export type MessagingDevice = { userId: string; sessionId: string; key: CryptoKey; clockOffset: number };
@@ -28,10 +29,6 @@ const SIGN_IN_TOO_OLD = "LS428";
 const DUPLICATE_KEY = "23505";
 const RECONNECT_CODES = new Set([SESSION_INVALID, PROOF_REJECTED, SIGN_IN_TOO_OLD]);
 const OTHER_TAB_DELAY_MS = 400;
-
-export function errorCode(error: unknown) {
-  return error && typeof error === "object" && "code" in error ? String(error.code) : "";
-}
 
 export function needsReconnect(error: unknown) {
   return error instanceof DeviceAccessError ? error.problem === "reconnect" : RECONNECT_CODES.has(errorCode(error));

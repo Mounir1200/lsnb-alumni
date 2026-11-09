@@ -12,7 +12,7 @@ import { savePendingAvatar } from "../lib/pendingAvatarStore";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { SITE_NAME } from "../lib/site";
 import { registerEmailAccount } from "../lib/emailConfirmation";
-import { createEmailSignupAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
+import { createEmailLinkAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type SubmissionStatus = {
   kind: "idle" | "loading" | "success" | "error";
@@ -94,7 +94,7 @@ export function JoinPage() {
 
       const email = String(data.get("email") ?? "").trim();
       const password = String(data.get("password") ?? "");
-      const { data: authData, error: authError, signInRequired } = await registerEmailAccount(supabase.auth, createEmailSignupAuth(), {
+      const { data: authData, error: authError, signInRequired } = await registerEmailAccount(supabase.auth, createEmailLinkAuth(), {
         email,
         password,
         options: {

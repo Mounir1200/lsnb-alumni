@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { authFailure, isRateLimited, OFFLINE } from "./authErrors";
+import { errorCode } from "./errorCode";
 
 export const CONFIRMATION_RESEND_SUCCESS = "Si cette adresse correspond à un compte en attente de confirmation, un nouveau lien a été envoyé. Vérifiez aussi les courriers indésirables.";
 
@@ -18,30 +20,33 @@ export async function registerEmailAccount(
 }
 
 export function getLoginError(error: unknown) {
-  const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
+  const code = errorCode(error);
   if (code === "email_not_confirmed") return "Confirmez d’abord votre adresse e-mail. Vous pouvez demander un nouveau lien ci-dessous.";
   if (code === "invalid_credentials") return "L’adresse e-mail ou le mot de passe est incorrect.";
-  if (code === "over_request_rate_limit" || code === "over_email_send_rate_limit") return "Trop de tentatives rapprochées. Patientez un peu avant de réessayer.";
+  if (isRateLimited(error)) return "Trop de tentatives rapprochées. Patientez un peu avant de réessayer.";
   return "La connexion n’a pas abouti. Vérifiez votre connexion internet et réessayez.";
 }
 
-export async function resendSignupConfirmation(auth: Pick<SupabaseClient["auth"], "resend">, email: string, redirectTo: string) {
+/** Trims the typed address and refuses one that cannot receive a link. */
+export function requireEmailAddress(email: string) {
   const address = email.trim();
   if (!/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(address)) throw new Error("Saisissez une adresse e-mail valide avant de demander un nouveau lien.");
-  try {
-    const { error } = await auth.resend({ type: "signup", email: address, options: { emailRedirectTo: redirectTo } });
-    if (error) {
-      if (error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit") {
-        throw new Error("Patientez une minute avant de demander un nouveau lien.");
-      }
-      throw new Error("L’e-mail de confirmation n’a pas pu être envoyé. Réessayez dans un instant.");
-    }
-  } catch (cause) {
-    // Keep the explicit local errors; never expose a provider response or network detail.
-    if (cause instanceof Error && [
-      "Patientez une minute avant de demander un nouveau lien.",
-      "L’e-mail de confirmation n’a pas pu être envoyé. Réessayez dans un instant.",
-    ].includes(cause.message)) throw cause;
-    throw new Error("L’e-mail de confirmation n’a pas pu être envoyé. Vérifiez votre connexion internet et réessayez.");
-  }
+  return address;
+}
+
+/**
+ * Sends an account email (confirmation or password reset) and words its failures for
+ * members, without any provider response or network detail. Supabase answers the same
+ * way whether or not the address has an account, so success reveals nothing either.
+ */
+export async function sendAccountEmail(send: () => Promise<{ error: unknown }>, subject: string) {
+  const failure = await authFailure(send);
+  if (failure === null) return;
+  if (failure === OFFLINE) throw new Error(`${subject} n’a pas pu être envoyé. Vérifiez votre connexion internet et réessayez.`);
+  throw new Error(isRateLimited(failure) ? "Patientez une minute avant de demander un nouveau lien." : `${subject} n’a pas pu être envoyé. Réessayez dans un instant.`);
+}
+
+export async function resendSignupConfirmation(auth: Pick<SupabaseClient["auth"], "resend">, email: string, redirectTo: string) {
+  const address = requireEmailAddress(email);
+  await sendAccountEmail(() => auth.resend({ type: "signup", email: address, options: { emailRedirectTo: redirectTo } }), "L’e-mail de confirmation");
 }

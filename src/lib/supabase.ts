@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { browserAuthOptions, emailSignupAuthOptions, linkAuthOptions } from "./authOptions";
+import { browserAuthOptions, emailLinkAuthOptions, linkAuthOptions } from "./authOptions";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
@@ -17,7 +17,7 @@ export function createLinkAuth() {
   return createClient(supabaseUrl!, supabaseAnonKey!, { auth: linkAuthOptions }).auth;
 }
 
-export function createEmailSignupAuth() {
+export function createEmailLinkAuth() {
   if (!isSupabaseConfigured) throw new Error("La connexion n’est pas configurée sur ce site.");
-  return createClient(supabaseUrl!, supabaseAnonKey!, { auth: emailSignupAuthOptions }).auth;
+  return createClient(supabaseUrl!, supabaseAnonKey!, { auth: emailLinkAuthOptions }).auth;
 }
