@@ -109,6 +109,21 @@ test("safety errors are worded for members", () => {
   }
 });
 
+test("a server error reaches the caller as it came, for the member-facing wording", async () => {
+  const { repo } = repository(() => json({ code: "XX000", message: "private diagnostic" }, 500));
+  const actions = [
+    () => repo.blockMember(blocked), () => repo.unblockMember(blocked), () => repo.hasBlocked(blocked),
+    () => repo.loadBlockedMembers(), () => repo.reportMember(blocked, "scam", ""),
+  ];
+  for (const action of actions) {
+    await assert.rejects(action(), (error: unknown) => {
+      assert.equal((error as { code?: string }).code, "XX000");
+      assert.doesNotMatch(repo.getSafetyErrorMessage(error), /private diagnostic/);
+      return true;
+    });
+  }
+});
+
 test("without a database, safety actions say they are unavailable", async () => {
   const repo = createSafetyRepository(null);
   await assert.rejects(repo.blockMember(blocked), /indisponible/);

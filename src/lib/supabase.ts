@@ -12,12 +12,11 @@ export const supabase = isSupabaseConfigured
     })
   : null;
 
-export function createLinkAuth() {
+/** A short-lived client that never touches the shared session (see authOptions.ts). */
+function createIsolatedAuth(auth: typeof linkAuthOptions | typeof emailLinkAuthOptions) {
   if (!isSupabaseConfigured) throw new Error("La connexion n’est pas configurée sur ce site.");
-  return createClient(supabaseUrl!, supabaseAnonKey!, { auth: linkAuthOptions }).auth;
+  return createClient(supabaseUrl!, supabaseAnonKey!, { auth }).auth;
 }
 
-export function createEmailLinkAuth() {
-  if (!isSupabaseConfigured) throw new Error("La connexion n’est pas configurée sur ce site.");
-  return createClient(supabaseUrl!, supabaseAnonKey!, { auth: emailLinkAuthOptions }).auth;
-}
+export const createLinkAuth = () => createIsolatedAuth(linkAuthOptions);
+export const createEmailLinkAuth = () => createIsolatedAuth(emailLinkAuthOptions);

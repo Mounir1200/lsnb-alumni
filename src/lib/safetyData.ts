@@ -27,58 +27,72 @@ const SAFETY_ERRORS: Record<string, string> = {
   LS428: RECONNECT_TO_REPORT,
 };
 
-export function createSafetyRepository(supabase: SupabaseClient | null) {
-  function client() {
-    if (!supabase) throw new SafetyActionError("Cette action est indisponible pour le moment.");
-    return supabase;
-  }
+type Client = SupabaseClient | null;
 
-  function checkedId(id: string) {
-    // Identifiers end up in PostgREST filters; refuse anything else before the request.
-    if (!isUuid(id)) throw new SafetyActionError("Ce membre est introuvable.");
-    return id;
-  }
+function connected(supabase: Client) {
+  if (!supabase) throw new SafetyActionError("Cette action est indisponible pour le moment.");
+  return supabase;
+}
 
-  /** Blocks the member; the database also ends every link between the two of them. */
-  async function blockMember(memberId: string) {
-    const { error } = await client().rpc("block_member", { p_member_id: checkedId(memberId) });
-    if (error) throw error;
-  }
+function checkedId(id: string) {
+  // Identifiers end up in PostgREST filters; refuse anything else before the request.
+  if (!isUuid(id)) throw new SafetyActionError("Ce membre est introuvable.");
+  return id;
+}
 
-  /** Row security limits the delete to the signed-in member's own block. */
-  async function unblockMember(memberId: string) {
-    const { error } = await client().from("member_blocks").delete().eq("blocked_id", checkedId(memberId));
-    if (error) throw error;
-  }
+/** Supabase answers with an error object; getSafetyErrorMessage words it for members. */
+function raise(error: unknown) {
+  if (error) throw error;
+}
 
-  async function hasBlocked(memberId: string) {
-    const { data, error } = await client().from("member_blocks").select("blocked_id").eq("blocked_id", checkedId(memberId));
-    if (error) throw error;
-    return (data ?? []).length > 0;
-  }
+/** Blocks the member; the database also ends every link between the two of them. */
+async function blockMember(supabase: Client, memberId: string) {
+  const { error } = await connected(supabase).rpc("block_member", { p_member_id: checkedId(memberId) });
+  raise(error);
+}
 
-  async function loadBlockedMembers(): Promise<BlockedMember[]> {
-    const { data, error } = await client().from("member_blocks")
-      .select(`blocked_id, created_at, blocked:profiles!member_blocks_blocked_id_fkey(${memberColumns})`)
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return ((data ?? []) as unknown as BlockRow[]).map((row) => ({
-      memberId: row.blocked_id, blockedAt: row.created_at, member: mapMemberSummary(row.blocked),
-    }));
-  }
+/** Row security limits the delete to the signed-in member's own block. */
+async function unblockMember(supabase: Client, memberId: string) {
+  const { error } = await connected(supabase).from("member_blocks").delete().eq("blocked_id", checkedId(memberId));
+  raise(error);
+}
 
-  async function reportMember(memberId: string, reason: ReportReason, details: string) {
-    const id = checkedId(memberId);
-    const problem = reportProblem(reason, details);
-    if (problem) throw new SafetyActionError(problem);
-    const { error } = await client().rpc("report_member", { p_member_id: id, p_reason: reason, p_details: details.trim() });
-    if (error) throw error;
-  }
+async function hasBlocked(supabase: Client, memberId: string) {
+  const { data, error } = await connected(supabase).from("member_blocks").select("blocked_id").eq("blocked_id", checkedId(memberId));
+  raise(error);
+  return (data ?? []).length > 0;
+}
 
-  function getSafetyErrorMessage(error: unknown): string {
-    if (error instanceof SafetyActionError || error instanceof DeviceAccessError) return error.message;
-    return SAFETY_ERRORS[errorCode(error)] ?? "L’action n’a pas abouti. Réessayez dans un instant.";
-  }
+async function loadBlockedMembers(supabase: Client): Promise<BlockedMember[]> {
+  const { data, error } = await connected(supabase).from("member_blocks")
+    .select(`blocked_id, created_at, blocked:profiles!member_blocks_blocked_id_fkey(${memberColumns})`)
+    .order("created_at", { ascending: false });
+  raise(error);
+  return ((data ?? []) as unknown as BlockRow[]).map((row) => ({
+    memberId: row.blocked_id, blockedAt: row.created_at, member: mapMemberSummary(row.blocked),
+  }));
+}
 
-  return { blockMember, unblockMember, hasBlocked, loadBlockedMembers, reportMember, getSafetyErrorMessage };
+async function reportMember(supabase: Client, memberId: string, reason: ReportReason, details: string) {
+  const id = checkedId(memberId);
+  const problem = reportProblem(reason, details);
+  if (problem) throw new SafetyActionError(problem);
+  const { error } = await connected(supabase).rpc("report_member", { p_member_id: id, p_reason: reason, p_details: details.trim() });
+  raise(error);
+}
+
+export function getSafetyErrorMessage(error: unknown): string {
+  if (error instanceof SafetyActionError || error instanceof DeviceAccessError) return error.message;
+  return SAFETY_ERRORS[errorCode(error)] ?? "L’action n’a pas abouti. Réessayez dans un instant.";
+}
+
+export function createSafetyRepository(supabase: Client) {
+  return {
+    blockMember: (memberId: string) => blockMember(supabase, memberId),
+    unblockMember: (memberId: string) => unblockMember(supabase, memberId),
+    hasBlocked: (memberId: string) => hasBlocked(supabase, memberId),
+    loadBlockedMembers: () => loadBlockedMembers(supabase),
+    reportMember: (memberId: string, reason: ReportReason, details: string) => reportMember(supabase, memberId, reason, details),
+    getSafetyErrorMessage,
+  };
 }
