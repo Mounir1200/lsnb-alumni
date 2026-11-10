@@ -6,13 +6,13 @@ import { REPORT_REASONS, REPORTED_MESSAGE_COUNT, reportProblem } from "../../../
 const projectFile = (path: string) => readFile(new URL(`../../../${path}`, import.meta.url), "utf8");
 
 test("the report form offers exactly the reasons the database accepts", async () => {
-  const migration = await projectFile("supabase/migrations/20261109170000_member_reports.sql");
+  const migration = await projectFile("supabase/migrations/20261110115213_member_reports.sql");
   const accepted = migration.match(/reason in \(([^)]*)\)/)?.[1]?.match(/'([a-z_]+)'/g)?.map((value) => value.slice(1, -1));
   assert.deepEqual(REPORT_REASONS.map((reason) => reason.value).sort(), [...(accepted ?? [])].sort());
 });
 
 test("the charter, the privacy policy and the database hand moderators the same number of messages", async () => {
-  const migration = await projectFile("supabase/migrations/20261109170000_member_reports.sql");
+  const migration = await projectFile("supabase/migrations/20261110115213_member_reports.sql");
   assert.match(migration, new RegExp(`order by latest\\.sequence desc limit ${REPORTED_MESSAGE_COUNT}\\b`));
   for (const page of ["src/pages/CharterPage.tsx", "src/pages/PrivacyPage.tsx"]) {
     assert.match(await projectFile(page), /\{REPORTED_MESSAGE_COUNT\}/, page);

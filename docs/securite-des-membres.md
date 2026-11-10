@@ -1,6 +1,6 @@
 # Sécurité des membres
 
-Charte de conduite, blocage, signalement et mot de passe oublié. Implémentation du 9 novembre 2026 ; les deux migrations ci-dessous doivent être appliquées avant le déploiement du site et du hub.
+Charte de conduite, blocage, signalement et mot de passe oublié. Implémentation du 9 novembre 2026 ; les deux migrations ci-dessous ont été appliquées en production le 10 novembre 2026.
 
 ## Pourquoi
 
@@ -14,7 +14,7 @@ Les élèves du lycée, en majorité mineurs, échangent en privé avec des adul
 
 ## Blocage
 
-Migration : `supabase/migrations/20261109160000_member_blocks.sql`.
+Migration : `supabase/migrations/20261110115109_member_blocks.sql`.
 
 - Un membre bloque depuis un profil ou une conversation (`MemberSafety`). Personne n’est prévenu.
 - `public.block_member()` est la seule entrée. Elle enregistre le blocage puis met fin aux liens du couple : les demandes en attente du membre bloqué sont refusées (leurs e-mails d’annonce partent alors à la corbeille, la file vérifie l’état de la demande), celles du bloqueur sont retirées, la connexion est supprimée et les mentorats actifs prennent fin, signés par le bloqueur. Relancée, elle ne change rien.
@@ -25,7 +25,7 @@ Migration : `supabase/migrations/20261109160000_member_blocks.sql`.
 
 ## Signalement
 
-Migration : `supabase/migrations/20261109170000_member_reports.sql`.
+Migration : `supabase/migrations/20261110115213_member_reports.sql`.
 
 - Un membre signale depuis un profil, une conversation ou une offre (son auteur), avec un motif parmi six ; une description est obligatoire pour « Autre problème ». Le motif « Comportement inquiétant envers un élève » rappelle de prévenir un adulte de confiance et, en cas d’urgence, la police.
 - Les signalements vivent dans `private.member_reports` : les membres les déposent par `public.report_member()` ou `public.messaging_report_conversation()` et ne les relisent jamais. Le membre signalé ne voit ni le signalement ni son auteur.
@@ -55,8 +55,8 @@ L’équipe n’est pas prévenue par e-mail d’un nouveau signalement : elle c
 
 ## Mise en production
 
-1. Appliquer `20261109160000_member_blocks.sql`, puis `20261109170000_member_reports.sql`, puis renommer les fichiers selon les versions enregistrées par Supabase. Elles ne cassent pas le site actuel : elles ajoutent des tables, des fonctions et des déclencheurs.
-2. Vérifier les droits : aucune table de signalement lisible par `anon` ou `authenticated`, `block_member` et les fonctions de signalement exécutables par `authenticated` seulement.
+1. Fait le 10 novembre 2026 : `20261110115109_member_blocks.sql`, puis `20261110115213_member_reports.sql`, appliquées dans cet ordre (les fichiers portent les versions enregistrées par Supabase). Elles ne cassent pas le site déjà en ligne : elles ajoutent des tables, des fonctions et des déclencheurs.
+2. Fait le même jour, sur la production : la RLS est active ; aucune table de blocage ou de signalement n’est accessible à `anon` ; `authenticated` ne peut que lire et supprimer ses propres blocages et ne lit aucun signalement ; seules `block_member`, `report_member`, `messaging_report_conversation`, `hub_reports` et `hub_resolve_report` lui sont ouvertes ; les fonctions internes ne le sont pas. Les avertissements de sécurité Supabase ne signalent rien de nouveau hors de ces fonctions ouvertes, de même nature que celles de la messagerie et du hub.
 3. Appliquer le modèle d’e-mail de réinitialisation.
 4. Déployer le site, puis le hub (publication manuelle sur Render).
 
