@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { after, before, beforeEach, describe, it } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import type { HighlightClaim, HighlightRepairClaim } from "./types.js";
+import { approveMember } from "./testDatabase.ts";
 
 let db: PGlite;
 let week: string;
@@ -22,6 +23,7 @@ async function seed() {
         graduation_year: 2020, gender, experience: "Développe des modèles statistiques." }),
     ]);
   }
+  for (const { id } of (await db.query<{ id: string }>("select id from public.profiles")).rows) await approveMember(db, id);
 }
 const claim = (slot = 1, targetWeek = week) => value<HighlightRepairClaim>(
   "select public.claim_highlight_fallback_repair($1::date, $2) as result", [targetWeek, slot],

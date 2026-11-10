@@ -3,6 +3,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
+import { approveMember } from './testDatabase.ts'
 
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
 let db: PGlite
@@ -12,10 +13,12 @@ async function value<T = any>(sql: string, params: unknown[] = []): Promise<T> {
   return (await db.query<{ value: T }>(sql, params)).rows[0]!.value
 }
 async function seed(name: string, year = 2020, provider = 'email', metadata = {}) {
-  return (await db.query<{ id: string }>(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
+  const id = (await db.query<{ id: string }>(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
     values(gen_random_uuid(),$1,$2,$3) returning id`, [`${name}@example.test`, JSON.stringify({
     first_name: name, last_name: 'Test', graduation_year: year, member_role: 'alumni', offers_mentoring: true, ...metadata,
   }), JSON.stringify({ provider })])).rows[0]!.id
+  await approveMember(db, id)
+  return id
 }
 async function asUser<T>(id: string, run: () => Promise<T>) {
   await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id])

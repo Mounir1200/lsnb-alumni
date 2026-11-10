@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { readFile, readdir } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
+import { approveMember } from './testDatabase.ts'
 
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
 let db: PGlite
@@ -32,10 +33,12 @@ async function initialize(target: PGlite, includeMessaging = true) {
   await target.exec('grant select,insert,update on public.profiles,public.profile_contacts to authenticated')
 }
 async function seed(name: string, target = db) {
-  return (await target.query<{id:string}>(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
+  const id = (await target.query<{id:string}>(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
     values(gen_random_uuid(),$1,$2,'{"provider":"email"}') returning id`, [`${name}@example.test`, JSON.stringify({
     first_name: name, last_name: 'Test', graduation_year: 2020, member_role: 'alumni', offers_mentoring: true,
   })])).rows[0]!.id
+  await approveMember(target, id)
+  return id
 }
 async function asUser<T>(id: string | null, run: () => Promise<T>, role = 'authenticated', target = db) {
   await target.query("select set_config('request.jwt.claim.sub',$1,false)", [id ?? ''])

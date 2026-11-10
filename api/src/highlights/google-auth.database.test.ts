@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { normalizeProfileLink } from '../../../src/lib/profileLinks.ts'
+import { approveMember } from './testDatabase.ts'
 
 let db: PGlite
 let legacyProfile: Record<string, unknown>
@@ -18,6 +19,7 @@ async function seed(provider = 'google', metadata: Record<string, unknown> = {},
   await db.query('insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data) values ($1, $2, $3, $4)', [
     id, email, JSON.stringify(metadata), JSON.stringify({ provider }),
   ])
+  await approveMember(db, id)
   return id
 }
 
