@@ -22,6 +22,7 @@ La maintenance ferme le site et ses accès aux données, tout en laissant les fo
 | Action | Administrateur | Modérateur |
 | --- | --- | --- |
 | Tableau de bord, liste des membres, journal | Toutes les promotions | Sa promotion uniquement |
+| Valider un nouveau compte, ou le refuser avec un motif | Oui | Sa promotion uniquement |
 | Retirer un membre avec un motif | Oui | Sa promotion uniquement |
 | Rétablir un accès | Oui | Non |
 | Corriger une promotion avec un motif | Oui | Non |
@@ -37,6 +38,8 @@ Un modérateur appartient à la promotion qu’il modère. Il ne peut agir sur l
 La promotion d’un profil terminé ne se modifie plus dans l’espace membre : l’admin utilise l’action de correction avec un motif. Le rôle d’un modérateur doit être retiré avant de changer sa promotion. Les profils Google à compléter restent distincts des suspensions ; rétablir un compte incomplet autorise son onboarding sans le publier prématurément dans l’annuaire.
 
 Les motifs font entre 10 et 500 caractères. Le journal conserve l’auteur, le membre visé, la promotion, le motif et l’heure serveur. Aucune interface membre ne peut modifier ou effacer ce journal. Les messages privés des demandes et les emails de contact ne sont pas exposés au hub, sauf les 20 derniers messages d’une conversation qu’un participant a signalée (voir [Sécurité des membres](securite-des-membres.md)).
+
+Un nouveau compte reste invisible tant qu’il n’est pas validé. L’écran « À valider » liste ceux de la promotion du modérateur (toutes les promotions pour un administrateur) ; le tableau de bord les annonce dès qu’il y en a. Valider s’inscrit au journal (« Compte validé ») ; refuser suspend le compte avec un motif, et un administrateur peut le rétablir, ce qui le remet en attente. Une promotion sans modérateur dépend des administrateurs.
 
 ### Gérer les administrateurs
 
