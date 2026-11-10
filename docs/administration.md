@@ -25,17 +25,44 @@ La maintenance ferme le site et ses accès aux données, tout en laissant les fo
 | Retirer un membre avec un motif | Oui | Sa promotion uniquement |
 | Rétablir un accès | Oui | Non |
 | Corriger une promotion avec un motif | Oui | Non |
-| Attribuer ou retirer un rôle | Oui | Non |
+| Nommer ou retirer un modérateur | Oui | Non |
+| Nommer ou retirer un administrateur | Non : en SQL, avec un accès direct à la base | Non |
 | Maintenance et logs du serveur | Oui | Non |
 | Lire et traiter les signalements | Tous | Ceux qui visent sa promotion, sauf ceux qui visent l’équipe ; jamais les siens |
 
 « Retirer » signifie suspendre l’accès et masquer le profil, de façon réversible. Ce n’est pas une suppression définitive des données ou du compte Auth. Une suspension bloque immédiatement les opérations sur les données, y compris avec un JWT encore valide. Le navigateur revérifie l’accès au plus toutes les 15 secondes lorsqu’il est visible, et lorsqu’il reprend le focus.
 
-Un modérateur appartient à la promotion qu’il modère. Il ne peut agir sur lui-même, un autre membre de l’équipe ou une autre promotion. Il faut d’abord retirer le rôle d’un membre de l’équipe avant de le suspendre ; l’administrateur ne peut pas retirer son propre rôle. Le dernier administrateur est protégé. Un rôle révoqué cesse immédiatement d’autoriser les fonctions du hub ; l’interface recontrôle aussi le rôle régulièrement.
+Un modérateur appartient à la promotion qu’il modère. Il ne peut agir sur lui-même, un autre membre de l’équipe ou une autre promotion. Il faut d’abord retirer le rôle d’un membre de l’équipe avant de le suspendre ; l’administrateur ne peut pas retirer son propre rôle. Le hub ne nomme ni ne retire aucun administrateur : seule une personne qui a un accès direct à la base le fait, en SQL (voir « Gérer les administrateurs »). Un rôle révoqué cesse immédiatement d’autoriser les fonctions du hub ; l’interface recontrôle aussi le rôle régulièrement.
 
 La promotion d’un profil terminé ne se modifie plus dans l’espace membre : l’admin utilise l’action de correction avec un motif. Le rôle d’un modérateur doit être retiré avant de changer sa promotion. Les profils Google à compléter restent distincts des suspensions ; rétablir un compte incomplet autorise son onboarding sans le publier prématurément dans l’annuaire.
 
 Les motifs font entre 10 et 500 caractères. Le journal conserve l’auteur, le membre visé, la promotion, le motif et l’heure serveur. Aucune interface membre ne peut modifier ou effacer ce journal. Les messages privés des demandes et les emails de contact ne sont pas exposés au hub, sauf les 20 derniers messages d’une conversation qu’un participant a signalée (voir [Sécurité des membres](securite-des-membres.md)).
+
+### Gérer les administrateurs
+
+Depuis le hub, un administrateur nomme et retire les modérateurs, jamais un administrateur : sinon un compte administrateur volé ou mal utilisé pourrait écarter tous les autres. Nommer ou retirer un administrateur demande un accès direct à la base, par exemple l’éditeur SQL de Supabase. Remplacez le UUID et vérifiez la ligne retournée.
+
+Nommer un administrateur, y compris un modérateur existant :
+
+```sql
+insert into private.hub_staff (user_id, role, graduation_year)
+select id, 'admin', null
+from public.profiles
+where id = 'REMPLACER_PAR_LE_UUID_DU_COMPTE'::uuid
+  and is_active and profile_completed
+on conflict (user_id) do update set role = 'admin', graduation_year = null
+returning user_id, role;
+```
+
+Retirer un administrateur :
+
+```sql
+delete from private.hub_staff
+where user_id = 'REMPLACER_PAR_LE_UUID_DU_COMPTE'::uuid and role = 'admin'
+returning user_id;
+```
+
+Gardez toujours au moins un administrateur : sans lui, plus personne ne gère la maintenance, les modérateurs ni les signalements visant l’équipe. Ces requêtes n’écrivent rien dans le journal de modération.
 
 ## Maintenance
 

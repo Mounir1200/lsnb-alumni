@@ -196,18 +196,29 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(rpc(moderator, 'hub_set_maintenance', [true, 'Un arrêt non autorisé.', null]), /staff access required/)
   })
 
-  it('protects staff assignment scope and the last administrator; revocation takes effect immediately', async () => {
+  it('protects staff assignment scope; revocation takes effect immediately', async () => {
     await assert.rejects(rpc(admin, 'hub_set_staff', [admin, null, null]), /own staff role/)
-    await assert.rejects(rpc(moderator, 'hub_set_staff', [samePromo, 'admin', null]), /staff access required/)
+    await assert.rejects(rpc(moderator, 'hub_set_staff', [samePromo, 'moderator', 2020]), /staff access required/)
     await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'moderator', 2020]), /assigned promotion/)
-    await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'admin', 2021]), /global scope/)
+    await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'curator', null]), /Invalid staff role/)
     await rpc(admin, 'hub_set_staff', [samePromo, 'moderator', 2020])
     assert.equal((await rpc(samePromo, 'hub_context')).role, 'moderator')
     await rpc(admin, 'hub_set_staff', [samePromo, null, null])
     await assert.rejects(rpc(samePromo, 'hub_context'), /staff access required/)
     await moderate(admin, otherPromo)
-    await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'admin', null]), /active completed profile/)
-    assert.equal((await rpc(admin, 'hub_staff')).filter((s: any) => s.role === 'admin').length, 1)
+    await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'moderator', 2021]), /active completed profile/)
+  })
+
+  it('leaves the administrator role to direct database access', async () => {
+    const secondAdmin = await seed('Seconde', 2018)
+    await db.query("insert into private.hub_staff(user_id,role) values($1,'admin')", [secondAdmin])
+    await assert.rejects(rpc(admin, 'hub_set_staff', [samePromo, 'admin', null]), /managed in the database/)
+    await assert.rejects(rpc(admin, 'hub_set_staff', [moderator, 'admin', null]), /managed in the database/)
+    await assert.rejects(rpc(admin, 'hub_set_staff', [secondAdmin, null, null]), /managed in the database/)
+    await assert.rejects(rpc(admin, 'hub_set_staff', [secondAdmin, 'moderator', 2018]), /managed in the database/)
+    const staff = await rpc(admin, 'hub_staff')
+    assert.deepEqual(staff.filter((s: any) => s.role === 'admin').map((s: any) => s.user_id).sort(), [admin, secondAdmin].sort())
+    assert.equal(staff.find((s: any) => s.user_id === moderator).role, 'moderator')
   })
 
   it('allows only administrators to correct promotions, with an audit trail and moderator reassignment protection', async () => {

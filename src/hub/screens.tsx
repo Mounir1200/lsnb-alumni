@@ -657,12 +657,12 @@ export function Team({ context, revision }: Common) {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
-  const [role, setRole] = useState<"admin" | "moderator">("moderator");
   const [promotion, setPromotion] = useState("");
+  // The hub appoints or removes moderators only: administrators are managed in the database.
   const [pending, setPending] = useState<{
     id: string;
     name: string;
-    role: "admin" | "moderator" | null;
+    role: "moderator" | null;
     promotion: number | null;
   } | null>(null);
   const [success, setSuccess] = useState("");
@@ -709,7 +709,10 @@ export function Team({ context, revision }: Common) {
           <div className="hub-panel-head">
             <div>
               <h2>Administrateurs & modérateurs</h2>
-              <p>Les droits sont vérifiés pour chaque opération.</p>
+              <p>
+                Vous nommez et retirez les modérateurs. Les administrateurs se
+                gèrent directement dans la base de données.
+              </p>
             </div>
           </div>
           {staff.error && (
@@ -733,6 +736,8 @@ export function Team({ context, revision }: Common) {
                     </div>
                     {s.user_id === context.user_id ? (
                       <small>Vous</small>
+                    ) : s.role === "admin" ? (
+                      <small>Géré en base</small>
                     ) : (
                       <button
                         className="hub-text-button danger-text"
@@ -756,8 +761,8 @@ export function Team({ context, revision }: Common) {
             ))}
         </section>
         <section className="hub-panel hub-form-panel">
-          <h2>Attribuer un rôle</h2>
-          <p>Choisissez un membre actif du réseau.</p>
+          <h2>Nommer un modérateur</h2>
+          <p>Choisissez un membre actif de la promotion à modérer.</p>
           <label className="hub-field">
             Rechercher un membre
             <input
@@ -809,56 +814,42 @@ export function Team({ context, revision }: Common) {
             </p>
           )}
           <label className="hub-field">
-            Rôle
+            Promotion à modérer
             <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as "admin" | "moderator")}
+              value={promotion}
+              disabled={!selected}
+              onChange={(e) => setPromotion(e.target.value)}
             >
-              <option value="moderator">Modérateur de promotion</option>
-              <option value="admin">Administrateur du réseau</option>
+              <option value="">Sélectionner un membre d’abord</option>
+              {promos.data?.promotions
+                .filter((p) => p.year === selected?.graduation_year)
+                .map((p) => (
+                  <option key={p.year} value={p.year}>
+                    {p.year}
+                  </option>
+                ))}
             </select>
+            <small>
+              Le modérateur doit appartenir à la promotion qu’il modère.
+            </small>
           </label>
-          {role === "moderator" && (
-            <label className="hub-field">
-              Promotion à modérer
-              <select
-                value={promotion}
-                disabled={!selected}
-                onChange={(e) => setPromotion(e.target.value)}
-              >
-                <option value="">Sélectionner un membre d’abord</option>
-                {promos.data?.promotions
-                  .filter((p) => p.year === selected?.graduation_year)
-                  .map((p) => (
-                    <option key={p.year} value={p.year}>
-                      {p.year}
-                    </option>
-                  ))}
-              </select>
-              <small>
-                Le modérateur doit appartenir à la promotion qu’il modère.
-              </small>
-            </label>
-          )}
           <p className="hub-form-hint">
-            {role === "admin"
-              ? "L’administrateur gère tous les membres, les rôles, la maintenance et les journaux."
-              : "Le modérateur peut consulter et suspendre les membres de sa promotion uniquement."}
+            Le modérateur peut consulter et suspendre les membres de sa promotion uniquement.
           </p>
           <button
             className="hub-button primary"
-            disabled={!selected || (role === "moderator" && !promotion)}
+            disabled={!selected || !promotion}
             onClick={() =>
               selected &&
               setPending({
                 id: selected.id,
                 name: fullName(selected),
-                role,
-                promotion: role === "moderator" ? Number(promotion) : null,
+                role: "moderator",
+                promotion: Number(promotion),
               })
             }
           >
-            Attribuer le rôle <ArrowUpRight size={16} />
+            Nommer modérateur <ArrowUpRight size={16} />
           </button>
         </section>
       </div>
@@ -866,10 +857,10 @@ export function Team({ context, revision }: Common) {
         <Confirm
           title={
             pending.role
-              ? `Attribuer le rôle à ${pending.name} ?`
+              ? `Nommer ${pending.name} modérateur ?`
               : `Retirer le rôle de ${pending.name} ?`
           }
-          label={pending.role ? "Confirmer les droits" : "Retirer le rôle"}
+          label={pending.role ? "Nommer modérateur" : "Retirer le rôle"}
           danger={!pending.role}
           onClose={() => setPending(null)}
           onConfirm={async () => {
@@ -885,11 +876,9 @@ export function Team({ context, revision }: Common) {
           }}
         >
           <p>
-            {pending.role === "admin"
-              ? "Cette personne obtiendra tous les droits d’administration, y compris la gestion des accès et la maintenance."
-              : pending.role === "moderator"
-                ? `Cette personne pourra modérer la promotion ${pending.promotion}.`
-                : "Cette personne perdra son accès au hub. Son compte alumni restera actif."}
+            {pending.role
+              ? `Cette personne pourra modérer la promotion ${pending.promotion}.`
+              : "Cette personne perdra son accès au hub. Son compte alumni restera actif."}
           </p>
         </Confirm>
       )}

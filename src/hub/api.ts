@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { memberErrorMessage } from "./memberErrors";
 import { reportErrorMessage } from "./reportErrors";
 
 export type Role = "admin" | "moderator";
@@ -233,6 +234,12 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
           display_name: "Camille · aperçu",
         },
         {
+          user_id: "sample-admin",
+          role: "admin",
+          graduation_year: null,
+          display_name: "Aïcha Traoré · exemple",
+        },
+        {
           user_id: "sample-3",
           role: "moderator",
           graduation_year: 2018,
@@ -297,33 +304,9 @@ export async function rpc<T>(
     if (error) {
       if (controller.signal.aborted)
         throw new Error("Le service met trop de temps à répondre. Réessayez.");
-      // Before the generic rules below, which would read "filed yourself" as a self-moderation.
-      const reportProblem = reportErrorMessage(error.message);
-      if (reportProblem) throw new Error(reportProblem);
-      if (/Remove the staff role/i.test(error.message))
-        throw new Error(
-          "Retirez d’abord le rôle de ce membre dans Équipe & accès.",
-        );
-      if (/Remove the moderator role/i.test(error.message))
-        throw new Error(
-          "Retirez d’abord son rôle de modérateur avant de corriger sa promotion.",
-        );
-      if (/yourself|your own staff/i.test(error.message))
-        throw new Error(
-          "Vous ne pouvez pas modifier vos propres droits ou suspendre votre compte.",
-        );
-      if (/last administrator/i.test(error.message))
-        throw new Error("Le dernier administrateur doit conserver son accès.");
-      if (/Moderators must belong/i.test(error.message))
-        throw new Error(
-          "Un modérateur doit appartenir à la promotion qui lui est attribuée.",
-        );
-      if (/active completed profile/i.test(error.message))
-        throw new Error(
-          "Ce rôle nécessite un compte actif avec un profil complet.",
-        );
-      if (/Member not found/i.test(error.message))
-        throw new Error("Ce membre n’existe plus. Actualisez la liste.");
+      // Report errors first: the member rules would read "filed yourself" as a self-moderation.
+      const known = reportErrorMessage(error.message) ?? memberErrorMessage(error.message);
+      if (known) throw new Error(known);
       if (
         error.code === "42501" ||
         /forbidden|unauthorized|not authorized|staff_required/i.test(
