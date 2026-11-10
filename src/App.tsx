@@ -76,13 +76,13 @@ export function App() {
             <Route path="/rejoindre" element={<JoinPage />} />
             <Route path="/connexion" element={<LoginPage />} />
             <Route path={FORGOT_PASSWORD_PATH} element={<ForgotPasswordPage />} />
-            <Route path={NEW_PASSWORD_PATH} element={<RequireAuth><NewPasswordPage /></RequireAuth>} />
+            <Route path={NEW_PASSWORD_PATH} element={<RequireAuth allowPending><NewPasswordPage /></RequireAuth>} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/completer-profil" element={<RequireAuth allowIncomplete><CompleteProfilePage /></RequireAuth>} />
             <Route
               path="/espace"
               element={
-                <RequireAuth>
+                <RequireAuth allowPending>
                   <OwnProfileRedirect />
                 </RequireAuth>
               }
@@ -98,7 +98,7 @@ export function App() {
             <Route
               path="/espace/modifier"
               element={
-                <RequireAuth>
+                <RequireAuth allowPending>
                   <EditProfilePage />
                 </RequireAuth>
               }

@@ -2,6 +2,7 @@ import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "../lib/supabase";
 import type { MemberRole } from "../lib/invitations";
+import { memberStatusOf, type MemberStatus } from "../lib/memberStatus";
 import { loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
 
 type AuthContextValue = {
@@ -9,7 +10,7 @@ type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
   lastEvent: AuthChangeEvent | null;
-  profileCompleted: boolean | null;
+  memberStatus: MemberStatus | null;
   memberRole: MemberRole | null;
   profileError: string | null;
   refreshProfile: () => Promise<void>;
@@ -78,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => {
     const ownState = profileState?.userId === userId ? profileState : null;
     return { session, user: session?.user ?? null, isLoading, lastEvent,
-      profileCompleted: ownState?.profile?.profile_completed ?? null,
+      memberStatus: ownState?.profile ? memberStatusOf(ownState.profile) : null,
       memberRole: ownState?.profile?.member_role ?? null,
       profileError: ownState?.error ?? null,
       refreshProfile,

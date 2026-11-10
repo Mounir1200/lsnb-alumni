@@ -126,11 +126,11 @@ export function JoinPage() {
       }
       const nextStep = signInRequired
         ? "Votre compte est créé, mais la connexion automatique n’a pas abouti. Connectez-vous avec votre adresse e-mail et votre mot de passe."
-        : "Consultez votre boîte mail pour confirmer votre adresse et activer votre compte. Vérifiez aussi les courriers indésirables.";
+        : "Consultez votre boîte mail pour confirmer votre adresse, en vérifiant aussi les courriers indésirables. Le modérateur de votre promotion validera ensuite votre compte.";
 
       setStatus({
         kind: "success",
-        message: authData.session ? "Votre compte est créé. Bienvenue dans le réseau." : `${nextStep}${photoMessage}`,
+        message: authData.session ? "Votre compte est créé. Le modérateur de votre promotion va maintenant le valider." : `${nextStep}${photoMessage}`,
       });
       form.reset();
       setPhoto(null);

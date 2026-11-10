@@ -4,9 +4,12 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { getProfileCompletionPath } from "../../lib/auth";
 import { Button } from "../ui/Button";
+import { PendingApproval } from "./PendingApproval";
 
-export function RequireAuth({ children, allowIncomplete = false }: { children: ReactNode; allowIncomplete?: boolean }) {
-  const { user, isLoading, profileCompleted, profileError, refreshProfile } = useAuth();
+type RequireAuthProps = { children: ReactNode; allowIncomplete?: boolean; allowPending?: boolean };
+
+export function RequireAuth({ children, allowIncomplete = false, allowPending = false }: RequireAuthProps) {
+  const { user, isLoading, memberStatus, profileError, refreshProfile } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -30,10 +33,11 @@ export function RequireAuth({ children, allowIncomplete = false }: { children: R
         <Button onClick={() => void refreshProfile()}>Réessayer</Button>
       </div>
     );
-    if (profileCompleted === null) return (
+    if (memberStatus === null) return (
       <div className="auth-state-page" role="status"><LoaderCircle className="spin" aria-hidden="true" /><p>Chargement de votre profil…</p></div>
     );
-    if (!profileCompleted) return <Navigate to={getProfileCompletionPath(`${location.pathname}${location.search}${location.hash}`)} replace />;
+    if (memberStatus === "incomplete") return <Navigate to={getProfileCompletionPath(`${location.pathname}${location.search}${location.hash}`)} replace />;
+    if (memberStatus === "pending" && !allowPending) return <PendingApproval />;
   }
 
   return children;
