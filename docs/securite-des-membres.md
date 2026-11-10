@@ -51,7 +51,7 @@ L’équipe n’est pas prévenue par e-mail d’un nouveau signalement : elle c
 
 - La connexion mène à `/mot-de-passe-oublie`, qui envoie un lien avec le client « liens par e-mail » (sans PKCE) : il s’ouvre aussi sur un autre appareil. Le message affiché ne dit pas si un compte existe ; 60 secondes séparent deux demandes, en plus des limites de Supabase.
 - Le lien revient sur `/auth/callback?next=/nouveau-mot-de-passe`. Le membre confirme qu’il s’agit de son compte, choisit un mot de passe d’au moins 8 caractères, puis ses autres appareils sont déconnectés (`signOut({ scope: "others" })`), ce qui coupe aussi leur messagerie. Un lien expiré l’indique et propose d’en demander un autre.
-- À configurer dans Supabase : le modèle « Reset Password » (`docs/email-templates/supabase-recovery-config.json`, détails dans `docs/email-templates/README.md`). Les URL de retour sont sur le même domaine que le site, déjà autorisé.
+- À configurer dans Supabase (Authentication → Emails → Reset Password) : l’objet « Réinitialisez votre mot de passe LSNB Alumni » dans Subject, et tout le contenu de `docs/email-templates/reset-password.html` dans Body. Le fichier JSON voisin sert seulement à l’API de gestion (détails dans `docs/email-templates/README.md`). Les URL de retour sont sur le même domaine que le site, déjà autorisé.
 
 ## Mise en production
 
