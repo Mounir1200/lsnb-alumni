@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { MessagingNavigation } from "../components/messaging/MessagingNavigation";
 import { useMessaging, type MessagingAccess } from "../components/messaging/MessagingProvider";
+import { MemberSafety } from "../components/safety/MemberSafety";
 import { Avatar } from "../components/ui/Avatar";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -126,6 +127,7 @@ function ConversationThread({ conversation, userId }: { conversation: Conversati
   const followLatest = useRef(true);
   const nonce = useRef<string | null>(null);
   const markedRead = useRef(new Set<string>());
+  const [blockedByMe, setBlockedByMe] = useState(false);
   const peer = peerOf(conversation, userId);
   const peerName = peer ? `${peer.firstName} ${peer.lastName}` : "Membre indisponible";
   const { id: conversationId } = conversation;
@@ -246,6 +248,7 @@ function ConversationThread({ conversation, userId }: { conversation: Conversati
       </div>
       <span className="message-thread__connection" title={connected ? "Réception en temps réel" : "Actualisation régulière en cours"}>{connected ? "En direct" : "Synchronisation"}</span>
     </header>
+    {peer && <div className="message-thread__safety"><MemberSafety memberId={peer.id} firstName={peer.firstName} conversationId={conversationId} onBlockedChange={setBlockedByMe} /></div>}
     {error && <div className="messages-error" role="alert">{error} <Button size="sm" variant="outline" onClick={refresh}>Réessayer</Button></div>}
     <div className="message-thread__history" ref={list} onScroll={measureBottom} role="log" aria-label="Historique des messages" aria-live="polite" aria-relevant="additions" tabIndex={0}>
       {messages === undefined ? <p className="messages-empty" role="status"><LoaderCircle className="spin" size={20} aria-hidden="true" /> Chargement des messages…</p>
@@ -269,16 +272,21 @@ function ConversationThread({ conversation, userId }: { conversation: Conversati
     {!atBottom && <button className="message-thread__latest" onClick={() => { followLatest.current = true; if (list.current) list.current.scrollTop = list.current.scrollHeight; setAtBottom(true); }}>Revenir aux derniers messages ↓</button>}
     <form className="message-composer" onSubmit={(event) => void submit(event)}>
       <label htmlFor="message-draft">Votre message à {peer?.firstName ?? "ce membre"}</label>
-      <textarea id="message-draft" name="message" rows={3} maxLength={4000} value={draft} disabled={sending || !peer}
+      <textarea id="message-draft" name="message" rows={3} maxLength={4000} value={draft} disabled={sending || !peer || blockedByMe}
         onChange={(event) => { setDraft(event.target.value); nonce.current = null; setSendError(undefined); }}
-        placeholder={peer ? "Écrivez votre message…" : "Ce membre n’est plus disponible."} required />
+        placeholder={composerPlaceholder(Boolean(peer), blockedByMe)} required />
       {sendError && <p role="alert" className="messages-error">{sendError}</p>}
-      <div className="message-composer__footer"><small>{draft.length}/4 000</small><Button type="submit" size="sm" disabled={sending || !draft.trim() || !peer || messages === undefined}>{sending ? <LoaderCircle className="spin" size={17} aria-hidden="true" /> : <Send size={17} aria-hidden="true" />} {sending ? "Envoi…" : sendError ? "Réessayer l’envoi" : "Envoyer"}</Button></div>
+      <div className="message-composer__footer"><small>{draft.length}/4 000</small><Button type="submit" size="sm" disabled={sending || !draft.trim() || !peer || blockedByMe || messages === undefined}>{sending ? <LoaderCircle className="spin" size={17} aria-hidden="true" /> : <Send size={17} aria-hidden="true" />} {sending ? "Envoi…" : sendError ? "Réessayer l’envoi" : "Envoyer"}</Button></div>
     </form>
   </section>;
 }
 
 const conversationKindLabels = { mentoring: "Mentorat", connection: "Relation", contact: "Échange privé" } as const;
+
+function composerPlaceholder(hasPeer: boolean, blockedByMe: boolean) {
+  if (!hasPeer) return "Ce membre n’est plus disponible.";
+  return blockedByMe ? "Vous avez bloqué ce membre : levez le blocage pour lui écrire." : "Écrivez votre message…";
+}
 
 function MessagesWorkspace({ userId }: { userId: string }) {
   const { conversationId } = useParams();

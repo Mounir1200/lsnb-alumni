@@ -70,3 +70,10 @@ test("a request crossing the other member's request explains what to do", () => 
   assert.match(repo.getConnectionErrorMessage(crossing), /vous a déjà envoyé une demande/);
   assert.match(repo.getConnectionErrorMessage({ code: "23505", message: "These members are already connected" }), /existe déjà/);
 });
+
+test("a request between a blocked pair says it cannot be sent, without saying who blocked whom", () => {
+  const repo = repository(() => json([]));
+  const message = repo.getConnectionErrorMessage({ code: "LS423", message: "One of these members has blocked the other" });
+  assert.match(message, /ne pouvez pas envoyer de demande à ce membre/);
+  assert.doesNotMatch(message, /bloqu/);
+});

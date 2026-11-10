@@ -1945,3 +1945,145 @@ tbody tr:hover {
   padding: 0 24px 15px;
   line-height: 1.7;
 }
+
+/* Reports: one card per report, the reported conversation folded until needed. */
+.hub-report-list {
+  display: grid;
+  gap: 1px;
+  background: var(--hub-line);
+  border-top: 1px solid var(--hub-line);
+}
+.hub-report {
+  display: grid;
+  gap: 12px;
+  padding: 20px 24px;
+  background: #fffefb;
+}
+.hub-report > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.hub-report-reason {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--hub-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+.hub-report-reason svg {
+  color: #9d4234;
+}
+.hub-report time,
+.hub-report small {
+  color: var(--hub-muted);
+  font-size: 11px;
+}
+.hub-report dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  margin: 0;
+}
+.hub-report dt {
+  margin-bottom: 3px;
+  color: var(--hub-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hub-report dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--hub-ink);
+  font-size: 13px;
+}
+.hub-report blockquote {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid #c27d38;
+  background: var(--hub-paper);
+  color: var(--hub-ink);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.hub-report-conversation {
+  border: 1px solid var(--hub-line);
+  border-radius: 6px;
+}
+.hub-report-conversation summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--hub-ink);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hub-report-conversation ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 4px 14px 14px;
+  list-style: none;
+}
+.hub-report-conversation li {
+  justify-self: start;
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #edf3e6;
+}
+.hub-report-conversation li.is-reported {
+  justify-self: end;
+  background: #fbf0dd;
+}
+.hub-report-conversation li span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--hub-muted);
+  font-size: 10px;
+}
+.hub-report-conversation li p {
+  margin: 0;
+  color: var(--hub-ink);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.hub-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hub-report-outcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  color: var(--hub-ink);
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .hub-report {
+    padding: 18px 16px;
+  }
+  .hub-report dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub-report-conversation li {
+    max-width: 100%;
+  }
+}

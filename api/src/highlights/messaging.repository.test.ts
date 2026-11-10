@@ -75,6 +75,22 @@ test("sending signs the exact text it sends, and an uncertain retry repeats the 
   assert.deepEqual(signed, [`send:${conversation}|${id(88)}|Une phrase privée.`, `send:${conversation}|${id(88)}|Une phrase privée.`]);
 });
 
+test("reporting a conversation signs the exact reason and description it sends", async () => {
+  const bodies: Record<string, unknown>[] = [];
+  const { signed, signer } = recordingSigner();
+  const repo = repository((url, init) => {
+    assert.equal(url.pathname, "/rest/v1/rpc/messaging_report_conversation");
+    bodies.push(JSON.parse(String(init.body)));
+    return new Response(null, { status: 204 });
+  }, signer);
+  await repo.reportConversation(conversation, "harassment", "  Messages insistants.  ");
+  assert.deepEqual(bodies, [{ p_conversation_id: conversation, p_reason: "harassment", p_details: "Messages insistants.", p_proof: proof }]);
+  assert.deepEqual(signed, [`report:${conversation}|harassment|Messages insistants.`]);
+  await assert.rejects(repo.reportConversation(conversation, "other", ""), /10 caractères/);
+  await assert.rejects(repo.reportConversation("not-an-id", "scam", ""), /introuvable/);
+  assert.equal(bodies.length, 1);
+});
+
 test("history and sync pages carry their cursor in the signed text", async () => {
   const rows = [10, 11, 12].map((sequence) => message(sequence));
   const { signed, signer } = recordingSigner();
@@ -122,6 +138,14 @@ test("a rejected device asks for a new sign-in, while other errors stay generic"
   }
   assert.equal(needsReconnect({ code: "54000" }), false);
   assert.doesNotMatch(repo.getMessagingError({ code: "XX000", message: "private diagnostic" }), /private diagnostic/);
+});
+
+test("a message between a blocked pair says the conversation is closed, without saying who blocked whom", () => {
+  const repo = repository(() => json(null));
+  const message = repo.getMessagingError({ code: "LS423", message: "One of these members has blocked the other" });
+  assert.match(message, /ne pouvez plus écrire dans cette conversation/);
+  assert.doesNotMatch(message, /bloqu/);
+  assert.equal(needsReconnect({ code: "LS423" }), false);
 });
 
 const token = (claims: Record<string, unknown>) => `header.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.signature`;

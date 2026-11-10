@@ -1,0 +1,57 @@
+/* Password recovery links and hints, beside the sign-in form. */
+
+.login-page__recovery {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  min-height: 44px;
+  margin-top: -14px;
+  color: var(--banco-deep);
+  font-size: var(--text-small);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.login-page__recovery:hover {
+  color: var(--ink);
+}
+
+.account-hint {
+  margin: 0;
+  padding-left: 16px;
+  color: #536371;
+  border-left: 2px solid var(--mango);
+  font-size: var(--text-small);
+  line-height: 1.7;
+}
+
+.account-hint a,
+.account-back a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.account-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0;
+  color: #5f6c77;
+  font-size: var(--text-small);
+}
+
+.account-back a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.account-back svg {
+  width: 16px;
+  height: 16px;
+}

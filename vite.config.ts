@@ -4,6 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // The quality tools write symlinked mutation workers under target/; watching them crashes the dev server.
+  server: { watch: { ignored: ["**/target/**", "**/.metrics/**"] } },
   build: {
     rollupOptions: {
       output: {

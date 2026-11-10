@@ -14,6 +14,16 @@ L’identité reprend les couleurs du site : bleu `#0c2948`, banco `#c27d38` et 
 
 Après inscription, le site demande de consulter sa boîte de réception et les indésirables. Le lien de renvoi mène à la page de connexion, qui permet de demander une nouvelle confirmation avec un délai local de 60 secondes et un message neutre sur l’existence du compte. Le fournisseur continue à imposer ses propres limites de débit.
 
+## Réinitialisation du mot de passe avec Supabase
+
+- Objet : **Réinitialisez votre mot de passe LSNB Alumni**.
+- Contenu HTML : `reset-password.html` ; version texte de référence : `reset-password.txt`.
+- `supabase-recovery-config.json` contient exactement les champs `mailer_subjects_recovery` et `mailer_templates_recovery_content` à appliquer à la configuration Auth (tableau de bord : Authentication → Emails → Reset Password). Sans ce réglage, Supabase envoie son modèle par défaut, en anglais.
+- Variable native Supabase : `{{ .ConfirmationURL }}`, à conserver telle quelle.
+- La page « Mot de passe oublié » (`/mot-de-passe-oublie`, liée depuis la connexion) envoie la demande avec le même client que l’inscription, sans PKCE : le lien s’ouvre aussi sur un autre appareil que celui de la demande. Il revient sur `/auth/callback?next=/nouveau-mot-de-passe`. Le membre confirme qu’il s’agit bien de son compte, choisit son nouveau mot de passe, puis ses autres appareils sont déconnectés.
+- Le message affiché est le même qu’un compte existe ou non. Le site impose 60 secondes entre deux demandes ; Supabase ajoute ses propres limites (une demande par minute pour une même adresse, et la limite d’envoi d’e-mails réglée dans Authentication → Rate Limits). Ces e-mails passent par le SMTP Brevo et comptent dans son quota quotidien.
+- Un compte créé avec Google peut aussi recevoir ce lien : il obtient alors un mot de passe en plus de la connexion Google.
+
 ## Notification de nouveau message avec Brevo
 
 L’envoi applicatif construit directement `subject`, `htmlContent` et `textContent` avec `renderMessageNotificationEmail` depuis `api/src/messaging/emailTemplate.ts`. Il n’exige pas de créer un template distant Brevo.

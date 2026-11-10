@@ -3,6 +3,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { CharterConsent } from "../components/safety/CharterConsent";
 import { Button } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
 import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
@@ -12,7 +13,7 @@ import { savePendingAvatar } from "../lib/pendingAvatarStore";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { SITE_NAME } from "../lib/site";
 import { registerEmailAccount } from "../lib/emailConfirmation";
-import { createEmailSignupAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
+import { createEmailLinkAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type SubmissionStatus = {
   kind: "idle" | "loading" | "success" | "error";
@@ -94,7 +95,7 @@ export function JoinPage() {
 
       const email = String(data.get("email") ?? "").trim();
       const password = String(data.get("password") ?? "");
-      const { data: authData, error: authError, signInRequired } = await registerEmailAccount(supabase.auth, createEmailSignupAuth(), {
+      const { data: authData, error: authError, signInRequired } = await registerEmailAccount(supabase.auth, createEmailLinkAuth(), {
         email,
         password,
         options: {
@@ -291,6 +292,7 @@ export function JoinPage() {
               <input type="checkbox" required />
               <span>J’accepte que ces informations soient utilisées pour mon profil dans l’{SITE_NAME}. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span>
             </label>
+            <CharterConsent />
 
             {role === "alumni" && (
               <p className="highlight-disclosure">

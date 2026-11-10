@@ -17,6 +17,7 @@ import { ProfileRequestButtons, type MentoringStatus } from "../components/profi
 import { ProfileStory } from "../components/profile/ProfileStory";
 import { ProfileTrajectory } from "../components/profile/ProfileTrajectory";
 import "../components/profile/Profile.css";
+import { MemberSafety } from "../components/safety/MemberSafety";
 import { Avatar } from "../components/ui/Avatar";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -48,6 +49,8 @@ export function ProfilePage() {
   const [requestStatus, setRequestStatus] = useState<RequestStatus>({ kind: "idle" });
   const [connectionsReload, setConnectionsReload] = useState(0);
   const [connections, setConnections] = useState<{ scope: string; requests?: ConnectionRequest[]; mentorships?: Mentorship[]; connected?: boolean; error?: string }>();
+  // Blocking ends the pair's links: hide the request actions and reload what remains.
+  const [blockedByMe, setBlockedByMe] = useState(false);
   const requestScope = `${user?.id ?? ""}:${profileId}`;
   const currentScope = useRef(requestScope);
   currentScope.current = requestScope;
@@ -57,6 +60,12 @@ export function ProfilePage() {
     mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
+
+  useEffect(() => {
+    if (!blockedByMe) return;
+    setRequestOpen(null);
+    setConnectionsReload((value) => value + 1);
+  }, [blockedByMe]);
 
   useEffect(() => {
     setSentKinds([]);
@@ -240,7 +249,7 @@ export function ProfilePage() {
                 </div>
               ) : profile.isDemo === false && !profileCompleted ? (
                 <ButtonLink to={getProfileCompletionPath(`/alumni/${profileId}`)} size="lg">Compléter mon profil</ButtonLink>
-              ) : (
+              ) : blockedByMe ? null : (
                 <ProfileRequestButtons
                   checking={profile.isDemo === false && !connectionsReady && !currentConnections?.error}
                   peerStatus={peerStatus}
@@ -259,6 +268,9 @@ export function ProfilePage() {
               {!isOwnProfile && (hasRelation || requestSent) && profile.isDemo === false && <ButtonLink to="/espace/relations" size="sm" variant="light">Gérer mes relations et demandes</ButtonLink>}
               {!isOwnProfile && acceptedConversation && profile.isDemo === false && <ButtonLink to={`/espace/messages/${acceptedConversation.id}`} size="sm" variant="light">Ouvrir la conversation</ButtonLink>}
               {!isOwnProfile && connectionsReady && declinedRequest && !hasRelation && !requestSent && <span>Votre précédente demande a été refusée. Vous pouvez formuler une nouvelle demande.</span>}
+              {!isOwnProfile && profile.isDemo === false && user && profileCompleted && (
+                <MemberSafety memberId={profile.id} firstName={profile.firstName} onBlockedChange={setBlockedByMe} />
+              )}
             </div>
           </div>
 

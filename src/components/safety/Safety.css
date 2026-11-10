@@ -1,0 +1,203 @@
+/* Member safety: blocking and reporting. */
+
+/* Report and block, on the dark profile hero: quiet next to the main request action. */
+.member-safety {
+  display: grid;
+  flex-basis: 100%;
+  gap: var(--space-2);
+  max-width: 520px;
+}
+
+.member-safety__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.member-safety__actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: var(--text-small);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.member-safety__actions button:hover,
+.member-safety__actions button:focus-visible {
+  border-color: var(--banco-light);
+  color: var(--chalk);
+}
+
+.member-safety__actions button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.member-safety__actions svg,
+.member-safety__notice svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.member-safety__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--banco-light);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--chalk);
+  font-size: var(--text-small);
+  line-height: 1.5;
+}
+
+.member-safety__notice svg {
+  margin-top: 2px;
+  color: var(--banco-light);
+}
+
+/* The same actions on the light conversation header. */
+.message-thread__safety {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.message-thread__safety .member-safety {
+  max-width: none;
+}
+
+.message-thread__safety .member-safety__actions {
+  justify-content: flex-end;
+}
+
+.message-thread__safety .member-safety__actions button {
+  border-color: var(--line);
+  color: #536371;
+}
+
+.message-thread__safety .member-safety__actions button:hover,
+.message-thread__safety .member-safety__actions button:focus-visible {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.message-thread__safety .member-safety__notice {
+  border-left-color: var(--banco);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.message-thread__safety .member-safety__notice svg {
+  color: var(--banco-deep);
+}
+
+.offer-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0 0 var(--space-2) var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #536371;
+  font-size: var(--text-small);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.offer-report:hover,
+.offer-report:focus-visible {
+  color: var(--ink);
+}
+
+.offer-report svg {
+  width: 15px;
+  height: 15px;
+}
+
+.report-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.report-form fieldset {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.report-form legend {
+  margin-bottom: var(--space-2);
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.report-form__reason {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  color: var(--ink);
+  font-size: var(--text-small);
+  cursor: pointer;
+}
+
+.report-form__reason:has(input:checked) {
+  border-color: var(--banco);
+  background: #fbf3e9;
+}
+
+.report-form__reason input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--banco-deep);
+}
+
+.report-form__charter {
+  font-size: var(--text-small);
+}
+
+.report-form__charter a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.safety-hint--urgent {
+  border-left-color: var(--banco);
+  color: #754716;
+  font-weight: 650;
+}
+
+.safety-hint {
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--mango);
+  font-size: var(--text-small);
+}
+
+.safety-hint a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

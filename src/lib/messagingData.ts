@@ -2,7 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ConnectionRequest } from "./mentorshipData";
 import { mapMemberSummary, memberColumns, type MemberRow } from "./memberSummary";
 import { collectRowsById, isUuid } from "./pagedRows";
-import { errorCode, needsReconnect, DeviceAccessError, type MessagingProof } from "./messagingDevice";
+import { errorCode } from "./errorCode";
+import { needsReconnect, DeviceAccessError, type MessagingProof } from "./messagingDevice";
+import { BLOCKED_PAIR, reportProblem, type ReportReason } from "./safety";
 
 export type ConversationMessage = {
   id: string;
@@ -77,6 +79,7 @@ export const signedCalls = {
   emailSet: (enabled: boolean): SignedCall => ["email-set", String(enabled)],
   devices: (): SignedCall => ["devices", ""],
   revoke: (sessionId: string): SignedCall => ["revoke", sessionId],
+  report: (conversationId: string, reason: string, details: string): SignedCall => ["report", `${conversationId}|${reason}|${details}`],
 };
 
 class MessagingActionError extends Error {}
@@ -181,6 +184,16 @@ export function createMessagingRepository(supabase: SupabaseClient | null, signe
     return toMessage(row);
   }
 
+  /** The database copies the conversation's latest messages into the report, sealed. */
+  async function reportConversation(conversationId: string, reason: ReportReason, details: string) {
+    const id = checkedId(conversationId);
+    const problem = reportProblem(reason, details);
+    if (problem) throw new MessagingActionError(problem);
+    const text = details.trim();
+    await signedRpc<null>("messaging_report_conversation", signedCalls.report(id, reason, text),
+      { p_conversation_id: id, p_reason: reason, p_details: text });
+  }
+
   async function markConversationRead(userId: string, conversationId: string, messages: ConversationMessage[]) {
     const id = checkedId(conversationId);
     const ids = messages.filter((message) => !message.readAt && message.recipientId === userId && message.conversationId === id)
@@ -227,11 +240,12 @@ export function createMessagingRepository(supabase: SupabaseClient | null, signe
     if (needsReconnect(error)) return new DeviceAccessError("reconnect").message;
     const code = errorCode(error);
     if (code === "54000") return "Vous avez envoyé beaucoup de messages. Patientez une minute avant de réessayer ; votre texte est conservé.";
+    if (code === BLOCKED_PAIR) return "Vous ne pouvez plus écrire dans cette conversation.";
     if (code === "42501") return "Cette conversation n’est plus accessible. Vérifiez votre connexion et l’état de votre relation.";
     if (["P0001", "23514", "22023"].includes(code)) return "Ce message ne peut pas être envoyé. Vérifiez sa longueur et l’état de votre relation.";
     return "La messagerie ne répond pas. Votre texte est conservé : réessayez dans un instant.";
   }
 
-  return { loadConversations, loadMessagePage, loadMessagesSince, sendMessage, markConversationRead, countUnreadMessages,
+  return { loadConversations, loadMessagePage, loadMessagesSince, sendMessage, reportConversation, markConversationRead, countUnreadMessages,
     recordMessagingPresence, loadEmailNotifications, saveEmailNotifications, loadDevices, revokeDevice, getMessagingError };
 }

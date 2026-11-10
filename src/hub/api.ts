@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { reportErrorMessage } from "./reportErrors";
 
 export type Role = "admin" | "moderator";
 export type Context = {
@@ -84,6 +85,24 @@ export type LogData = {
   retention: string;
   service: string;
 };
+export type ReportMessage = {
+  from: "reporter" | "reported";
+  sent_at: string;
+  text: string;
+};
+export type HubReport = {
+  id: string;
+  reason: string;
+  details: string;
+  status: "open" | "resolved" | "dismissed";
+  created_at: string;
+  handled_at: string | null;
+  resolution: string | null;
+  handled_by_name: string | null;
+  reported: { id: string; name: string; graduation_year: number | null; is_suspended: boolean } | null;
+  reporter: { id: string; name: string; graduation_year: number | null } | null;
+  messages: ReportMessage[] | null;
+};
 
 const preview = new URLSearchParams(window.location.search).get("demo");
 export const demoRole: Role | null =
@@ -120,6 +139,38 @@ const sampleActivity = import.meta.env.DEV ? Array.from({ length: 30 }, (_, i) =
   views: 36 + ((i * 23) % 76),
   registrations: i % 4 === 0 ? 1 : 0,
 })) : [];
+
+const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60000).toISOString();
+const sampleReports: HubReport[] = import.meta.env.DEV ? [
+  {
+    id: "sample-report-1", reason: "scam", status: "open", created_at: minutesAgo(40),
+    details: "Il demande 50 000 FCFA pour « réserver » une place de stage.",
+    handled_at: null, resolution: null, handled_by_name: null,
+    reported: { id: "sample-5", name: "Oumar Zongo · exemple", graduation_year: 2019, is_suspended: false },
+    reporter: { id: "sample-2", name: "Fatoumata Traoré · exemple", graduation_year: 2020 },
+    messages: null,
+  },
+  {
+    id: "sample-report-2", reason: "minor_safety", status: "open", created_at: minutesAgo(180),
+    details: "Il insiste pour me voir seul et me demande mon numéro.",
+    handled_at: null, resolution: null, handled_by_name: null,
+    reported: { id: "sample-7", name: "Adama Sow · exemple", graduation_year: 2018, is_suspended: false },
+    reporter: { id: "sample-0", name: "Aminata Ouédraogo · exemple", graduation_year: 2018 },
+    messages: [
+      { from: "reported", sent_at: minutesAgo(400), text: "Bonjour, je peux t’aider pour ton dossier de bourse." },
+      { from: "reporter", sent_at: minutesAgo(390), text: "Merci beaucoup ! Quels documents faut-il ?" },
+      { from: "reported", sent_at: minutesAgo(380), text: "On en parle plutôt en vrai. Tu es libre samedi ? Donne-moi ton numéro." },
+      { from: "reporter", sent_at: minutesAgo(370), text: "Je préfère qu’on reste ici, s’il vous plaît." },
+    ],
+  },
+  {
+    id: "sample-report-3", reason: "fake_profile", status: "resolved", created_at: minutesAgo(4000),
+    details: "", handled_at: minutesAgo(3000), resolution: "Profil corrigé par son auteur après échange avec l’équipe.",
+    handled_by_name: "Camille · aperçu",
+    reported: { id: "sample-1", name: "Idrissa Koné · exemple", graduation_year: 2019, is_suspended: false },
+    reporter: null, messages: null,
+  },
+] : [];
 
 function demoData(name: string, args: Record<string, unknown>): unknown {
   const members =
@@ -208,6 +259,12 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
         page: 1,
         page_size: 25,
       };
+    case "hub_reports": {
+      const reports = sampleReports.filter((report) =>
+        (report.status === "open") === (args.p_status !== "handled")
+        && (demoRole === "admin" || report.reported?.graduation_year === 2018));
+      return { items: reports, total: reports.length, page: 1, page_size: 25 };
+    }
     case "public_site_status":
       return {
         enabled: false,
@@ -240,6 +297,9 @@ export async function rpc<T>(
     if (error) {
       if (controller.signal.aborted)
         throw new Error("Le service met trop de temps à répondre. Réessayez.");
+      // Before the generic rules below, which would read "filed yourself" as a self-moderation.
+      const reportProblem = reportErrorMessage(error.message);
+      if (reportProblem) throw new Error(reportProblem);
       if (/Remove the staff role/i.test(error.message))
         throw new Error(
           "Retirez d’abord le rôle de ce membre dans Équipe & accès.",

@@ -8,6 +8,6 @@ export { DeviceAccessError, needsReconnect, type DeviceAccessProblem } from "./m
 
 export const messagingDevice = createDeviceManager(supabase, createIndexedDbDeviceStore());
 export const {
-  loadConversations, loadMessagePage, loadMessagesSince, sendMessage, markConversationRead, countUnreadMessages,
+  loadConversations, loadMessagePage, loadMessagesSince, sendMessage, reportConversation, markConversationRead, countUnreadMessages,
   recordMessagingPresence, loadEmailNotifications, saveEmailNotifications, loadDevices, revokeDevice, getMessagingError,
 } = createMessagingRepository(supabase, messagingDevice);

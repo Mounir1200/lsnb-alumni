@@ -53,6 +53,8 @@ const actionNames: Record<string, string> = {
   member_promotion_changed: "Promotion corrigée",
   promotion_corrected: "Promotion corrigée",
   staff_changed: "Droits mis à jour",
+  report_resolved: "Signalement résolu",
+  report_dismissed: "Signalement classé",
 };
 
 export function Overview({

@@ -6,6 +6,7 @@ import { Avatar } from "../components/ui/Avatar";
 import { MemberConnectionRow } from "../components/mentoring/MemberConnectionRow";
 import { MentorshipPerson } from "../components/mentoring/MentorshipPerson";
 import { usePendingRequests } from "../components/mentoring/PendingRequestsProvider";
+import { BlockedMembersSection } from "../components/safety/BlockedMembersSection";
 import { Button } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
 import {
@@ -233,6 +234,7 @@ export function ConnectionsPage() {
               <section aria-labelledby="my-mentees-title"><div className="connections-section__heading"><h2 id="my-mentees-title">Mes mentorés</h2><span className="connections-count">{mentees.length}</span></div>{mentees.length ? <ul className="connections-list">{mentees.map((item) => renderMentorship(item, "mentee"))}</ul> : <p className="connections-empty">Vous n’accompagnez personne pour le moment.</p>}</section>
             </div>
           </section>
+          <BlockedMembersSection />
         </>
       )}
     </div>

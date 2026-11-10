@@ -117,6 +117,8 @@ Les demandes d’échange et de mentorat se gèrent dans **Mon espace → Mes re
 
 Les membres renseignent leur parcours en quelques phrases et ses **étapes clés** datées (formations, expériences), affichées dans les repères de leur profil. Le [guide des étapes du parcours](docs/etapes-parcours.md) décrit leur format, leur saisie et la migration à appliquer avant de déployer le frontend.
 
+La **charte de conduite** (`/charte`) pose les règles que chaque membre accepte en s’inscrivant. Un membre peut **bloquer** une personne (plus aucune demande ni aucun message entre eux, liens terminés) et **signaler** un profil, une conversation ou une offre à l’équipe, qui traite les signalements dans le hub. La connexion propose aussi **« Mot de passe oublié »**. Le [guide Sécurité des membres](docs/securite-des-membres.md) décrit les règles, les limites, les migrations et le modèle d’e-mail à appliquer.
+
 L’onglet **Offres** permet aux mentors alumni de publier des stages, des bourses et des admissions universitaires ; les membres les parcourent et posent leurs questions à l’auteur par une demande d’échange liée à l’offre. Le [guide des offres](docs/offres.md) décrit les règles de visibilité et la migration à appliquer avant de déployer le frontend.
 
 ## Direction visuelle

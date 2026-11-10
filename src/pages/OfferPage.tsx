@@ -6,6 +6,7 @@ import { OfferContact } from "../components/offers/OfferContact";
 import { OfferOwnerPanel } from "../components/offers/OfferOwnerPanel";
 import { OfferAccessState, OfferNotice, OffersLoadError } from "../components/offers/OfferStates";
 import { formatOfferDate, OfferDeadline, OfferKindTag } from "../components/offers/OfferTags";
+import { OfferReportButton } from "../components/safety/OfferReportButton";
 import { ButtonLink } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
 import { useOfferAccess } from "../hooks/useOfferAccess";
@@ -90,6 +91,7 @@ export function OfferPage() {
               <section className="offer-author" aria-label="Personne qui partage l’offre">
                 <p>Partagée par</p>
                 <MentorshipPerson member={offer.author} />
+                {!isOwn && !offer.isDemo && user && <OfferReportButton author={offer.author} offerTitle={offer.title} />}
               </section>
             )}
             {isOwn ? <OfferOwnerPanel offer={offer} /> : <OfferContact key={offer.id} offer={offer} userId={user?.id} />}

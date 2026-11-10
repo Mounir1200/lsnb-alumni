@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createClient } from "@supabase/supabase-js";
-import { browserAuthOptions, emailSignupAuthOptions, linkAuthOptions } from "../../../src/lib/authOptions.ts";
+import { browserAuthOptions, emailLinkAuthOptions, linkAuthOptions } from "../../../src/lib/authOptions.ts";
 
 test("the installed SDK rejects implicit URL sessions on site and hub without replacing stored identity", async () => {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
@@ -93,12 +93,12 @@ test("the installed SDK still exchanges a browser-bound PKCE code", async () => 
   }
 });
 
-test("email signup and resend issue cross-device links without a PKCE challenge or persistent session", async () => {
+test("email signup, resend and password reset issue cross-device links without a PKCE challenge or persistent session", async () => {
   let writes=0;
   const client=createClient("https://project.supabase.co","public-key",{
-    auth:{...emailSignupAuthOptions,storage:{getItem:()=>null,setItem:()=>{writes++},removeItem:()=>{writes++}}},
+    auth:{...emailLinkAuthOptions,storage:{getItem:()=>null,setItem:()=>{writes++},removeItem:()=>{writes++}}},
     global:{fetch:async(url,init)=>{
-      const request=new URL(String(url));assert.ok(["/auth/v1/signup","/auth/v1/resend"].includes(request.pathname));
+      const request=new URL(String(url));assert.ok(["/auth/v1/signup","/auth/v1/resend","/auth/v1/recover"].includes(request.pathname));
       assert.equal(request.searchParams.get("redirect_to"),"https://site.test/auth/callback?next=%2Fannuaire");
       const body=JSON.parse(String(init?.body));assert.equal(body.code_challenge,null);assert.equal(body.code_challenge_method,null);
       return Response.json({id:"member",email:"member@example.test"});
@@ -107,6 +107,7 @@ test("email signup and resend issue cross-device links without a PKCE challenge 
   const result=await client.auth.signUp({email:"member@example.test",password:"submitted-password",options:{emailRedirectTo:"https://site.test/auth/callback?next=%2Fannuaire"}});
   assert.equal(result.error,null);assert.equal(result.data.session,null);assert.equal(writes,0);
   assert.equal((await client.auth.resend({type:"signup",email:"member@example.test",options:{emailRedirectTo:"https://site.test/auth/callback?next=%2Fannuaire"}})).error,null);
+  assert.equal((await client.auth.resetPasswordForEmail("member@example.test",{redirectTo:"https://site.test/auth/callback?next=%2Fannuaire"})).error,null);
   assert.equal(writes,0);
   client.auth.stopAutoRefresh();
 });

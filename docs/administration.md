@@ -27,6 +27,7 @@ La maintenance ferme le site et ses accès aux données, tout en laissant les fo
 | Corriger une promotion avec un motif | Oui | Non |
 | Attribuer ou retirer un rôle | Oui | Non |
 | Maintenance et logs du serveur | Oui | Non |
+| Lire et traiter les signalements | Tous | Ceux qui visent sa promotion, sauf ceux qui visent l’équipe ; jamais les siens |
 
 « Retirer » signifie suspendre l’accès et masquer le profil, de façon réversible. Ce n’est pas une suppression définitive des données ou du compte Auth. Une suspension bloque immédiatement les opérations sur les données, y compris avec un JWT encore valide. Le navigateur revérifie l’accès au plus toutes les 15 secondes lorsqu’il est visible, et lorsqu’il reprend le focus.
 
@@ -34,7 +35,7 @@ Un modérateur appartient à la promotion qu’il modère. Il ne peut agir sur l
 
 La promotion d’un profil terminé ne se modifie plus dans l’espace membre : l’admin utilise l’action de correction avec un motif. Le rôle d’un modérateur doit être retiré avant de changer sa promotion. Les profils Google à compléter restent distincts des suspensions ; rétablir un compte incomplet autorise son onboarding sans le publier prématurément dans l’annuaire.
 
-Les motifs font entre 10 et 500 caractères. Le journal conserve l’auteur, le membre visé, la promotion, le motif et l’heure serveur. Aucune interface membre ne peut modifier ou effacer ce journal. Les messages privés des demandes et les emails de contact ne sont pas exposés au hub.
+Les motifs font entre 10 et 500 caractères. Le journal conserve l’auteur, le membre visé, la promotion, le motif et l’heure serveur. Aucune interface membre ne peut modifier ou effacer ce journal. Les messages privés des demandes et les emails de contact ne sont pas exposés au hub, sauf les 20 derniers messages d’une conversation qu’un participant a signalée (voir [Sécurité des membres](securite-des-membres.md)).
 
 ## Maintenance
 
