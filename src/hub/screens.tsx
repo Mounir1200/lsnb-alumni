@@ -7,6 +7,7 @@ import {
   Search,
   ShieldCheck,
   Terminal,
+  UserCheck,
   UserMinus,
   UserPlus,
   Wrench,
@@ -41,6 +42,7 @@ import {
 
 type Common = { context: Context; revision: number };
 const actionNames: Record<string, string> = {
+  member_approved: "Compte validé",
   member_suspended: "Membre suspendu",
   member_restored: "Membre rétabli",
   maintenance_enabled: "Maintenance activée",
@@ -61,7 +63,8 @@ export function Overview({
   context,
   revision,
   goMembers,
-}: Common & { goMembers: (year?: number) => void }) {
+  goApprovals,
+}: Common & { goMembers: (year?: number) => void; goApprovals: () => void }) {
   const resource = useResource(
     () => rpc<Dashboard>("hub_dashboard"),
     `dashboard-${revision}`,
@@ -101,6 +104,22 @@ export function Overview({
       {resource.loading && !resource.data && <Loading />}
       {data && (
         <>
+          {data.pending_members > 0 && (
+            <div className="hub-callout" role="status">
+              <UserCheck size={20} aria-hidden="true" />
+              <p>
+                <strong>
+                  {data.pending_members === 1
+                    ? "1 nouveau compte attend sa validation."
+                    : `${number(data.pending_members)} nouveaux comptes attendent leur validation.`}
+                </strong>{" "}
+                Ils restent invisibles tant que personne ne les a validés.
+              </p>
+              <button className="hub-button primary" onClick={goApprovals}>
+                Voir les comptes <ArrowUpRight size={14} />
+              </button>
+            </div>
+          )}
           <div className="hub-kpis">
             <div className="hub-kpi dominant">
               <span>Membres du réseau</span>
@@ -459,6 +478,7 @@ export function Members({
             >
               <option value="all">Tous les statuts</option>
               <option value="active">Comptes actifs</option>
+              <option value="pending">Comptes à valider</option>
               <option value="suspended">Comptes suspendus</option>
             </select>
           </label>
@@ -516,9 +536,11 @@ export function Members({
                           <Status active={!m.is_suspended}>
                             {m.is_suspended
                               ? "Suspendu"
-                              : m.profile_completed
-                                ? "Actif"
-                                : "À compléter"}
+                              : m.approval_pending
+                                ? "À valider"
+                                : m.profile_completed
+                                  ? "Actif"
+                                  : "À compléter"}
                           </Status>
                         </td>
                         <td>{date(m.created_at)}</td>
@@ -834,7 +856,7 @@ export function Team({ context, revision }: Common) {
             </small>
           </label>
           <p className="hub-form-hint">
-            Le modérateur peut consulter et suspendre les membres de sa promotion uniquement.
+            Le modérateur valide les nouveaux comptes, consulte et suspend les membres de sa promotion uniquement.
           </p>
           <button
             className="hub-button primary"

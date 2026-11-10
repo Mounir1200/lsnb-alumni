@@ -12,6 +12,8 @@ test("each error of the hub's member and team functions has the team's wording",
     ["Moderators must belong to their assigned promotion", /appartenir à la promotion/],
     ["Staff must have an active completed profile", /profil complet/],
     ["Member not found", /n’existe plus/],
+    ["Member is not awaiting approval", /n’attend plus de validation/],
+    ["Forbidden: moderators may only approve their own promotion", /comptes de votre promotion/],
   ];
   for (const [message, expected] of cases) assert.match(memberErrorMessage(message) ?? "", expected, message);
 });

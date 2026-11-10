@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   Shield,
   Terminal,
+  UserCheck,
   Users,
   Wrench,
   X,
@@ -36,12 +37,13 @@ import {
   ServerLogs,
   Team,
 } from "./screens";
+import { Approvals } from "./approvals";
 import { Reports } from "./reports";
 import { ErrorState, Loading, Status } from "./ui";
 import "./styles.css";
 
 type Screen =
-  "overview" | "members" | "reports" | "team" | "maintenance" | "audit" | "logs";
+  "overview" | "members" | "approvals" | "reports" | "team" | "maintenance" | "audit" | "logs";
 const nav = [
   {
     id: "overview",
@@ -50,6 +52,7 @@ const nav = [
     admin: false,
   },
   { id: "members", label: "Membres & promotions", icon: Users, admin: false },
+  { id: "approvals", label: "À valider", icon: UserCheck, admin: false },
   { id: "reports", label: "Signalements", icon: Flag, admin: false },
   { id: "team", label: "Équipe & accès", icon: Shield, admin: true },
   { id: "maintenance", label: "Maintenance", icon: Wrench, admin: true },
@@ -441,6 +444,7 @@ function Hub({
               context={context}
               revision={revision}
               goMembers={(year) => go("members", year)}
+              goApprovals={() => go("approvals")}
             />
           )}
           {screen === "members" && (
@@ -450,6 +454,9 @@ function Hub({
               revision={revision}
               initialPromotion={promotion}
             />
+          )}
+          {screen === "approvals" && (
+            <Approvals context={context} revision={revision} />
           )}
           {screen === "reports" && (
             <Reports context={context} revision={revision} />

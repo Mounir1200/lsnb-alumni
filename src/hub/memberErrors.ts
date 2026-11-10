@@ -6,6 +6,8 @@ const MEMBER_ERRORS: [RegExp, string][] = [
   [/Moderators must belong/i, "Un modérateur doit appartenir à la promotion qui lui est attribuée."],
   [/active completed profile/i, "Ce rôle nécessite un compte actif avec un profil complet."],
   [/Member not found/i, "Ce membre n’existe plus. Actualisez la liste."],
+  [/not awaiting approval/i, "Ce compte n’attend plus de validation. Actualisez la liste."],
+  [/only approve their own promotion/i, "Vous ne pouvez valider que les comptes de votre promotion."],
 ];
 
 /** The team's wording for an error raised by the hub's member and team functions, or null for any other error. */

@@ -19,9 +19,11 @@ export type Member = {
   is_active: boolean;
   is_suspended: boolean;
   profile_completed: boolean;
+  approval_pending: boolean;
   created_at: string;
   city: string | null;
   country: string | null;
+  specialty?: string | null;
   staff_role: Role | null;
 };
 export type PageData<T> = {
@@ -33,6 +35,7 @@ export type PageData<T> = {
 export type Dashboard = {
   members: number;
   active_members: number;
+  pending_members: number;
   suspended_members: number;
   mentors: number;
   offers: number;
@@ -120,15 +123,19 @@ const sampleMembers: Member[] = import.meta.env.DEV ? [
   ["Oumar", "Zongo", 2019, "Paris", "France"],
   ["Mariam", "Coulibaly", 2020, "Montréal", "Canada"],
   ["Adama", "Sow", 2018, "Bamako", "Mali"],
+  ["Salif", "Ouattara", 2018, "Bobo-Dioulasso", "Burkina Faso"],
+  ["Awa", "Kaboré", 2021, "Ouagadougou", "Burkina Faso"],
 ].map(([first, last, year, city, country], index) => ({
   id: `sample-${index}`,
   first_name: String(first),
   last_name: String(last),
   graduation_year: Number(year),
-  member_role: index % 3 === 0 ? "mentor" : "alumni",
-  is_active: index !== 5,
+  member_role: index >= 8 ? "student" : index % 3 === 0 ? "mentor" : "alumni",
+  is_active: index !== 5 && index < 8,
   is_suspended: index === 5,
   profile_completed: true,
+  approval_pending: index >= 8,
+  specialty: index >= 8 ? "Terminale D" : "Génie civil",
   created_at: new Date(now.getTime() - index * 86400000).toISOString(),
   city: String(city),
   country: String(country),
@@ -190,7 +197,8 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
       return {
         members: members.length,
         active_members: members.filter((m) => m.is_active).length,
-        suspended_members: members.filter((m) => !m.is_active).length,
+        pending_members: members.filter((m) => m.approval_pending && !m.is_suspended).length,
+        suspended_members: members.filter((m) => m.is_suspended).length,
         mentors: 3,
         offers: 12,
         requests: 18,
@@ -216,7 +224,9 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
               .toLowerCase()
               .includes(String(args.p_search).toLowerCase())) &&
           (args.p_status === "all" ||
-            (args.p_status === "active") === m.is_active),
+            (args.p_status === "active" && m.is_active) ||
+            (args.p_status === "pending" && m.approval_pending && !m.is_suspended) ||
+            (args.p_status === "suspended" && m.is_suspended)),
       );
       return {
         items: filtered,
@@ -388,4 +398,6 @@ export const roleName = (role: string | null) =>
       ? "Modérateur"
       : role === "mentor"
         ? "Mentor"
-        : "Alumni";
+        : role === "student"
+          ? "Élève"
+          : "Alumni";
