@@ -16,6 +16,8 @@ import { ButtonLink } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
 import { SectionPathBackdrop } from "../components/visual/SectionPathBackdrop";
 import { pickHomePhotos, type HomePhoto } from "../data/homePhotos";
+import { useAudience } from "../hooks/useAudience";
+import { mentoringInvitation, profileInvitation } from "../lib/invitations";
 
 const discoveryPaths = [
   {
@@ -51,6 +53,9 @@ export function HomePage() {
   const location = useLocation();
   // Drawn once per visit, so a photo never changes while it is being looked at.
   const [photos] = useState(() => pickHomePhotos());
+  const audience = useAudience();
+  const mentoring = mentoringInvitation(audience);
+  const invitation = profileInvitation(audience);
 
   useEffect(() => {
     if (!location.hash) return;
@@ -144,9 +149,11 @@ export function HomePage() {
               <ButtonLink to="/annuaire?mentor=true">
                 Trouver un mentor <MessageCircle size={18} aria-hidden="true" />
               </ButtonLink>
-              <Link to="/rejoindre?mentorat=true" className="text-link text-link--action">
-                Devenir mentor <ArrowRight size={17} aria-hidden="true" />
-              </Link>
+              {mentoring && (
+                <Link to={mentoring.to} className="text-link text-link--action">
+                  {mentoring.label} <ArrowRight size={17} aria-hidden="true" />
+                </Link>
+              )}
             </div>
           </Reveal>
         </div>
@@ -207,16 +214,13 @@ export function HomePage() {
       <section className="join-cta">
         <div className="page-shell join-cta__inner">
           <div>
-            <RouteStop tone="light">Prochaine escale : vous</RouteStop>
-            <h2>Ajoutez votre trajectoire<br />à la carte.</h2>
+            <RouteStop tone="light">{invitation.eyebrow}</RouteStop>
+            <h2>{invitation.title[0]}<br />{invitation.title[1]}</h2>
           </div>
           <div>
-            <p>
-              Élève ou alumni, créez un profil clair, partagez votre parcours et choisissez
-              librement si vous souhaitez proposer du mentorat.
-            </p>
-            <ButtonLink to="/rejoindre" variant="light" size="lg">
-              Créer mon profil <ArrowRight size={18} aria-hidden="true" />
+            <p>{invitation.text}</p>
+            <ButtonLink to={invitation.action.to} variant="light" size="lg">
+              {invitation.action.label} <ArrowRight size={18} aria-hidden="true" />
             </ButtonLink>
           </div>
         </div>

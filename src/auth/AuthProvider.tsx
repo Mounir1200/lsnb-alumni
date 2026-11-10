@@ -1,7 +1,8 @@
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "../lib/supabase";
-import { loadOnboardingProfile } from "../lib/onboardingRepository";
+import type { MemberRole } from "../lib/invitations";
+import { loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
 
 type AuthContextValue = {
   session: Session | null;
@@ -9,6 +10,7 @@ type AuthContextValue = {
   isLoading: boolean;
   lastEvent: AuthChangeEvent | null;
   profileCompleted: boolean | null;
+  memberRole: MemberRole | null;
   profileError: string | null;
   refreshProfile: () => Promise<void>;
 };
@@ -19,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(supabase));
   const [lastEvent, setLastEvent] = useState<AuthChangeEvent | null>(null);
-  const [profileState, setProfileState] = useState<{ userId: string; completed: boolean | null; error: string | null } | null>(null);
+  const [profileState, setProfileState] = useState<{ userId: string; profile: OnboardingProfile | null; error: string | null } | null>(null);
   const userId = session?.user.id;
   const currentUserId = useRef(userId);
   currentUserId.current = userId;
@@ -30,9 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const request = ++profileRequest.current;
     try {
       const profile = await loadOnboardingProfile(userId);
-      if (currentUserId.current === userId && profileRequest.current === request) setProfileState({ userId, completed: profile.profile_completed, error: null });
+      if (currentUserId.current === userId && profileRequest.current === request) setProfileState({ userId, profile, error: null });
     } catch {
-      if (currentUserId.current === userId && profileRequest.current === request) setProfileState({ userId, completed: null, error: "Impossible de vérifier votre profil. Réessayez." });
+      if (currentUserId.current === userId && profileRequest.current === request) setProfileState({ userId, profile: null, error: "Impossible de vérifier votre profil. Réessayez." });
     }
   }, [userId]);
 
@@ -73,14 +75,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = useMemo<AuthContextValue>(
-    () => ({ session, user: session?.user ?? null, isLoading, lastEvent,
-      profileCompleted: profileState?.userId === userId ? profileState?.completed ?? null : null,
-      profileError: profileState?.userId === userId ? profileState?.error ?? null : null,
+  const value = useMemo<AuthContextValue>(() => {
+    const ownState = profileState?.userId === userId ? profileState : null;
+    return { session, user: session?.user ?? null, isLoading, lastEvent,
+      profileCompleted: ownState?.profile?.profile_completed ?? null,
+      memberRole: ownState?.profile?.member_role ?? null,
+      profileError: ownState?.error ?? null,
       refreshProfile,
-    }),
-    [isLoading, lastEvent, session, profileState, userId, refreshProfile],
-  );
+    };
+  }, [isLoading, lastEvent, session, profileState, userId, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

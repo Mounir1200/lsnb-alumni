@@ -1,6 +1,7 @@
 import { Camera, Check, LoaderCircle, LockKeyhole, Orbit, UserRound } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { CharterConsent } from "../components/safety/CharterConsent";
@@ -21,6 +22,7 @@ type SubmissionStatus = {
 };
 
 export function JoinPage() {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [role, setRole] = useState<"alumni" | "student">("alumni");
@@ -141,6 +143,10 @@ export function JoinPage() {
       });
     }
   };
+
+  // A member who already has an account goes to their space. While this page
+  // signs someone up, it leads the way itself.
+  if (user && status.kind === "idle" && !googleBusy) return <Navigate to="/espace" replace />;
 
   return (
     <div className="account-page">
