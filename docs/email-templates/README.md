@@ -18,7 +18,8 @@ Après inscription, le site demande de consulter sa boîte de réception et les 
 
 - Objet : **Réinitialisez votre mot de passe LSNB Alumni**.
 - Contenu HTML : `reset-password.html` ; version texte de référence : `reset-password.txt`.
-- `supabase-recovery-config.json` contient exactement les champs `mailer_subjects_recovery` et `mailer_templates_recovery_content` à appliquer à la configuration Auth (tableau de bord : Authentication → Emails → Reset Password). Sans ce réglage, Supabase envoie son modèle par défaut, en anglais.
+- Dans le tableau de bord (Authentication → Emails → Reset Password) : coller l’objet ci-dessus dans **Subject**, puis tout le contenu de `reset-password.html` dans **Body** (onglet Source), à la place du modèle existant. L’aperçu doit montrer l’e-mail mis en forme, sans `\n` ni guillemets échappés. Sans ce réglage, Supabase envoie son modèle par défaut, en anglais.
+- `supabase-recovery-config.json` ne se colle pas dans le tableau de bord : il sert seulement à envoyer les mêmes champs (`mailer_subjects_recovery`, `mailer_templates_recovery_content`) par l’API de gestion de Supabase.
 - Variable native Supabase : `{{ .ConfirmationURL }}`, à conserver telle quelle.
 - La page « Mot de passe oublié » (`/mot-de-passe-oublie`, liée depuis la connexion) envoie la demande avec le même client que l’inscription, sans PKCE : le lien s’ouvre aussi sur un autre appareil que celui de la demande. Il revient sur `/auth/callback?next=/nouveau-mot-de-passe`. Le membre confirme qu’il s’agit bien de son compte, choisit son nouveau mot de passe, puis ses autres appareils sont déconnectés.
 - Le message affiché est le même qu’un compte existe ou non. Le site impose 60 secondes entre deux demandes ; Supabase ajoute ses propres limites (une demande par minute pour une même adresse, et la limite d’envoi d’e-mails réglée dans Authentication → Rate Limits). Ces e-mails passent par le SMTP Brevo et comptent dans son quota quotidien.
