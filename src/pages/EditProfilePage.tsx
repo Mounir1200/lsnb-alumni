@@ -14,6 +14,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { DeleteAccountSection } from "../components/profile/DeleteAccount";
 import { DraftHint, DraftResumeNotice, PublicListingField, useProfileDraftAutosave } from "../components/profile/ProfileDraft";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -621,6 +622,8 @@ export function EditProfilePage() {
               </p>
             )}
           </form>
+
+          <DeleteAccountSection userId={user.id} isListedOption={form.memberRole === "alumni"} />
         </section>
       </div>
     </div>

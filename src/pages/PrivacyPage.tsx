@@ -21,15 +21,15 @@ export function PrivacyPage() {
       <h1>Comprendre comment votre parcours est partagé.</h1>
       <p>
         LSNB Alumni sépare les informations de profil des coordonnées personnelles. Seuls les
-        membres connectés consultent les profils complets, et chacun décide de la visibilité de son
-        contact. Deux contenus restent visibles sans compte : l’annuaire public et les portraits
+        membres dont le compte est validé consultent les profils complets, et chacun décide de la
+        visibilité de son contact. Deux contenus restent visibles sans compte : l’annuaire public et les portraits
         Highlight de l’accueil.
       </p>
       <h2>Annuaire public</h2>
       <p>
         Sans connexion, les visiteurs voient la liste des anciens élèves : nom, photo, promotion,
         spécialité, domaine, ville, pays et disponibilité pour le mentorat. Le parcours, les liens,
-        les relations et les coordonnées restent réservés aux membres connectés. Les élèves actuels
+        les relations et les coordonnées restent réservés aux membres validés. Les élèves actuels
         n’apparaissent jamais dans cette liste publique. Chaque ancien élève peut s’en retirer à tout
         moment depuis « Modifier mon profil » ; sa fiche reste alors visible des seuls membres, et il
         n’est plus présenté dans Highlight.
@@ -48,7 +48,7 @@ export function PrivacyPage() {
       <p>
         Nom, prénom, statut, promotion, parcours, spécialités, expérience, ville, pays, photo et
         moyen de contact. Vous pouvez aussi ajouter un lien LinkedIn et un lien de portfolio :
-        ils sont facultatifs, visibles par les membres connectés sur votre fiche et modifiables
+        ils sont facultatifs, visibles par les membres validés sur votre fiche et modifiables
         ou supprimables depuis votre espace membre. Le genre est facultatif et déclaré par la personne pour équilibrer
         les duos Highlight et adapter les pronoms et les accords du portrait. Il n’est jamais
         déduit du nom ou de la photo. Le mentorat est volontaire.
@@ -62,7 +62,7 @@ export function PrivacyPage() {
       </p>
       <p>
         Après acceptation, le lien entre le mentor et la personne accompagnée apparaît sur leurs
-        fiches, pour les membres connectés. Chacun peut mettre fin à ce lien depuis son espace
+        fiches, pour les membres validés. Chacun peut mettre fin à ce lien depuis son espace
         de relations : il cesse alors d’apparaître sur les fiches. Désactiver votre offre de
         mentorat dans votre profil arrête les nouvelles demandes, mais ne met pas fin à vos
         relations existantes. La visibilité de vos coordonnées reste un réglage distinct.
@@ -179,8 +179,13 @@ export function PrivacyPage() {
       </p>
       <ul>
         <li>
-          Dans l’espace d’administration, un modérateur voit les membres de sa promotion : nom,
-          promotion, statut, ville, pays, date d’inscription et état du compte. Il ne voit ni les
+          Un nouveau compte attend d’être validé par le modérateur de sa promotion ou par un
+          administrateur, qui vérifie que la personne a bien fréquenté le lycée. D’ici là, personne
+          ne voit son profil, et il ne peut ni consulter les profils, ni écrire aux membres.
+        </li>
+        <li>
+          Dans l’espace d’administration, un modérateur voit les membres de sa promotion : nom,
+          promotion, statut, spécialité, ville, pays, date d’inscription et état du compte. Il ne voit ni les
           adresses e-mail, ni les coordonnées. Des messages, il ne voit que ceux d’une conversation
           signalée qui concerne un membre de sa promotion.
         </li>
@@ -227,6 +232,38 @@ export function PrivacyPage() {
         des profils consultés. Le tableau de bord n’affiche que des totaux ; un modérateur ne voit
         que ceux de sa promotion.
       </p>
+      <h2 id="vos-droits">Vos droits</h2>
+      <ul>
+        <li>
+          <b>Consulter et corriger.</b> Tout ce que vous avez saisi se trouve dans « Modifier mon
+          profil », où vous pouvez le corriger à tout moment. Pour corriger votre promotion,
+          écrivez-nous.
+        </li>
+        <li>
+          <b>Limiter la diffusion.</b> Un ancien élève peut quitter l’annuaire public et Highlight,
+          et chacun peut masquer son moyen de contact, depuis « Modifier mon profil ».
+        </li>
+        <li>
+          <b>Effacer.</b> « Supprimer mon compte », en bas de « Modifier mon profil », efface
+          aussitôt et définitivement votre compte, votre profil, votre photo, vos relations, vos
+          messages, vos offres et vos portraits Highlight. Les signalements que vous avez faits
+          restent, sans votre nom, et le journal de modération garde les décisions qui vous
+          concernent.
+        </li>
+        <li>
+          <b>Durée de conservation.</b> Vos données sont gardées tant que votre compte existe, puis
+          effacées avec lui, sauf ce qui est indiqué ci-dessus.
+        </li>
+        <li>
+          <b>Nous écrire.</b> Pour toute question ou demande sur vos données, y compris la suppression
+          d’un compte suspendu : <a href="mailto:contact@lsnb-reseau.org">contact@lsnb-reseau.org</a>.
+        </li>
+        <li>
+          <b>Réclamation.</b> Si notre réponse ne vous convient pas, vous pouvez saisir la Commission
+          de l’informatique et des libertés (CIL), l’autorité de protection des données personnelles
+          du Burkina Faso.
+        </li>
+      </ul>
     </article>
   );
 }
