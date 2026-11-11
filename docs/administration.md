@@ -46,6 +46,8 @@ Les motifs font entre 10 et 500 caractères. Le journal conserve l’auteur, le 
 
 Un nouveau compte reste invisible tant qu’il n’est pas validé. L’écran « À valider » liste ceux de la promotion du modérateur (toutes les promotions pour un administrateur) ; le tableau de bord les annonce dès qu’il y en a. Valider s’inscrit au journal (« Compte validé ») ; refuser suspend le compte avec un motif, et un administrateur peut le rétablir, ce qui le remet en attente. Une promotion sans modérateur dépend des administrateurs. Chacun est prévenu par e-mail quand des comptes attendent dans sa portée, au plus une fois toutes les 12 heures (voir [Sécurité des membres](securite-des-membres.md)).
 
+Sur le site, un membre de l’équipe trouve le bouton « Hub de l’équipe » parmi les actions de son propre profil (« Mon espace »), et nulle part ailleurs : ni sur le profil d’un autre membre, ni sur le sien vu par quelqu’un d’autre. `public.has_hub_access()` répond pour la session seule, avec la règle du hub (`private.require_staff`) : un membre de l’équipe suspendu ou inactif perd le bouton en même temps que l’accès. Le bouton mène à `VITE_HUB_URL`.
+
 ### Gérer les super administrateurs
 
 Le réseau compte trois super administrateurs au plus ; la base le vérifie, que l’ajout passe par le hub ou par SQL. Un super administrateur en nomme un autre depuis « Équipe & accès ». Personne ne le retire depuis le hub : il quitte l’équipe lui-même, ou une personne qui a un accès direct à la base le retire, par exemple dans l’éditeur SQL de Supabase. Remplacez le UUID et vérifiez la ligne retournée.
@@ -97,7 +99,7 @@ Référence : [Counter Loader de Md afsar mahmud sur 21st.dev](https://21st.dev/
 
 3. Créer la ressource statique **lsnb-alumni-hub** prévue dans `render.yaml` : commande `npm ci --include=dev && npm run build:hub`, dossier `dist-hub`, réécriture vers `/index.html`. Son déploiement automatique est désactivé pour permettre une publication indépendante du site.
 4. Configurer ses variables publiques `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL`, `VITE_SITE_URL`. Aucun secret backend dans le hub.
-5. Ajouter l’origine exacte du hub à `FRONTEND_ORIGINS` de l’API. Ajouter l’URL du hub aux redirections Supabase autorisées pour Google et conserver celles du site. Configurer `VITE_HUB_URL` sur le site pour le lien d’accès à l’équipe.
+5. Ajouter l’origine exacte du hub à `FRONTEND_ORIGINS` de l’API. Ajouter l’URL du hub aux redirections Supabase autorisées pour Google et conserver celles du site. Configurer `VITE_HUB_URL` sur le site pour le lien d’accès à l’équipe de la page de maintenance et le bouton « Hub de l’équipe » de « Mon espace ».
 6. Déployer API, hub et site après vérification de la migration. Tester sur l’environnement d’essai un admin, un modo et deux membres de promotions différentes ; tester aussi une maintenance courte et sa réouverture. Aucun compte réel n’est modéré par les tests locaux.
 
 ## Développement et validation
