@@ -44,7 +44,7 @@ La promotion d’un profil terminé ne se modifie plus dans l’espace membre : 
 
 Les motifs font entre 10 et 500 caractères. Le journal conserve l’auteur, le membre visé, la promotion, le motif et l’heure serveur. Aucune interface membre ne peut modifier ou effacer ce journal. Les messages privés des demandes et les emails de contact ne sont pas exposés au hub, sauf les 20 derniers messages d’une conversation qu’un participant a signalée (voir [Sécurité des membres](securite-des-membres.md)).
 
-Un nouveau compte reste invisible tant qu’il n’est pas validé. L’écran « À valider » liste ceux de la promotion du modérateur (toutes les promotions pour un administrateur) ; le tableau de bord les annonce dès qu’il y en a. Valider s’inscrit au journal (« Compte validé ») ; refuser suspend le compte avec un motif, et un administrateur peut le rétablir, ce qui le remet en attente. Une promotion sans modérateur dépend des administrateurs.
+Un nouveau compte reste invisible tant qu’il n’est pas validé. L’écran « À valider » liste ceux de la promotion du modérateur (toutes les promotions pour un administrateur) ; le tableau de bord les annonce dès qu’il y en a. Valider s’inscrit au journal (« Compte validé ») ; refuser suspend le compte avec un motif, et un administrateur peut le rétablir, ce qui le remet en attente. Une promotion sans modérateur dépend des administrateurs. Chacun est prévenu par e-mail quand des comptes attendent dans sa portée, au plus une fois toutes les 12 heures (voir [Sécurité des membres](securite-des-membres.md)).
 
 ### Gérer les super administrateurs
 

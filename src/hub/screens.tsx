@@ -535,9 +535,11 @@ export function Members({
                           <Status active={!m.is_suspended}>
                             {m.is_suspended
                               ? "Suspendu"
-                              : m.approval_pending
+                              : m.awaits_approval
                                 ? "À valider"
-                                : m.profile_completed
+                                : m.approval_pending
+                                  ? "E-mail à confirmer"
+                                  : m.profile_completed
                                   ? "Actif"
                                   : "À compléter"}
                           </Status>
