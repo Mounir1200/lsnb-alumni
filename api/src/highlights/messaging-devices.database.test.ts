@@ -19,7 +19,7 @@ const supabaseStubs = `
   grant usage on schema public to anon,authenticated,service_role;
   create schema auth; grant usage on schema auth to anon,authenticated,service_role;
   create schema storage; grant usage on schema storage to authenticated;
-  create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb not null default '{}',raw_app_meta_data jsonb not null default '{}');
+  create table auth.users(id uuid primary key,email text, email_confirmed_at timestamptz default clock_timestamp(),raw_user_meta_data jsonb not null default '{}',raw_app_meta_data jsonb not null default '{}');
   create table auth.sessions(id uuid primary key,user_id uuid not null references auth.users(id) on delete cascade,
     created_at timestamptz not null default clock_timestamp(),not_after timestamptz,user_agent text);
   create function auth.uid() returns uuid language sql as 'select nullif(current_setting(''request.jwt.claim.sub'',true),'''')::uuid';
