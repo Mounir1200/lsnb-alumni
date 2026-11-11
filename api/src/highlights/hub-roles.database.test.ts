@@ -41,6 +41,15 @@ describe('Three levels of team: super administrators, administrators and moderat
     await staff(otherModerator, 'moderator', 2021)
   })
 
+  it('tells each signed-in member whether the hub opens to them, as the hub itself decides', async () => {
+    for (const id of [owner, admin, moderator]) assert.equal(await rpc(id, 'has_hub_access'), true, id)
+    assert.equal(await rpc(member, 'has_hub_access'), false)
+    await db.query('insert into private.hub_suspensions (user_id) values ($1)', [moderator])
+    await db.query('update public.profiles set is_active = false where id = $1', [admin])
+    assert.deepEqual([await rpc(moderator, 'has_hub_access'), await rpc(admin, 'has_hub_access')], [false, false])
+    await asMember(db, null, () => assert.rejects(db.query('select public.has_hub_access()'), /permission denied/), 'anon')
+  })
+
   it('keeps at most three super administrators, whichever path writes the team', async () => {
     await rpc(owner, 'hub_set_staff', [await join('second@example.test', 2019), 'super_admin', null])
     await staff(await join('third@example.test', 2019), 'super_admin')
