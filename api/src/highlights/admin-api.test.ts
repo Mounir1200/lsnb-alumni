@@ -190,7 +190,7 @@ test("Supabase authorization verifies Auth first and preserves user context for 
   const calls: { url: string; init: RequestInit }[] = [];
   const store = createAdminBackend({ url: "https://example.supabase.co", secretKey: "server_secret_key" }, fakeFetch((url, init) => {
     calls.push({ url, init });
-    return json(url.endsWith("/auth/v1/user") ? { id: "trusted-user", user_metadata: { role: "admin" } } : { user_id: "trusted-user", role: "admin" });
+    return json(url.endsWith("/auth/v1/user") ? { id: "trusted-user", user_metadata: { role: "admin" } } : { user_id: "trusted-user", role: "super_admin" });
   }));
   await store.authorize("user_access_token");
   assert.equal(calls.length, 2);
@@ -205,8 +205,9 @@ test("Supabase authorization verifies Auth first and preserves user context for 
   assert.equal(calls[1]!.init.body, "{}");
 });
 
-test("forged admin metadata, another user's context and moderator roles never authorize", async () => {
-  for (const context of [null, { role: "admin" }, { role: "admin", user_id: "other-user" }, { role: "moderator", user_id: "trusted-user" }, { role: "member", user_id: "trusted-user" }]) {
+test("forged admin metadata, another user's context, administrators and moderators never read the server logs", async () => {
+  for (const context of [null, { role: "super_admin" }, { role: "super_admin", user_id: "other-user" }, { role: "admin", user_id: "trusted-user" },
+    { role: "moderator", user_id: "trusted-user" }, { role: "member", user_id: "trusted-user" }]) {
     const store = createAdminBackend({ url: "https://example.supabase.co", secretKey: "secret" }, fakeFetch((url) =>
       json(url.endsWith("/auth/v1/user") ? { id: "trusted-user", user_metadata: { role: "admin" } } : context)));
     await assert.rejects(store.authorize("forged_claims"), (error: unknown) => error instanceof ControlPlaneError && error.status === 403);
