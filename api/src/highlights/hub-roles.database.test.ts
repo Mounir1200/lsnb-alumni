@@ -105,6 +105,16 @@ describe('Three levels of team: super administrators, administrators and moderat
     await rpc(owner, 'hub_change_promotion', [member, 2021, 'Correction vérifiée du dossier'])
   })
 
+  it('keeps a moderator away from members whose promotion is unknown', async () => {
+    const waiting = await join('waiting@example.test', 2020, true)
+    const settled = await join('settled@example.test', 2020)
+    await db.query('update public.profiles set graduation_year = null where id in ($1, $2)', [waiting, settled])
+    await assert.rejects(rpc(moderator, 'hub_approve_member', [waiting]), /own promotion/)
+    await assert.rejects(rpc(moderator, 'hub_moderate_member', [settled, false, 'Comportement signalé à vérifier']), /own promotion/)
+    await rpc(admin, 'hub_approve_member', [waiting])
+    await rpc(admin, 'hub_moderate_member', [settled, false, 'Comportement signalé à vérifier'])
+  })
+
   it('shows every team member the whole network’s statistics, and what waits within their scope', async () => {
     await join('waiting@example.test', 2021, true)
     const seenByModerator = await rpc(moderator, 'hub_dashboard')
