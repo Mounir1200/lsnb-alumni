@@ -90,7 +90,8 @@ export function createAdminBackend(
       if (!isRecord(user) || typeof user.id !== "string" || !user.id) throw new ControlPlaneError(401);
       const context = await request("/rest/v1/rpc/hub_context", accessToken);
       // Read the live, database-owned role on every request so revocations take effect immediately.
-      if (!isRecord(context) || context.user_id !== user.id || context.role !== "admin") {
+      // The server logs are part of the technical side, which belongs to super administrators.
+      if (!isRecord(context) || context.user_id !== user.id || context.role !== "super_admin") {
         throw new ControlPlaneError(403);
       }
     },

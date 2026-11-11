@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { PendingApprovalNotice } from "../components/auth/PendingApproval";
 import { ProfileGate } from "../components/auth/ProfileGate";
 import { ProfileMentorshipNetwork } from "../components/mentoring/ProfileMentorshipNetwork";
 import { ProfileAside } from "../components/profile/ProfileAside";
@@ -37,7 +38,9 @@ type RequestStatus = {
 
 export function ProfilePage() {
   const { profileId = "" } = useParams();
-  const { user, isLoading: authLoading, profileCompleted } = useAuth();
+  const { user, isLoading: authLoading, memberStatus, profileError } = useAuth();
+  const isActiveMember = memberStatus === "active";
+  const isOwnProfilePage = user?.id === profileId;
   const demoProfile = getAlumniProfile(profileId);
   const [profile, setProfile] = useState<AlumniProfile | undefined>(demoProfile);
   const [loading, setLoading] = useState(Boolean(!demoProfile && isSupabaseConfigured));
@@ -105,7 +108,7 @@ export function ProfilePage() {
   }, [profileId, user?.id, authLoading]);
 
   useEffect(() => {
-    if (!user || !profileCompleted || demoProfile || authLoading) return;
+    if (!user || !isActiveMember || demoProfile || authLoading) return;
     let active = true;
     setConnections({ scope: requestScope });
     void Promise.all([loadProfileConnections(user.id, profileId), loadActiveMentorships(user.id), findMemberConnection(user.id, profileId)])
@@ -114,9 +117,10 @@ export function ProfilePage() {
       })
       .catch((error: unknown) => { if (active) setConnections({ scope: requestScope, error: getConnectionErrorMessage(error) }); });
     return () => { active = false; };
-  }, [user?.id, profileId, profileCompleted, authLoading, Boolean(demoProfile), connectionsReload, requestScope]);
+  }, [user?.id, profileId, isActiveMember, authLoading, Boolean(demoProfile), connectionsReload, requestScope]);
 
-  if (!demoProfile && isSupabaseConfigured && !authLoading && !user) {
+  const isClosedToViewer = !user || memberStatus === "incomplete" || memberStatus === "pending";
+  if (!demoProfile && isSupabaseConfigured && !authLoading && !isOwnProfilePage && isClosedToViewer) {
     return (
       <section className="auth-state-page">
         <ProfileGate profileId={profileId} heading="h1" />
@@ -124,7 +128,8 @@ export function ProfilePage() {
     );
   }
 
-  if (loading || authLoading || (profile && profile.id !== profileId)) {
+  const isCheckingViewer = Boolean(user) && memberStatus === null && !profileError;
+  if (loading || authLoading || isCheckingViewer || (profile && profile.id !== profileId)) {
     return (
       <section className="simple-page page-shell" aria-live="polite">
         <RouteStop>Chargement</RouteStop>
@@ -171,7 +176,7 @@ export function ProfilePage() {
 
   const handleRequestSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user || !profileCompleted) {
+    if (!user || !isActiveMember) {
       setRequestStatus({
         kind: "login",
         message: "Connectez-vous et complétez votre profil pour envoyer cette demande.",
@@ -216,6 +221,8 @@ export function ProfilePage() {
           <ArrowLeft size={17} aria-hidden="true" /> Retour à l’annuaire
         </Link>
 
+        {isOwnProfile && memberStatus === "pending" && <PendingApprovalNotice />}
+
         <section className="profile-hero" aria-labelledby="profile-name">
           <div className="profile-hero__main">
             <div className="profile-hero__identity">
@@ -247,7 +254,7 @@ export function ProfilePage() {
                     <Users size={18} aria-hidden="true" /> Relations
                   </ButtonLink>
                 </div>
-              ) : profile.isDemo === false && !profileCompleted ? (
+              ) : profile.isDemo === false && !isActiveMember ? (
                 <ButtonLink to={getProfileCompletionPath(`/alumni/${profileId}`)} size="lg">Compléter mon profil</ButtonLink>
               ) : blockedByMe ? null : (
                 <ProfileRequestButtons
@@ -268,7 +275,7 @@ export function ProfilePage() {
               {!isOwnProfile && (hasRelation || requestSent) && profile.isDemo === false && <ButtonLink to="/espace/relations" size="sm" variant="light">Gérer mes relations et demandes</ButtonLink>}
               {!isOwnProfile && acceptedConversation && profile.isDemo === false && <ButtonLink to={`/espace/messages/${acceptedConversation.id}`} size="sm" variant="light">Ouvrir la conversation</ButtonLink>}
               {!isOwnProfile && connectionsReady && declinedRequest && !hasRelation && !requestSent && <span>Votre précédente demande a été refusée. Vous pouvez formuler une nouvelle demande.</span>}
-              {!isOwnProfile && profile.isDemo === false && user && profileCompleted && (
+              {!isOwnProfile && profile.isDemo === false && user && isActiveMember && (
                 <MemberSafety memberId={profile.id} firstName={profile.firstName} onBlockedChange={setBlockedByMe} />
               )}
             </div>

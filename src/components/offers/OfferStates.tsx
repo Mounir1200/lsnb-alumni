@@ -1,6 +1,7 @@
 import { BriefcaseBusiness, CloudOff, LoaderCircle, LockKeyhole, RefreshCw, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
+import { PendingApproval } from "../auth/PendingApproval";
 import type { OfferAccess } from "../../hooks/useOfferAccess";
 import { getProfileCompletionPath } from "../../lib/auth";
 import { Button, ButtonLink } from "../ui/Button";
@@ -35,6 +36,7 @@ export function OfferAccessState({ access, next }: { access: Exclude<OfferAccess
       </div>
     );
   }
+  if (access === "pending") return <PendingApproval />;
   if (access === "incomplete") {
     return (
       <section className="auth-state-page">

@@ -11,24 +11,27 @@ type DirectoryProfilesState =
 
 const demoDirectory: DirectoryProfilesState = { status: "ready", profiles: alumniProfiles, source: "demo" };
 
-// Signed-in members read every active profile; visitors get the public alumni listing.
-// The fictional showcase remains only for a site without Supabase.
+// Active members read every active profile; visitors, and accounts not yet
+// approved, get the public alumni listing. The fictional showcase remains only
+// for a site without Supabase.
 export function useDirectoryProfiles() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, memberStatus, profileError } = useAuth();
   const [state, setState] = useState<DirectoryProfilesState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
   const userId = user?.id;
   const showsDemo = !isSupabaseConfigured;
+  const readsMembers = memberStatus === "active";
+  const isCheckingMember = Boolean(userId) && memberStatus === null && !profileError;
 
   useEffect(() => {
-    if (showsDemo || authLoading) return;
+    if (showsDemo || authLoading || isCheckingMember) return;
     let active = true;
     setState({ status: "loading" });
-    (userId ? loadProfiles() : loadPublicProfiles())
+    (readsMembers ? loadProfiles() : loadPublicProfiles())
       .then((result) => { if (active) setState({ status: "ready", ...result }); })
       .catch(() => { if (active) setState({ status: "error" }); });
     return () => { active = false; };
-  }, [showsDemo, authLoading, userId, reloadKey]);
+  }, [showsDemo, authLoading, isCheckingMember, readsMembers, userId, reloadKey]);
 
   return { ...(showsDemo ? demoDirectory : state), retry: () => setReloadKey((key) => key + 1) };
 }

@@ -19,23 +19,58 @@ La maintenance ferme le site et ses accès aux données, tout en laissant les fo
 
 ## Droits et parcours
 
-| Action | Administrateur | Modérateur |
-| --- | --- | --- |
-| Tableau de bord, liste des membres, journal | Toutes les promotions | Sa promotion uniquement |
-| Retirer un membre avec un motif | Oui | Sa promotion uniquement |
-| Rétablir un accès | Oui | Non |
-| Corriger une promotion avec un motif | Oui | Non |
-| Attribuer ou retirer un rôle | Oui | Non |
-| Maintenance et logs du serveur | Oui | Non |
-| Lire et traiter les signalements | Tous | Ceux qui visent sa promotion, sauf ceux qui visent l’équipe ; jamais les siens |
+Trois niveaux, chacun avec les droits des niveaux du dessous (`supabase/migrations/20261111005314_hub_role_levels.sql`, et côté hub `src/hub/roles.ts`).
+
+| Action | Super administrateur (3 au plus) | Administrateur | Modérateur |
+| --- | --- | --- | --- |
+| Statistiques du tableau de bord | Tout le réseau | Tout le réseau | Tout le réseau (des totaux) |
+| Liste des membres, journal | Toutes les promotions | Toutes les promotions | Sa promotion |
+| Valider un nouveau compte, ou le refuser avec un motif | Oui | Oui | Sa promotion |
+| Retirer un membre avec un motif | Oui | Oui | Sa promotion |
+| Rétablir un accès, corriger une promotion | Oui | Oui | Non |
+| Nommer ou retirer un modérateur | Oui | Oui | Non |
+| Nommer ou retirer un administrateur | Oui | Non | Non |
+| Nommer un super administrateur | Oui, jusqu’à trois | Non | Non |
+| Retirer un super administrateur | Non : il démissionne, ou en SQL | Non | Non |
+| Maintenance et logs du serveur | Oui | Non | Non |
+| Agir sur un signalement | Tous, sauf ceux qui le visent | Tous, sauf ceux qui visent un administrateur | Sa promotion, sauf l’équipe |
+| Voir un signalement | Comme ci-dessus | Comme ci-dessus | Une alerte (nom, promotion, motif, état) pour les membres des autres promotions |
 
 « Retirer » signifie suspendre l’accès et masquer le profil, de façon réversible. Ce n’est pas une suppression définitive des données ou du compte Auth. Une suspension bloque immédiatement les opérations sur les données, y compris avec un JWT encore valide. Le navigateur revérifie l’accès au plus toutes les 15 secondes lorsqu’il est visible, et lorsqu’il reprend le focus.
 
-Un modérateur appartient à la promotion qu’il modère. Il ne peut agir sur lui-même, un autre membre de l’équipe ou une autre promotion. Il faut d’abord retirer le rôle d’un membre de l’équipe avant de le suspendre ; l’administrateur ne peut pas retirer son propre rôle. Le dernier administrateur est protégé. Un rôle révoqué cesse immédiatement d’autoriser les fonctions du hub ; l’interface recontrôle aussi le rôle régulièrement.
+Un modérateur appartient à la promotion qu’il modère. Il ne peut agir sur lui-même, un autre membre de l’équipe ou une autre promotion. Il faut d’abord retirer le rôle d’un membre de l’équipe avant de le suspendre. Chaque niveau gère seulement les niveaux du dessous, et personne ne change son propre rôle ; chacun peut en revanche quitter l’équipe (« Quitter l’équipe »), sauf le dernier super administrateur. Le hub ne retire jamais un super administrateur : un compte volé ne peut donc pas écarter les autres (voir « Gérer les super administrateurs »). Un rôle révoqué cesse immédiatement d’autoriser les fonctions du hub ; l’interface recontrôle aussi le rôle régulièrement.
 
 La promotion d’un profil terminé ne se modifie plus dans l’espace membre : l’admin utilise l’action de correction avec un motif. Le rôle d’un modérateur doit être retiré avant de changer sa promotion. Les profils Google à compléter restent distincts des suspensions ; rétablir un compte incomplet autorise son onboarding sans le publier prématurément dans l’annuaire.
 
 Les motifs font entre 10 et 500 caractères. Le journal conserve l’auteur, le membre visé, la promotion, le motif et l’heure serveur. Aucune interface membre ne peut modifier ou effacer ce journal. Les messages privés des demandes et les emails de contact ne sont pas exposés au hub, sauf les 20 derniers messages d’une conversation qu’un participant a signalée (voir [Sécurité des membres](securite-des-membres.md)).
+
+Un nouveau compte reste invisible tant qu’il n’est pas validé. L’écran « À valider » liste ceux de la promotion du modérateur (toutes les promotions pour un administrateur) ; le tableau de bord les annonce dès qu’il y en a. Valider s’inscrit au journal (« Compte validé ») ; refuser suspend le compte avec un motif, et un administrateur peut le rétablir, ce qui le remet en attente. Une promotion sans modérateur dépend des administrateurs.
+
+### Gérer les super administrateurs
+
+Le réseau compte trois super administrateurs au plus ; la base le vérifie, que l’ajout passe par le hub ou par SQL. Un super administrateur en nomme un autre depuis « Équipe & accès ». Personne ne le retire depuis le hub : il quitte l’équipe lui-même, ou une personne qui a un accès direct à la base le retire, par exemple dans l’éditeur SQL de Supabase. Remplacez le UUID et vérifiez la ligne retournée.
+
+Nommer le premier super administrateur, ou n’importe quel membre de l’équipe :
+
+```sql
+insert into private.hub_staff (user_id, role, graduation_year)
+select id, 'super_admin', null
+from public.profiles
+where id = 'REMPLACER_PAR_LE_UUID_DU_COMPTE'::uuid
+  and is_active and profile_completed
+on conflict (user_id) do update set role = 'super_admin', graduation_year = null
+returning user_id, role;
+```
+
+Retirer un super administrateur (il en restera au moins un) :
+
+```sql
+delete from private.hub_staff
+where user_id = 'REMPLACER_PAR_LE_UUID_DU_COMPTE'::uuid and role = 'super_admin'
+returning user_id;
+```
+
+Gardez toujours au moins un super administrateur : sans lui, plus personne ne gère la maintenance, les administrateurs ni les signalements visant un administrateur. Ces requêtes n’écrivent rien dans le journal de modération.
 
 ## Maintenance
 
@@ -52,22 +87,13 @@ Référence : [Counter Loader de Md afsar mahmud sur 21st.dev](https://21st.dev/
 - Le dashboard utilise les vrais profils, offres et demandes, regroupés par promotion, et 30 jours d’activité. Aucune métrique fictive n’apparaît en production.
 - L’activité commence lors du déploiement de ce code : les périodes antérieures affichent zéro visite enregistrée, pas une estimation. Les inscriptions historiques viennent des dates réelles des profils.
 - Une visite authentifiée enregistre uniquement l’identifiant du membre, la journée UTC et une rubrique parmi accueil, annuaire, profil, offres, highlights et espace membre. Une même rubrique est comptée au plus une fois par minute et par membre. Les textes de recherche, identifiants de profils consultés, messages et IP ne sont pas enregistrés par cette mesure. Ce sont des visites observées et agrégées, pas une mesure exhaustive de fréquentation anonyme.
-- `GET /api/v1/admin/logs` vérifie le token auprès de Supabase Auth, puis relit le rôle en base à chaque requête. Les 500 derniers événements du **processus API** sont disponibles avec niveau, date, route générique, code HTTP et durée. Les tokens, corps, paramètres d’URL, emails et traces d’erreur ne sont jamais inclus.
+- `GET /api/v1/admin/logs` est réservé aux super administrateurs : il vérifie le token auprès de Supabase Auth, puis relit le rôle en base à chaque requête. Les 500 derniers événements du **processus API** sont disponibles avec niveau, date, route générique, code HTTP et durée. Les tokens, corps, paramètres d’URL, emails et traces d’erreur ne sont jamais inclus.
 - Les logs sont réinitialisés au redémarrage du processus ; ils n’incluent ni les logs de build Render, ni ceux de PostgreSQL ou du job Highlights séparé. Le journal de modération, lui, est persistant en base. Pour une conservation centralisée des logs d’infrastructure, un collecteur ou une intégration hébergeur reste nécessaire.
 
 ## Installation et activation
 
 1. Relire puis appliquer `supabase/migrations/20261022212154_administration_hub.sql` sur un environnement d’essai, puis sur le projet cible. Ne jamais déployer le nouveau site ou l’API avant cette migration : le contrôle de disponibilité refuse l’accès s’il ne peut pas vérifier le statut.
-2. Choisir un compte existant, actif et au profil complété comme premier administrateur. Un opérateur de confiance effectue l’attribution ci-dessous ; il n’existe aucune route publique d’auto-attribution. Remplacer explicitement le UUID, vérifier la ligne retournée et ne jamais se baser sur des métadonnées modifiables par l’utilisateur.
-
-```sql
-insert into private.hub_staff (user_id, role, graduation_year)
-select id, 'admin', null
-from public.profiles
-where id = 'REMPLACER_PAR_LE_UUID_DU_COMPTE'::uuid
-  and is_active and profile_completed
-returning user_id, role;
-```
+2. Choisir un compte existant, actif et au profil complété comme premier super administrateur (requête dans « Gérer les super administrateurs »). Un opérateur de confiance effectue l’attribution ci-dessous ; il n’existe aucune route publique d’auto-attribution. Remplacer explicitement le UUID, vérifier la ligne retournée et ne jamais se baser sur des métadonnées modifiables par l’utilisateur.
 
 3. Créer la ressource statique **lsnb-alumni-hub** prévue dans `render.yaml` : commande `npm ci --include=dev && npm run build:hub`, dossier `dist-hub`, réécriture vers `/index.html`. Son déploiement automatique est désactivé pour permettre une publication indépendante du site.
 4. Configurer ses variables publiques `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL`, `VITE_SITE_URL`. Aucun secret backend dans le hub.

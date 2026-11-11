@@ -53,7 +53,8 @@ function useMessagingAccess(userId: string | undefined) {
 }
 
 export function MessagingProvider({ children }: { children: ReactNode }) {
-  const { user, profileCompleted } = useAuth();
+  const { user, memberStatus } = useAuth();
+  const isActiveMember = memberStatus === "active";
   const location = useLocation();
   const path = useRef(location.pathname);
   path.current = location.pathname;
@@ -71,7 +72,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!userId || !profileCompleted || !supabase || access !== "ready") {
+    if (!userId || !isActiveMember || !supabase || access !== "ready") {
       refreshRef.current = () => undefined;
       return;
     }
@@ -156,7 +157,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("scroll", activity);
       if (channel) void client.removeChannel(channel);
     };
-  }, [userId, profileCompleted, access, reportError]);
+  }, [userId, isActiveMember, access, reportError]);
 
   const current = userId && state?.userId === userId && access === "ready" ? state : undefined;
   const value = useMemo(() => ({ unread: current?.unread ?? 0, revision: current?.revision ?? 0,

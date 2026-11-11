@@ -37,15 +37,33 @@ Migration : `supabase/migrations/20261110115213_member_reports.sql`.
 
 Écran « Signalements » (`src/hub/reports.tsx`), fonctions `public.hub_reports()` et `public.hub_resolve_report()`.
 
-| Action | Administrateur | Modérateur |
-| --- | --- | --- |
-| Lire les signalements et les conversations signalées | Tous | Ceux qui visent sa promotion, sauf ceux qui visent un membre de l’équipe |
-| Marquer résolu ou classer sans suite, avec une note | Oui | Dans sa portée, sauf ses propres signalements |
-| Retirer l’accès du membre signalé depuis la fiche | Oui | Membres de sa promotion (règles habituelles) |
+Un membre de l’équipe agit sur un signalement qui vise quelqu’un en dessous de lui, dans sa portée, jamais sur lui-même ; les super administrateurs traitent aussi ceux qui visent l’un d’eux (`private.report_in_scope`).
+
+| Action | Super administrateur | Administrateur | Modérateur |
+| --- | --- | --- | --- |
+| Lire le détail (description, auteur, conversation) | Tous, sauf ceux qui le visent | Tous, sauf ceux qui visent un administrateur | Sa promotion, sauf l’équipe |
+| Être averti (nom, promotion, motif, état) | — | — | Tous les membres signalés des autres promotions |
+| Marquer résolu ou classer sans suite, avec une note | Dans sa portée | Dans sa portée | Dans sa portée, sauf ses propres signalements |
+| Retirer l’accès du membre signalé depuis la fiche | Oui | Oui | Membres de sa promotion |
+
+Les badges du menu du hub comptent les signalements ouverts et les comptes à valider de chacun (`hub_context`, relu chaque minute).
 
 Chaque décision est inscrite dans le journal (`report_resolved`, `report_dismissed`) avec la note. Un signalement ne se traite qu’une fois. L’aperçu local `?demo=admin` ou `?demo=moderator` montre des signalements fictifs, retirés du build de production.
 
 L’équipe n’est pas prévenue par e-mail d’un nouveau signalement : elle consulte le hub. Une alerte déclenchée à l’arrivée du signalement serait l’évolution suivante, en respectant le quota Brevo partagé.
+
+## Validation des nouveaux comptes
+
+- Un profil qui devient complet (inscription par e-mail ou fin de l’onboarding Google) passe « en attente » : `profiles.approval_pending`, posé par un seul déclencheur. Un compte en attente est inactif, donc absent de l’annuaire, de Highlight, des demandes, des messages et des offres. Deux contraintes interdisent un compte en attente incomplet ou actif.
+- Lire les profils et les contacts des autres demande un compte actif (`private.member_active()`). Le compte en attente se connecte, lit et modifie son propre profil et son contact, et voit le reste comme un visiteur. Le site lui explique où il en est (`PendingApproval`).
+- Le modérateur de la promotion, ou un administrateur, valide le compte depuis l’écran « À valider » du hub (`hub_approve_member`, inscrit au journal). Refuser, c’est suspendre avec un motif ; rétablir un compte refusé le remet en attente.
+- Les comptes créés avant la migration restent validés. Aucun e-mail ne prévient encore le modérateur : le tableau de bord du hub affiche les comptes en attente.
+
+## Suppression de compte
+
+- « Supprimer mon compte », en bas de « Modifier mon profil », demande de taper SUPPRIMER. Le site retire d’abord la photo du stockage (hors des cascades de la base), appelle `delete_my_account()`, puis oublie les brouillons, ouvre `/compte-supprime` et ferme la session locale.
+- `delete_my_account()` supprime l’utilisateur `auth.users` de l’appelant ; les cascades emportent le profil, le contact, les relations, les demandes, les messages et appareils, les offres, les blocages, le rôle d’équipe, l’activité et les portraits Highlight. Les signalements faits par le membre restent, sans son nom ; ceux qui le visent disparaissent avec son compte. Le journal de modération garde les noms et les motifs.
+- Un compte suspendu n’atteint pas cette page : il demande sa suppression à l’adresse de contact. L’équipe retire alors sa photo dans Storage (`avatars/<id>/avatar`), puis supprime le compte en SQL (`delete from auth.users where id = …`).
 
 ## Mot de passe oublié
 
@@ -59,6 +77,7 @@ L’équipe n’est pas prévenue par e-mail d’un nouveau signalement : elle c
 2. Fait le même jour, sur la production : la RLS est active ; aucune table de blocage ou de signalement n’est accessible à `anon` ; `authenticated` ne peut que lire et supprimer ses propres blocages et ne lit aucun signalement ; seules `block_member`, `report_member`, `messaging_report_conversation`, `hub_reports` et `hub_resolve_report` lui sont ouvertes ; les fonctions internes ne le sont pas. Les avertissements de sécurité Supabase ne signalent rien de nouveau hors de ces fonctions ouvertes, de même nature que celles de la messagerie et du hub.
 3. Appliquer le modèle d’e-mail de réinitialisation.
 4. Déployer le site, puis le hub (publication manuelle sur Render).
+5. Fait le 11 novembre 2026 : `20261111005158_member_approval.sql`, `20261111005213_account_deletion.sql` puis `20261111005314_hub_role_levels.sql`, appliquées dans cet ordre (les fichiers portent les versions enregistrées par Supabase). Le compte du propriétaire du réseau a été nommé super administrateur en SQL juste après ; l’autre administrateur reste administrateur. Vérifié en production : aucun compte en attente, les 7 profils actifs le restent, aucun visiteur ne peut appeler `delete_my_account`, et le hub reconnaît le super administrateur. La validation change le site déjà en ligne : déployer le site et le hub sans tarder.
 
 ## Vérifications
 
@@ -69,4 +88,4 @@ npm run build:hub
 npm run test:api
 ```
 
-Tests ajoutés : `member-blocks.database.test.ts`, `member-reports.database.test.ts`, `safety.repository.test.ts`, `safety.test.ts`, `password-recovery.test.ts`, `auth-errors.test.ts`, `hub-report-errors.test.ts`, et des cas dans les tests de messagerie et de relations. Les fenêtres et l’écran du hub ont été contrôlés dans le navigateur en démonstration, à 1024 et 375 px. Le parcours complet avec de vrais comptes (lien de réinitialisation reçu, blocage et signalement entre deux comptes) reste à valider sur l’environnement réel.
+Tests ajoutés : `member-approval.database.test.ts`, `account-deletion.database.test.ts`, `account-deletion.test.ts`, `member-status.test.ts`, `invitations.test.ts`, `hub-member-errors.test.ts`, `member-blocks.database.test.ts`, `member-reports.database.test.ts`, `safety.repository.test.ts`, `safety.test.ts`, `password-recovery.test.ts`, `auth-errors.test.ts`, `hub-report-errors.test.ts`, et des cas dans les tests de messagerie et de relations. Les fenêtres et l’écran du hub ont été contrôlés dans le navigateur en démonstration, à 1024 et 375 px. Le parcours complet avec de vrais comptes (lien de réinitialisation reçu, blocage et signalement entre deux comptes) reste à valider sur l’environnement réel.

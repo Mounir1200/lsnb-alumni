@@ -11,9 +11,10 @@ import {
   UserRound,
 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { DeleteAccountSection } from "../components/profile/DeleteAccount";
 import { DraftHint, DraftResumeNotice, PublicListingField, useProfileDraftAutosave } from "../components/profile/ProfileDraft";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -30,6 +31,7 @@ import {
 } from "../lib/profileRepository";
 import { normalizeCareerSteps, toCareerStepDrafts } from "../lib/careerSteps";
 import { loadProfileDraft, resumableDraft, type EditorForm } from "../lib/profileDraft";
+import { MENTORING_SECTION_ID } from "../lib/invitations";
 import { normalizeProfileLink } from "../lib/profileLinks";
 
 type SaveStatus = {
@@ -122,6 +124,13 @@ export function EditProfilePage() {
 
   // Every change is kept on this device until it is saved or discarded.
   const hasUnsavedChanges = useProfileDraftAutosave(user?.id, form, savedForm);
+
+  // "Proposer un mentorat" lands on the mentoring choice once the form is shown.
+  const { hash } = useLocation();
+  const isFormShown = Boolean(form);
+  useEffect(() => {
+    if (isFormShown && hash === `#${MENTORING_SECTION_ID}`) document.getElementById(MENTORING_SECTION_ID)?.scrollIntoView({ block: "start" });
+  }, [isFormShown, hash]);
 
   useEffect(() => {
     if (!photo) {
@@ -532,7 +541,7 @@ export function EditProfilePage() {
             </div>
 
             {form.memberRole === "alumni" && (
-              <div className="profile-editor-mentoring">
+              <div className="profile-editor-mentoring" id={MENTORING_SECTION_ID}>
                 <label className="form-check form-check--mentor">
                   <input
                     type="checkbox"
@@ -613,6 +622,8 @@ export function EditProfilePage() {
               </p>
             )}
           </form>
+
+          <DeleteAccountSection userId={user.id} isListedOption={form.memberRole === "alumni"} />
         </section>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
+import { approveMember } from './testDatabase.ts'
 
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
 let db: PGlite
@@ -16,6 +17,7 @@ async function signUp(metadata: Record<string, unknown> = {}, provider = 'email'
     JSON.stringify({ first_name: 'Membre', last_name: 'Test', member_role: 'alumni', ...metadata }),
     JSON.stringify({ provider }),
   ])
+  await approveMember(db, result.rows[0]!.id)
   return result.rows[0]!.id
 }
 

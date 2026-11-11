@@ -3,6 +3,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
+import { approveMember } from './testDatabase.ts'
 
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
 const contactMessage = 'Bonjour, quelles sont les conditions pour postuler à cette offre ?'
@@ -24,6 +25,7 @@ async function seed(options: { student?: boolean; mentor?: boolean; incomplete?:
     JSON.stringify({ provider: options.incomplete ? 'google' : 'email' }),
   ])
   const id = result.rows[0]!.id
+  await approveMember(db, id)
   if (options.inactive) await db.query('update public.profiles set is_active = false where id = $1', [id])
   return id
 }

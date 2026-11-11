@@ -3,6 +3,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
+import { approveMember } from './testDatabase.ts'
 
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
 let db: PGlite
@@ -12,10 +13,12 @@ async function value<T = any>(sql: string, params: unknown[] = []): Promise<T> {
   return (await db.query<{ value: T }>(sql, params)).rows[0]!.value
 }
 async function seed(name: string, year = 2020, provider = 'email', metadata = {}) {
-  return (await db.query<{ id: string }>(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
+  const id = (await db.query<{ id: string }>(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
     values(gen_random_uuid(),$1,$2,$3) returning id`, [`${name}@example.test`, JSON.stringify({
     first_name: name, last_name: 'Test', graduation_year: year, member_role: 'alumni', offers_mentoring: true, ...metadata,
   }), JSON.stringify({ provider })])).rows[0]!.id
+  await approveMember(db, id)
+  return id
 }
 async function asUser<T>(id: string, run: () => Promise<T>) {
   await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id])
@@ -59,7 +62,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     moderator = await seed('Modérateur', 2020)
     samePromo = await seed('Membre', 2020)
     otherPromo = await seed('Autre', 2021)
-    await db.query("insert into private.hub_staff(user_id,role,graduation_year) values($1,'admin',null),($2,'moderator',2020)", [admin, moderator])
+    await db.query("insert into private.hub_staff(user_id,role,graduation_year) values($1,'super_admin',null),($2,'moderator',2020)", [admin, moderator])
   })
   after(async () => { await db?.close() })
 
@@ -71,7 +74,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(rpc(fake, 'hub_set_staff', [fake, 'admin', null]), /staff access required/)
     await assert.rejects(asUser(fake, () => db.query("insert into private.hub_staff(user_id,role) values($1,'admin')", [fake])), /permission denied/)
     await assert.rejects(asUser(fake, () => db.exec('select * from private.hub_audit')), /permission denied/)
-    assert.equal((await rpc(admin, 'hub_context')).role, 'admin')
+    assert.equal((await rpc(admin, 'hub_context')).role, 'super_admin')
     assert.equal((await rpc(moderator, 'hub_context')).graduation_year, 2020)
   })
 
@@ -85,7 +88,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     } finally { await db.exec('reset role') }
   })
 
-  it('scopes member search, staff list, dashboard and audit to the moderator promotion', async () => {
+  it('scopes member search, staff list and audit to the moderator promotion', async () => {
     const list = await rpc(moderator, 'hub_members')
     assert.equal(list.total, 2)
     assert.ok(list.items.every((p: any) => p.graduation_year === 2020))
@@ -93,7 +96,6 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     assert.equal((await rpc(admin, 'hub_members')).total, 4)
     assert.equal((await rpc(admin, 'hub_members', ['autre', null, 'all', 1])).items[0].id, otherPromo)
     assert.equal((await rpc(moderator, 'hub_staff')).length, 1)
-    assert.equal((await rpc(moderator, 'hub_dashboard')).members, 2)
     await moderate(admin, otherPromo)
     await moderate(moderator, samePromo)
     assert.equal((await rpc(moderator, 'hub_audit')).total, 1)
@@ -154,7 +156,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(asUser(samePromo, () => db.query("insert into storage.objects(bucket_id,name) values('avatars',$1)", [`${samePromo}/second.png`])), /row-level security/)
     assert.equal((await asUser(samePromo, () => db.query('delete from storage.objects returning id'))).rows.length, 0)
     await assert.rejects(rpc(samePromo, 'record_member_activity', ['home']), /Site unavailable/)
-    assert.equal((await rpc(admin, 'hub_context')).role, 'admin')
+    assert.equal((await rpc(admin, 'hub_context')).role, 'super_admin')
     assert.equal((await rpc(admin, 'hub_members')).total, 4)
     await moderate(moderator, samePromo)
     await maintenance(false)
@@ -196,18 +198,17 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(rpc(moderator, 'hub_set_maintenance', [true, 'Un arrêt non autorisé.', null]), /staff access required/)
   })
 
-  it('protects staff assignment scope and the last administrator; revocation takes effect immediately', async () => {
+  it('protects staff assignment scope; revocation takes effect immediately', async () => {
     await assert.rejects(rpc(admin, 'hub_set_staff', [admin, null, null]), /own staff role/)
-    await assert.rejects(rpc(moderator, 'hub_set_staff', [samePromo, 'admin', null]), /staff access required/)
+    await assert.rejects(rpc(moderator, 'hub_set_staff', [samePromo, 'moderator', 2020]), /staff access required/)
     await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'moderator', 2020]), /assigned promotion/)
-    await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'admin', 2021]), /global scope/)
+    await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'curator', null]), /Invalid staff role/)
     await rpc(admin, 'hub_set_staff', [samePromo, 'moderator', 2020])
     assert.equal((await rpc(samePromo, 'hub_context')).role, 'moderator')
     await rpc(admin, 'hub_set_staff', [samePromo, null, null])
     await assert.rejects(rpc(samePromo, 'hub_context'), /staff access required/)
     await moderate(admin, otherPromo)
-    await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'admin', null]), /active completed profile/)
-    assert.equal((await rpc(admin, 'hub_staff')).filter((s: any) => s.role === 'admin').length, 1)
+    await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'moderator', 2021]), /active completed profile/)
   })
 
   it('allows only administrators to correct promotions, with an audit trail and moderator reassignment protection', async () => {
@@ -232,7 +233,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     assert.equal((await rpc(admin, 'hub_audit')).total, 1)
   })
 
-  it('counts real UTC activity once per user/route/minute and zero-fills 30 days within scope', async () => {
+  it('counts real UTC activity once per user/route/minute and zero-fills 30 days across the network', async () => {
     await rpc(samePromo, 'record_member_activity', ['directory'])
     await rpc(samePromo, 'record_member_activity', ['directory'])
     await rpc(samePromo, 'record_member_activity', ['offers'])
@@ -240,16 +241,16 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(rpc(samePromo, 'record_member_activity', ['/profile/private?token=secret']), /Invalid activity route/)
     const dash = await rpc(moderator, 'hub_dashboard')
     assert.equal(dash.activity.length, 30)
-    assert.equal(dash.active_30d, 1)
-    assert.equal(dash.activity.at(-1).views, 2)
-    assert.equal(dash.activity.at(-1).active_members, 1)
-    assert.equal(dash.activity.at(-1).registrations, 2)
+    assert.equal(dash.active_30d, 2)
+    assert.equal(dash.activity.at(-1).views, 3)
+    assert.equal(dash.activity.at(-1).active_members, 2)
+    assert.equal(dash.activity.at(-1).registrations, 4)
     assert.equal(dash.activity[0].views, 0)
-    assert.deepEqual(dash.promotions, [{ year: 2020, members: 2, active: 2 }])
+    assert.deepEqual(dash.promotions, [{ year: 2021, members: 1, active: 1 }, { year: 2020, members: 2, active: 2 }, { year: 2019, members: 1, active: 1 }])
     assert.equal((await rpc(admin, 'hub_dashboard')).active_30d, 2)
     await db.query("update private.member_activity set last_seen=clock_timestamp()-interval '2 minutes' where user_id=$1 and route='directory'", [samePromo])
     await rpc(samePromo, 'record_member_activity', ['directory'])
-    assert.equal((await rpc(moderator, 'hub_dashboard')).activity.at(-1).views, 3)
+    assert.equal((await rpc(moderator, 'hub_dashboard')).activity.at(-1).views, 4)
   })
 
   it('validates and caps pagination without exposing extra fields', async () => {

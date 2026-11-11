@@ -1,0 +1,36 @@
+/* On the waiting member's own profile, between the back link and the profile itself. */
+.pending-approval-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  border-left: 3px solid var(--banco);
+  border-radius: var(--radius-control);
+  background: var(--chalk);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font-size: var(--text-small);
+  line-height: 1.6;
+}
+
+.pending-approval-notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--banco-deep);
+}
+
+.pending-approval-notice p {
+  max-width: 72ch;
+  margin: 0;
+}
+
+.pending-approval-notice b {
+  color: var(--ink-deep);
+}
+
+@media (max-width: 640px) {
+  .pending-approval-notice {
+    padding: var(--space-3) var(--space-4);
+  }
+}

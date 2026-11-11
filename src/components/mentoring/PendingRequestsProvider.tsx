@@ -14,25 +14,26 @@ const PendingRequestsContext = createContext<PendingRequestsContextValue | undef
 
 // First-contact requests stay on site; private conversation reminders start after acceptance.
 export function PendingRequestsProvider({ children }: { children: ReactNode }) {
-  const { user, profileCompleted } = useAuth();
+  const { user, memberStatus } = useAuth();
+  const isActiveMember = memberStatus === "active";
   const { key: locationKey } = useLocation();
   const [reload, setReload] = useState(0);
   const [state, setState] = useState<{ userId: string; count: number }>();
   const userId = user?.id;
 
   useEffect(() => {
-    if (!userId || !profileCompleted) return;
+    if (!userId || !isActiveMember) return;
     let active = true;
     countPendingReceivedRequests(userId)
       .then((count) => { if (active) setState({ userId, count }); })
       // A failed count only leaves the badge as it was; the relations page reports errors.
       .catch(() => undefined);
     return () => { active = false; };
-  }, [userId, profileCompleted, locationKey, reload]);
+  }, [userId, isActiveMember, locationKey, reload]);
 
   const refresh = useCallback(() => setReload((value) => value + 1), []);
   useEffect(() => {
-    if (!userId || !profileCompleted || !supabase) return;
+    if (!userId || !isActiveMember || !supabase) return;
     const client = supabase;
     let active = true;
     const changed = () => { if (active) refresh(); };
@@ -53,7 +54,7 @@ export function PendingRequestsProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", foreground);
       void client.removeChannel(channel);
     };
-  }, [userId, profileCompleted, refresh]);
+  }, [userId, isActiveMember, refresh]);
   const count = userId && state?.userId === userId ? state.count : 0;
   const value = useMemo(() => ({ count, revision: reload, refresh }), [count, reload, refresh]);
 

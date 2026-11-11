@@ -2,9 +2,9 @@ import { animate, stagger } from "animejs";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../auth/AuthProvider";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
-import { heroActions } from "../../lib/heroActions";
+import { useAudience } from "../../hooks/useAudience";
+import { heroActions } from "../../lib/invitations";
 import { SITE_ORIGIN } from "../../lib/site";
 import { ButtonLink } from "../ui/Button";
 import { TrajectoryField } from "../visual/TrajectoryField";
@@ -13,8 +13,7 @@ import { HeroSearch } from "./HeroSearch";
 export function Hero() {
   const rootRef = useRef<HTMLElement>(null);
   const reducedMotion = useReducedMotion();
-  const { user, isLoading } = useAuth();
-  const actions = heroActions({ isVisitor: !isLoading && !user });
+  const actions = heroActions(useAudience());
 
   useEffect(() => {
     if (!rootRef.current || reducedMotion) return;

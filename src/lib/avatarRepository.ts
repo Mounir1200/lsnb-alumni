@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { readPendingAvatar, removePendingAvatar } from "./pendingAvatarStore";
+import { avatarPath } from "./avatarPath";
 
 const MAX_AVATAR_SIZE = 4 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -16,7 +17,7 @@ export async function uploadAvatar(userId: string, file: File) {
   const validationError = getAvatarValidationError(file);
   if (validationError) throw new Error(validationError);
 
-  const path = `${userId}/avatar`;
+  const path = avatarPath(userId);
   const { error: uploadError } = await supabase.storage
     .from("avatars")
     .upload(path, file, {
@@ -48,7 +49,7 @@ export async function uploadAvatar(userId: string, file: File) {
 export async function deleteAvatar(userId: string) {
   if (!supabase) throw new Error("Supabase n’est pas configuré.");
 
-  const path = `${userId}/avatar`;
+  const path = avatarPath(userId);
   const { error: deleteError } = await supabase.storage.from("avatars").remove([path]);
   if (deleteError) throw deleteError;
 

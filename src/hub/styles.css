@@ -2087,3 +2087,84 @@ tbody tr:hover {
     max-width: 100%;
   }
 }
+
+/* Account approvals reuse the report cards, with a welcoming icon and their three facts on one row. */
+.hub-approval .hub-report-reason svg {
+  color: var(--hub-green);
+}
+.hub-approval dl {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 760px) {
+  .hub-approval dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The overview's call to approve waiting accounts: shown only when there are some. */
+.hub-callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--hub-line);
+  border-left: 3px solid var(--hub-green);
+  border-radius: 10px;
+  background: #fffefb;
+  color: var(--hub-ink);
+}
+.hub-callout > svg {
+  flex: 0 0 auto;
+  color: var(--hub-green);
+}
+.hub-callout p {
+  flex: 1 1 280px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* What waits within the team member's scope, next to the menu item. */
+.hub-nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--hub-green);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* A report another promotion handles: known to everyone, quieter than the reports to act on. */
+.hub-report-alert {
+  background: var(--hub-paper);
+}
+.hub-report-alert .hub-report-reason svg {
+  color: var(--hub-muted);
+}
+.hub-report-alert-note {
+  margin: 0;
+  color: var(--hub-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+/* Folded menu: the count sits on the icon's corner. */
+.is-collapsed .hub-sidebar .hub-nav-item {
+  position: relative;
+}
+.is-collapsed .hub-sidebar .hub-nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+}

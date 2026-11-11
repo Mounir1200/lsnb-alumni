@@ -52,10 +52,21 @@ export async function applyMigration(db: PGlite, file: string) {
 }
 
 export type MemberOptions = {
-  student?: boolean; mentor?: boolean; inactive?: boolean; email?: string; firstName?: string; graduationYear?: number
+  student?: boolean; mentor?: boolean; inactive?: boolean; pending?: boolean; email?: string; firstName?: string; graduationYear?: number
 }
 
-/** Signs a member up the way the site does; their profile is complete and active. */
+/**
+ * What the hub does when a moderator approves a new account: members see it
+ * from then on. A database migrated only up to an earlier migration has no
+ * approval yet, and the approval migration keeps its accounts approved.
+ */
+export async function approveMember(db: PGlite, id: string) {
+  const { rows } = await db.query(`select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'approval_pending'`)
+  if (rows.length) await db.query('update public.profiles set approval_pending = false, is_active = true where id = $1 and approval_pending', [id])
+}
+
+/** Signs a member up the way the site does; their profile is complete and, unless `pending`, approved. */
 export async function seedMember(db: PGlite, options: MemberOptions = {}) {
   const result = await db.query<{ id: string }>(`insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data)
     values (gen_random_uuid(), $1, $2, '{"provider":"email"}') returning id`, [
@@ -66,6 +77,7 @@ export async function seedMember(db: PGlite, options: MemberOptions = {}) {
     }),
   ])
   const id = result.rows[0]!.id
+  if (!options.pending) await approveMember(db, id)
   if (options.inactive) await db.query('update public.profiles set is_active = false where id = $1', [id])
   return id
 }

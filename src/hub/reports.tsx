@@ -2,6 +2,7 @@ import { Flag, MessagesSquare, UserMinus } from "lucide-react";
 import { useState } from "react";
 import { REPORT_REASONS } from "../lib/safety";
 import { type Context, type HubReport, type PageData, type ReportMessage, date, rpc, useResource } from "./api";
+import { coversNetwork } from "./roles";
 import { Confirm, Empty, ErrorState, Loading, Pagination, Refresh, Status } from "./ui";
 
 type Decision = { report: HubReport; action: "resolved" | "dismissed" | "suspend" };
@@ -74,6 +75,31 @@ function ReportCard({ report, onDecide }: { report: HubReport; onDecide: (decisi
   );
 }
 
+const alertStates: Record<HubReport["status"], string> = { open: "En cours", resolved: "Résolu", dismissed: "Classé sans suite" };
+
+/** Every promotion learns which profile is reported; only those who may act read the rest. */
+function ReportAlert({ report }: { report: HubReport }) {
+  return (
+    <article className="hub-report hub-report-alert" aria-label={`Alerte : ${reasonLabels[report.reason] ?? report.reason}`}>
+      <header>
+        <span className="hub-report-reason"><Flag size={14} aria-hidden="true" /> {reasonLabels[report.reason] ?? report.reason}</span>
+        <time dateTime={report.created_at}>{date(report.created_at, true)}</time>
+      </header>
+      <dl>
+        <div>
+          <dt>Membre signalé</dt>
+          <dd><Person person={report.reported} /> {report.reported?.is_suspended && <Status active={false}>Accès retiré</Status>}</dd>
+        </div>
+        <div><dt>État</dt><dd>{alertStates[report.status]}</dd></div>
+      </dl>
+      <p className="hub-report-alert-note">
+        Le détail reste réservé au modérateur de la promotion {report.reported?.graduation_year ?? "concernée"} et aux
+        administrateurs, qui seuls peuvent agir.
+      </p>
+    </article>
+  );
+}
+
 function DecisionDialog({ decision, onClose, onDone }: { decision: Decision; onClose: () => void; onDone: () => void }) {
   const { report, action } = decision;
   if (action === "suspend") {
@@ -129,9 +155,9 @@ export function Reports({ context, revision }: { context: Context; revision: num
         <div>
           <h1>Ce que les membres signalent.</h1>
           <p>
-            {context.role === "admin"
-              ? "Les signalements de tout le réseau."
-              : `Les signalements qui visent la promotion ${context.graduation_year}. Ceux qui visent un membre de l’équipe vont aux administrateurs.`}
+            {coversNetwork(context.role)
+              ? "Les signalements de tout le réseau. Ceux qui visent un membre de l’équipe vont au niveau supérieur."
+              : `Les signalements de tout le réseau, pour que chaque promotion connaisse les profils à surveiller. Vous agissez sur ceux de la promotion ${context.graduation_year}.`}
           </p>
         </div>
         <Refresh onClick={resource.refresh} loading={resource.loading} at={resource.at} />
@@ -155,7 +181,9 @@ export function Reports({ context, revision }: { context: Context; revision: num
         {resource.loading && !resource.data && <Loading />}
         {resource.data && (resource.data.items.length ? (
           <div className="hub-report-list">
-            {resource.data.items.map((report) => <ReportCard key={report.id} report={report} onDecide={setDecision} />)}
+            {resource.data.items.map((report) => report.can_act
+              ? <ReportCard key={report.id} report={report} onDecide={setDecision} />
+              : <ReportAlert key={report.id} report={report} />)}
           </div>
         ) : (
           <Empty title={view === "open" ? "Aucun signalement à traiter" : "Aucun signalement traité"}>

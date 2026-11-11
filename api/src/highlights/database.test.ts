@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
+import { approveMember } from './testDatabase.ts'
 
 type Article = {
   slot: number
@@ -36,6 +37,7 @@ async function seed(gender: string | null = null, memberRole = 'alumni', active 
     JSON.stringify({ first_name: 'Awa', last_name: 'Test', graduation_year: 2020, member_role: memberRole,
       gender, experience: 'Travaille dans le développement logiciel.', offers_mentoring: true }),
   ])
+  await approveMember(db, id)
   if (!active) await db.query('update public.profiles set is_active = false where id = $1', [id])
   return id
 }

@@ -1,6 +1,7 @@
 import { Camera, Check, LoaderCircle, LockKeyhole, Orbit, UserRound } from "lucide-react";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { CharterConsent } from "../components/safety/CharterConsent";
@@ -21,6 +22,7 @@ type SubmissionStatus = {
 };
 
 export function JoinPage() {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [role, setRole] = useState<"alumni" | "student">("alumni");
@@ -124,11 +126,11 @@ export function JoinPage() {
       }
       const nextStep = signInRequired
         ? "Votre compte est créé, mais la connexion automatique n’a pas abouti. Connectez-vous avec votre adresse e-mail et votre mot de passe."
-        : "Consultez votre boîte mail pour confirmer votre adresse et activer votre compte. Vérifiez aussi les courriers indésirables.";
+        : "Consultez votre boîte mail pour confirmer votre adresse, en vérifiant aussi les courriers indésirables. Le modérateur de votre promotion validera ensuite votre compte.";
 
       setStatus({
         kind: "success",
-        message: authData.session ? "Votre compte est créé. Bienvenue dans le réseau." : `${nextStep}${photoMessage}`,
+        message: authData.session ? "Votre compte est créé. Le modérateur de votre promotion va maintenant le valider." : `${nextStep}${photoMessage}`,
       });
       form.reset();
       setPhoto(null);
@@ -141,6 +143,10 @@ export function JoinPage() {
       });
     }
   };
+
+  // A member who already has an account goes to their space. While this page
+  // signs someone up, it leads the way itself.
+  if (user && status.kind === "idle" && !googleBusy) return <Navigate to="/espace" replace />;
 
   return (
     <div className="account-page">

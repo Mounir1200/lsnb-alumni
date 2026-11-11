@@ -27,6 +27,8 @@ import { NewPasswordPage } from "./pages/NewPasswordPage";
 import { FORGOT_PASSWORD_PATH, NEW_PASSWORD_PATH } from "./lib/passwordRecovery";
 import { CharterPage } from "./pages/CharterPage";
 import { CHARTER_PATH } from "./lib/site";
+import { AccountDeletedPage } from "./pages/AccountDeletedPage";
+import { ACCOUNT_DELETED_PATH } from "./lib/accountDeletion";
 
 function PostConfirmationRedirect() {
   const navigate = useNavigate();
@@ -76,13 +78,13 @@ export function App() {
             <Route path="/rejoindre" element={<JoinPage />} />
             <Route path="/connexion" element={<LoginPage />} />
             <Route path={FORGOT_PASSWORD_PATH} element={<ForgotPasswordPage />} />
-            <Route path={NEW_PASSWORD_PATH} element={<RequireAuth><NewPasswordPage /></RequireAuth>} />
+            <Route path={NEW_PASSWORD_PATH} element={<RequireAuth allowPending><NewPasswordPage /></RequireAuth>} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/completer-profil" element={<RequireAuth allowIncomplete><CompleteProfilePage /></RequireAuth>} />
             <Route
               path="/espace"
               element={
-                <RequireAuth>
+                <RequireAuth allowPending>
                   <OwnProfileRedirect />
                 </RequireAuth>
               }
@@ -98,12 +100,13 @@ export function App() {
             <Route
               path="/espace/modifier"
               element={
-                <RequireAuth>
+                <RequireAuth allowPending>
                   <EditProfilePage />
                 </RequireAuth>
               }
             />
             <Route path="/confidentialite" element={<PrivacyPage />} />
+            <Route path={ACCOUNT_DELETED_PATH} element={<AccountDeletedPage />} />
             <Route path={CHARTER_PATH} element={<CharterPage />} />
             <Route path="/espace/messages" element={<RequireAuth><MessagesPage /></RequireAuth>} />
             <Route path="/espace/messages/:conversationId" element={<RequireAuth><MessagesPage /></RequireAuth>} />

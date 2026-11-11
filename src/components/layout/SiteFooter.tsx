@@ -1,9 +1,12 @@
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAudience } from "../../hooks/useAudience";
+import { profileInvitation } from "../../lib/invitations";
 import { CHARTER_PATH, SITE_NAME } from "../../lib/site";
 import { BrandMark } from "../ui/BrandMark";
 
 export function SiteFooter() {
+  const { action: profileLink } = profileInvitation(useAudience());
   return (
     <footer className="site-footer">
       <div className="page-shell site-footer__grid">
@@ -20,7 +23,7 @@ export function SiteFooter() {
           <Link to="/highlights">Highlight de la semaine</Link>
           <Link to="/annuaire?mentor=true">Trouver un mentor</Link>
           <Link to="/offres">Stages, bourses et admissions</Link>
-          <Link to="/rejoindre">Créer un profil</Link>
+          <Link to={profileLink.to}>{profileLink.label}</Link>
         </nav>
 
         <nav className="site-footer__nav" aria-label="À propos">

@@ -6,6 +6,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { createProof, importDeviceKey, type MessagingDevice } from '../../../src/lib/messagingDevice.ts'
 import { signedCalls } from '../../../src/lib/messagingData.ts'
+import { approveMember } from './testDatabase.ts'
 
 const migrationsUrl = new URL('../../../supabase/migrations/', import.meta.url)
 const deviceMigration = '20261024191932_device_bound_messaging.sql'
@@ -63,6 +64,7 @@ async function seed(name: string): Promise<Member> {
     values(gen_random_uuid(),$1,$2,'{"provider":"email"}') returning id`, [`${name}@example.test`, JSON.stringify({
     first_name: name, last_name: 'Test', graduation_year: 2020, member_role: 'alumni', offers_mentoring: true,
   })])).rows[0]!.id
+  await approveMember(db, id)
   return { id, session: await signIn(id) }
 }
 

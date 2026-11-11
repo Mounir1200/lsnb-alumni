@@ -1,13 +1,18 @@
+import type { Role } from "./roles";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { memberErrorMessage } from "./memberErrors";
 import { reportErrorMessage } from "./reportErrors";
 
-export type Role = "admin" | "moderator";
+export type { Role };
 export type Context = {
   user_id: string;
   role: Role;
   graduation_year: number | null;
   display_name: string;
+  /** What waits within this team member's scope: the badges of the menu. */
+  pending_approvals: number;
+  open_reports: number;
 };
 export type Member = {
   id: string;
@@ -18,9 +23,11 @@ export type Member = {
   is_active: boolean;
   is_suspended: boolean;
   profile_completed: boolean;
+  approval_pending: boolean;
   created_at: string;
   city: string | null;
   country: string | null;
+  specialty?: string | null;
   staff_role: Role | null;
 };
 export type PageData<T> = {
@@ -32,6 +39,7 @@ export type PageData<T> = {
 export type Dashboard = {
   members: number;
   active_members: number;
+  pending_members: number;
   suspended_members: number;
   mentors: number;
   offers: number;
@@ -93,7 +101,9 @@ export type ReportMessage = {
 export type HubReport = {
   id: string;
   reason: string;
-  details: string;
+  /** Whoever cannot act on a report gets an alert: no details, author, messages or note. */
+  can_act: boolean;
+  details: string | null;
   status: "open" | "resolved" | "dismissed";
   created_at: string;
   handled_at: string | null;
@@ -106,7 +116,7 @@ export type HubReport = {
 
 const preview = new URLSearchParams(window.location.search).get("demo");
 export const demoRole: Role | null =
-  import.meta.env.DEV && (preview === "admin" || preview === "moderator")
+  import.meta.env.DEV && (preview === "super_admin" || preview === "admin" || preview === "moderator")
     ? preview
     : null;
 const now = new Date();
@@ -119,15 +129,19 @@ const sampleMembers: Member[] = import.meta.env.DEV ? [
   ["Oumar", "Zongo", 2019, "Paris", "France"],
   ["Mariam", "Coulibaly", 2020, "Montréal", "Canada"],
   ["Adama", "Sow", 2018, "Bamako", "Mali"],
+  ["Salif", "Ouattara", 2018, "Bobo-Dioulasso", "Burkina Faso"],
+  ["Awa", "Kaboré", 2021, "Ouagadougou", "Burkina Faso"],
 ].map(([first, last, year, city, country], index) => ({
   id: `sample-${index}`,
   first_name: String(first),
   last_name: String(last),
   graduation_year: Number(year),
-  member_role: index % 3 === 0 ? "mentor" : "alumni",
-  is_active: index !== 5,
+  member_role: index >= 8 ? "student" : index % 3 === 0 ? "mentor" : "alumni",
+  is_active: index !== 5 && index < 8,
   is_suspended: index === 5,
   profile_completed: true,
+  approval_pending: index >= 8,
+  specialty: index >= 8 ? "Terminale D" : "Génie civil",
   created_at: new Date(now.getTime() - index * 86400000).toISOString(),
   city: String(city),
   country: String(country),
@@ -141,7 +155,7 @@ const sampleActivity = import.meta.env.DEV ? Array.from({ length: 30 }, (_, i) =
 })) : [];
 
 const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60000).toISOString();
-const sampleReports: HubReport[] = import.meta.env.DEV ? [
+const sampleReports: Omit<HubReport, "can_act">[] = import.meta.env.DEV ? [
   {
     id: "sample-report-1", reason: "scam", status: "open", created_at: minutesAgo(40),
     details: "Il demande 50 000 FCFA pour « réserver » une place de stage.",
@@ -184,21 +198,24 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
         role: demoRole,
         graduation_year: demoRole === "moderator" ? 2018 : null,
         display_name: "Camille · aperçu",
+        pending_approvals: members.filter((m) => m.approval_pending && !m.is_suspended).length,
+        open_reports: sampleReports.filter((report) => report.status === "open").length,
       };
     case "hub_dashboard":
       return {
-        members: members.length,
-        active_members: members.filter((m) => m.is_active).length,
-        suspended_members: members.filter((m) => !m.is_active).length,
+        members: sampleMembers.length,
+        active_members: sampleMembers.filter((m) => m.is_active).length,
+        pending_members: members.filter((m) => m.approval_pending && !m.is_suspended).length,
+        suspended_members: sampleMembers.filter((m) => m.is_suspended).length,
         mentors: 3,
         offers: 12,
         requests: 18,
         active_30d: members.length,
-        promotions: [...new Set(members.map((m) => m.graduation_year))].map(
+        promotions: [...new Set(sampleMembers.map((m) => m.graduation_year))].map(
           (year) => ({
             year,
-            members: members.filter((m) => m.graduation_year === year).length,
-            active: members.filter(
+            members: sampleMembers.filter((m) => m.graduation_year === year).length,
+            active: sampleMembers.filter(
               (m) => m.graduation_year === year && m.is_active,
             ).length,
           }),
@@ -215,7 +232,9 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
               .toLowerCase()
               .includes(String(args.p_search).toLowerCase())) &&
           (args.p_status === "all" ||
-            (args.p_status === "active") === m.is_active),
+            (args.p_status === "active" && m.is_active) ||
+            (args.p_status === "pending" && m.approval_pending && !m.is_suspended) ||
+            (args.p_status === "suspended" && m.is_suspended)),
       );
       return {
         items: filtered,
@@ -228,9 +247,15 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
       return [
         {
           user_id: "preview",
-          role: "admin",
+          role: demoRole ?? "admin",
           graduation_year: null,
           display_name: "Camille · aperçu",
+        },
+        {
+          user_id: "sample-admin",
+          role: "admin",
+          graduation_year: null,
+          display_name: "Aïcha Traoré · exemple",
         },
         {
           user_id: "sample-3",
@@ -260,9 +285,11 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
         page_size: 25,
       };
     case "hub_reports": {
-      const reports = sampleReports.filter((report) =>
-        (report.status === "open") === (args.p_status !== "handled")
-        && (demoRole === "admin" || report.reported?.graduation_year === 2018));
+      const reports = sampleReports
+        .filter((report) => (report.status === "open") === (args.p_status !== "handled"))
+        .map((report) => demoRole !== "moderator" || report.reported?.graduation_year === 2018
+          ? { ...report, can_act: true }
+          : { ...report, can_act: false, details: null, resolution: null, handled_by_name: null, reporter: null, messages: null });
       return { items: reports, total: reports.length, page: 1, page_size: 25 };
     }
     case "public_site_status":
@@ -297,33 +324,9 @@ export async function rpc<T>(
     if (error) {
       if (controller.signal.aborted)
         throw new Error("Le service met trop de temps à répondre. Réessayez.");
-      // Before the generic rules below, which would read "filed yourself" as a self-moderation.
-      const reportProblem = reportErrorMessage(error.message);
-      if (reportProblem) throw new Error(reportProblem);
-      if (/Remove the staff role/i.test(error.message))
-        throw new Error(
-          "Retirez d’abord le rôle de ce membre dans Équipe & accès.",
-        );
-      if (/Remove the moderator role/i.test(error.message))
-        throw new Error(
-          "Retirez d’abord son rôle de modérateur avant de corriger sa promotion.",
-        );
-      if (/yourself|your own staff/i.test(error.message))
-        throw new Error(
-          "Vous ne pouvez pas modifier vos propres droits ou suspendre votre compte.",
-        );
-      if (/last administrator/i.test(error.message))
-        throw new Error("Le dernier administrateur doit conserver son accès.");
-      if (/Moderators must belong/i.test(error.message))
-        throw new Error(
-          "Un modérateur doit appartenir à la promotion qui lui est attribuée.",
-        );
-      if (/active completed profile/i.test(error.message))
-        throw new Error(
-          "Ce rôle nécessite un compte actif avec un profil complet.",
-        );
-      if (/Member not found/i.test(error.message))
-        throw new Error("Ce membre n’existe plus. Actualisez la liste.");
+      // Report errors first: the member rules would read "filed yourself" as a self-moderation.
+      const known = reportErrorMessage(error.message) ?? memberErrorMessage(error.message);
+      if (known) throw new Error(known);
       if (
         error.code === "42501" ||
         /forbidden|unauthorized|not authorized|staff_required/i.test(
@@ -403,6 +406,10 @@ export const roleName = (role: string | null) =>
     ? "Administrateur"
     : role === "moderator"
       ? "Modérateur"
-      : role === "mentor"
+      : role === "super_admin"
+        ? "Super administrateur"
+        : role === "mentor"
         ? "Mentor"
-        : "Alumni";
+        : role === "student"
+          ? "Élève"
+          : "Alumni";
