@@ -2125,3 +2125,46 @@ tbody tr:hover {
   font-size: 14px;
   line-height: 1.5;
 }
+
+/* What waits within the team member's scope, next to the menu item. */
+.hub-nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--hub-green);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* A report another promotion handles: known to everyone, quieter than the reports to act on. */
+.hub-report-alert {
+  background: var(--hub-paper);
+}
+.hub-report-alert .hub-report-reason svg {
+  color: var(--hub-muted);
+}
+.hub-report-alert-note {
+  margin: 0;
+  color: var(--hub-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+/* Folded menu: the count sits on the icon's corner. */
+.is-collapsed .hub-sidebar .hub-nav-item {
+  position: relative;
+}
+.is-collapsed .hub-sidebar .hub-nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+}

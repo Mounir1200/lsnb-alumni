@@ -1,14 +1,18 @@
+import type { Role } from "./roles";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { memberErrorMessage } from "./memberErrors";
 import { reportErrorMessage } from "./reportErrors";
 
-export type Role = "admin" | "moderator";
+export type { Role };
 export type Context = {
   user_id: string;
   role: Role;
   graduation_year: number | null;
   display_name: string;
+  /** What waits within this team member's scope: the badges of the menu. */
+  pending_approvals: number;
+  open_reports: number;
 };
 export type Member = {
   id: string;
@@ -97,7 +101,9 @@ export type ReportMessage = {
 export type HubReport = {
   id: string;
   reason: string;
-  details: string;
+  /** Whoever cannot act on a report gets an alert: no details, author, messages or note. */
+  can_act: boolean;
+  details: string | null;
   status: "open" | "resolved" | "dismissed";
   created_at: string;
   handled_at: string | null;
@@ -110,7 +116,7 @@ export type HubReport = {
 
 const preview = new URLSearchParams(window.location.search).get("demo");
 export const demoRole: Role | null =
-  import.meta.env.DEV && (preview === "admin" || preview === "moderator")
+  import.meta.env.DEV && (preview === "super_admin" || preview === "admin" || preview === "moderator")
     ? preview
     : null;
 const now = new Date();
@@ -149,7 +155,7 @@ const sampleActivity = import.meta.env.DEV ? Array.from({ length: 30 }, (_, i) =
 })) : [];
 
 const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60000).toISOString();
-const sampleReports: HubReport[] = import.meta.env.DEV ? [
+const sampleReports: Omit<HubReport, "can_act">[] = import.meta.env.DEV ? [
   {
     id: "sample-report-1", reason: "scam", status: "open", created_at: minutesAgo(40),
     details: "Il demande 50 000 FCFA pour « réserver » une place de stage.",
@@ -192,22 +198,24 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
         role: demoRole,
         graduation_year: demoRole === "moderator" ? 2018 : null,
         display_name: "Camille · aperçu",
+        pending_approvals: members.filter((m) => m.approval_pending && !m.is_suspended).length,
+        open_reports: sampleReports.filter((report) => report.status === "open").length,
       };
     case "hub_dashboard":
       return {
-        members: members.length,
-        active_members: members.filter((m) => m.is_active).length,
+        members: sampleMembers.length,
+        active_members: sampleMembers.filter((m) => m.is_active).length,
         pending_members: members.filter((m) => m.approval_pending && !m.is_suspended).length,
-        suspended_members: members.filter((m) => m.is_suspended).length,
+        suspended_members: sampleMembers.filter((m) => m.is_suspended).length,
         mentors: 3,
         offers: 12,
         requests: 18,
         active_30d: members.length,
-        promotions: [...new Set(members.map((m) => m.graduation_year))].map(
+        promotions: [...new Set(sampleMembers.map((m) => m.graduation_year))].map(
           (year) => ({
             year,
-            members: members.filter((m) => m.graduation_year === year).length,
-            active: members.filter(
+            members: sampleMembers.filter((m) => m.graduation_year === year).length,
+            active: sampleMembers.filter(
               (m) => m.graduation_year === year && m.is_active,
             ).length,
           }),
@@ -239,7 +247,7 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
       return [
         {
           user_id: "preview",
-          role: "admin",
+          role: demoRole ?? "admin",
           graduation_year: null,
           display_name: "Camille · aperçu",
         },
@@ -277,9 +285,11 @@ function demoData(name: string, args: Record<string, unknown>): unknown {
         page_size: 25,
       };
     case "hub_reports": {
-      const reports = sampleReports.filter((report) =>
-        (report.status === "open") === (args.p_status !== "handled")
-        && (demoRole === "admin" || report.reported?.graduation_year === 2018));
+      const reports = sampleReports
+        .filter((report) => (report.status === "open") === (args.p_status !== "handled"))
+        .map((report) => demoRole !== "moderator" || report.reported?.graduation_year === 2018
+          ? { ...report, can_act: true }
+          : { ...report, can_act: false, details: null, resolution: null, handled_by_name: null, reporter: null, messages: null });
       return { items: reports, total: reports.length, page: 1, page_size: 25 };
     }
     case "public_site_status":
@@ -396,7 +406,9 @@ export const roleName = (role: string | null) =>
     ? "Administrateur"
     : role === "moderator"
       ? "Modérateur"
-      : role === "mentor"
+      : role === "super_admin"
+        ? "Super administrateur"
+        : role === "mentor"
         ? "Mentor"
         : role === "student"
           ? "Élève"

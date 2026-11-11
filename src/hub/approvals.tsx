@@ -1,6 +1,7 @@
 import { BadgeCheck, UserMinus, UserRoundPlus } from "lucide-react";
 import { useState } from "react";
 import { type Context, type Member, type PageData, date, fullName, roleName, rpc, useResource } from "./api";
+import { coversNetwork } from "./roles";
 import { Confirm, Empty, ErrorState, Loading, Pagination, Refresh } from "./ui";
 
 type Decision = { member: Member; action: "approve" | "refuse" };
@@ -86,7 +87,7 @@ export function Approvals({ context, revision }: { context: Context; revision: n
         <div>
           <h1>Les nouveaux comptes à valider.</h1>
           <p>
-            {context.role === "admin"
+            {coversNetwork(context.role)
               ? "Toutes les promotions. Un compte reste invisible tant que personne ne l’a validé."
               : `Les inscriptions de la promotion ${context.graduation_year}. Un compte reste invisible tant que personne ne l’a validé.`}
           </p>

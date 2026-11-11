@@ -38,6 +38,7 @@ import {
   Team,
 } from "./screens";
 import { Approvals } from "./approvals";
+import { coversNetwork, hasRole, isRole } from "./roles";
 import { Reports } from "./reports";
 import { ErrorState, Loading, Status } from "./ui";
 import "./styles.css";
@@ -49,15 +50,15 @@ const nav = [
     id: "overview",
     label: "Vue d’ensemble",
     icon: LayoutDashboard,
-    admin: false,
+    minRole: "moderator",
   },
-  { id: "members", label: "Membres & promotions", icon: Users, admin: false },
-  { id: "approvals", label: "À valider", icon: UserCheck, admin: false },
-  { id: "reports", label: "Signalements", icon: Flag, admin: false },
-  { id: "team", label: "Équipe & accès", icon: Shield, admin: true },
-  { id: "maintenance", label: "Maintenance", icon: Wrench, admin: true },
-  { id: "audit", label: "Journal de modération", icon: Activity, admin: false },
-  { id: "logs", label: "Logs du serveur", icon: Terminal, admin: true },
+  { id: "members", label: "Membres & promotions", icon: Users, minRole: "moderator" },
+  { id: "approvals", label: "À valider", icon: UserCheck, minRole: "moderator" },
+  { id: "reports", label: "Signalements", icon: Flag, minRole: "moderator" },
+  { id: "team", label: "Équipe & accès", icon: Shield, minRole: "admin" },
+  { id: "maintenance", label: "Maintenance", icon: Wrench, minRole: "super_admin" },
+  { id: "audit", label: "Journal de modération", icon: Activity, minRole: "moderator" },
+  { id: "logs", label: "Logs du serveur", icon: Terminal, minRole: "super_admin" },
 ] as const;
 function siteUrl() {
   try {
@@ -235,7 +236,9 @@ function Hub({
   session: Session | null;
   onLogout: () => void;
 }) {
-  const allowed = nav.filter((item) => context.role === "admin" || !item.admin);
+  // Each team member sees only what their level allows: moderators get a simpler hub.
+  const allowed = nav.filter((item) => hasRole(context.role, item.minRole));
+  const badges: Partial<Record<Screen, number>> = { approvals: context.pending_approvals, reports: context.open_reports };
   const resolveScreen = (): Screen =>
     allowed.find((item) => `#${item.id}` === window.location.hash)?.id ||
     "overview";
@@ -293,10 +296,10 @@ function Hub({
         <Shield size={16} />
         <div>
           <strong>
-            {context.role === "admin" ? "Administration" : "Modération"}
+            {coversNetwork(context.role) ? "Administration" : "Modération"}
           </strong>
           <span>
-            {context.role === "admin"
+            {coversNetwork(context.role)
               ? "Toutes les promotions"
               : `Promotion ${context.graduation_year}`}
           </span>
@@ -310,7 +313,7 @@ function Hub({
               <span className="hub-nav-caption">Pilotage</span>
             )}
             <button
-              aria-label={item.label}
+              aria-label={badges[item.id] ? `${item.label} (${badges[item.id]} en attente)` : item.label}
               title={item.label}
               aria-current={screen === item.id ? "page" : undefined}
               className={`hub-nav-item ${screen === item.id ? "is-active" : ""}`}
@@ -318,6 +321,9 @@ function Hub({
             >
               <item.icon size={18} strokeWidth={1.7} />
               <span>{item.label}</span>
+              {Boolean(badges[item.id]) && (
+                <b className="hub-nav-badge" aria-hidden="true">{badges[item.id]}</b>
+              )}
               {screen === item.id && (
                 <ChevronRight className="hub-nav-arrow" size={14} />
               )}
@@ -461,10 +467,10 @@ function Hub({
           {screen === "reports" && (
             <Reports context={context} revision={revision} />
           )}
-          {screen === "team" && context.role === "admin" && (
+          {screen === "team" && hasRole(context.role, "admin") && (
             <Team context={context} revision={revision} />
           )}
-          {screen === "maintenance" && context.role === "admin" && (
+          {screen === "maintenance" && hasRole(context.role, "super_admin") && (
             <Maintenance
               revision={revision}
               onChanged={() => setRevision((v) => v + 1)}
@@ -473,7 +479,7 @@ function Hub({
           {screen === "audit" && (
             <AuditLog context={context} revision={revision} />
           )}
-          {screen === "logs" && context.role === "admin" && (
+          {screen === "logs" && hasRole(context.role, "super_admin") && (
             <ServerLogs
               token={session?.access_token || ""}
               revision={revision}
@@ -482,7 +488,7 @@ function Hub({
           <footer className="hub-footer">
             <span>LSNB Réseau · L’espace de l’équipe</span>
             <span>
-              {context.role === "admin"
+              {coversNetwork(context.role)
                 ? "Administration"
                 : `Modération · promotion ${context.graduation_year}`}
             </span>
@@ -562,7 +568,7 @@ function App() {
       try {
         const next = await rpc<Context>("hub_context");
         if (alive) {
-          if (!next || !["admin", "moderator"].includes(next.role))
+          if (!next || !isRole(next.role))
             throw new Error(
               "Ce compte ne dispose pas d’un accès au hub. Un administrateur doit vous attribuer un rôle.",
             );

@@ -13,6 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { assignableRoles, canRemoveRole, coversNetwork, SUPER_ADMIN_LIMIT, type Role } from "./roles";
 import {
   type Audit,
   type Context,
@@ -87,9 +88,9 @@ export function Overview({
         <div>
           <h1>Le réseau, en perspective.</h1>
           <p>
-            {context.role === "admin"
+            {coversNetwork(context.role)
               ? "L’activité des alumni et la vie de chaque promotion."
-              : `Votre espace de modération pour la promotion ${context.graduation_year}.`}
+              : `Les chiffres de tout le réseau. Vous modérez la promotion ${context.graduation_year}.`}
           </p>
         </div>
         <Refresh
@@ -124,11 +125,7 @@ export function Overview({
             <div className="hub-kpi dominant">
               <span>Membres du réseau</span>
               <strong>{number(data.members)}</strong>
-              <small>
-                {context.role === "admin"
-                  ? "Toutes les promotions"
-                  : `Promotion ${context.graduation_year}`}
-              </small>
+              <small>Toutes les promotions</small>
             </div>
             <div className="hub-kpi">
               <span>Actifs sur 30 jours</span>
@@ -304,13 +301,15 @@ export function Overview({
                             <span>{number(p.active)}</span>
                           </td>
                           <td>
-                            <button
-                              className="hub-icon-button"
-                              aria-label={`Voir les membres de la promotion ${p.year}`}
-                              onClick={() => goMembers(p.year)}
-                            >
-                              <ArrowUpRight size={16} />
-                            </button>
+                            {(coversNetwork(context.role) || p.year === context.graduation_year) && (
+                              <button
+                                className="hub-icon-button"
+                                aria-label={`Voir les membres de la promotion ${p.year}`}
+                                onClick={() => goMembers(p.year)}
+                              >
+                                <ArrowUpRight size={16} />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -377,7 +376,7 @@ export function Members({
     return () => clearTimeout(timer);
   }, [search]);
   const effectivePromo =
-    context.role === "moderator"
+    !coversNetwork(context.role)
       ? context.graduation_year
       : promotion
         ? Number(promotion)
@@ -414,7 +413,7 @@ export function Members({
         <div>
           <h1>Les membres.</h1>
           <p>
-            {context.role === "admin"
+            {coversNetwork(context.role)
               ? "Retrouvez les alumni et veillez à la qualité du réseau."
               : `Vous modérez les membres rattachés à la promotion ${context.graduation_year}.`}
           </p>
@@ -448,7 +447,7 @@ export function Members({
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
-          {context.role === "admin" && (
+          {coversNetwork(context.role) && (
             <label className="hub-select-label">
               <span className="hub-sr-only">Promotion</span>
               <select
@@ -546,7 +545,7 @@ export function Members({
                         <td>{date(m.created_at)}</td>
                         <td>
                           <div className="hub-member-actions">
-                            {context.role === "admin" &&
+                            {coversNetwork(context.role) &&
                               m.staff_role !== "moderator" && (
                                 <button
                                   className="hub-row-button positive"
@@ -572,7 +571,7 @@ export function Members({
                                 <UserMinus size={15} />
                                 Retirer
                               </button>
-                            ) : context.role === "admin" ? (
+                            ) : coversNetwork(context.role) ? (
                               <button
                                 className="hub-row-button positive"
                                 onClick={() => setSelected(m)}
@@ -671,23 +670,43 @@ export function Members({
   );
 }
 
+type TeamChange = { id: string; name: string; role: Role | null; promotion: number | null };
+
+const ROLE_HINTS: Record<Role, string> = {
+  moderator: "Le modérateur valide les nouveaux comptes, suspend les membres et traite les signalements de sa promotion.",
+  admin: "L’administrateur couvre tout le réseau : membres, signalements et modérateurs. Il ne touche ni à la maintenance ni aux logs.",
+  super_admin: "Le super administrateur a tous les droits, maintenance et logs compris. Le réseau en compte trois au plus.",
+};
+
+function changeConsequence(change: TeamChange) {
+  if (change.role === "moderator") return `Cette personne pourra modérer la promotion ${change.promotion}.`;
+  if (change.role === "admin") return "Cette personne gérera les membres, les signalements et les modérateurs de tout le réseau.";
+  if (change.role === "super_admin") {
+    return "Cette personne aura tous les droits, maintenance et logs compris. Personne ne pourra la retirer depuis le hub : elle quittera l’équipe elle-même, ou par la base de données.";
+  }
+  return "Cette personne perdra son accès au hub. Son compte membre restera actif.";
+}
+
+/** What a team member reads instead of a button on a row they may not change. */
+function protectedRowLabel(target: Role) {
+  return target === "super_admin" ? "Retrait par la base" : "Géré par un super admin";
+}
+
 export function Team({ context, revision }: Common) {
   const staff = useResource(
     () => rpc<Staff[]>("hub_staff"),
     `staff-${revision}`,
   );
+  const roles = assignableRoles(context.role);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
+  const [role, setRole] = useState<Role>("moderator");
   const [promotion, setPromotion] = useState("");
-  // The hub appoints or removes moderators only: administrators are managed in the database.
-  const [pending, setPending] = useState<{
-    id: string;
-    name: string;
-    role: "moderator" | null;
-    promotion: number | null;
-  } | null>(null);
+  const [pending, setPending] = useState<TeamChange | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const [success, setSuccess] = useState("");
+  const superAdmins = staff.data?.filter((s) => s.role === "super_admin").length ?? 0;
   useEffect(() => {
     const t = setTimeout(() => setQuery(search), 300);
     return () => clearTimeout(t);
@@ -730,10 +749,11 @@ export function Team({ context, revision }: Common) {
         <section className="hub-panel">
           <div className="hub-panel-head">
             <div>
-              <h2>Administrateurs & modérateurs</h2>
+              <h2>L’équipe</h2>
               <p>
-                Vous nommez et retirez les modérateurs. Les administrateurs se
-                gèrent directement dans la base de données.
+                {context.role === "super_admin"
+                  ? "Vous nommez les administrateurs, les modérateurs et jusqu’à trois super administrateurs. Un super administrateur quitte l’équipe lui-même, ou par la base de données."
+                  : "Vous nommez et retirez les modérateurs. Un super administrateur nomme les administrateurs."}
               </p>
             </div>
           </div>
@@ -751,16 +771,16 @@ export function Team({ context, revision }: Common) {
                       <strong>{s.display_name}</strong>
                       <span>
                         {roleName(s.role)} ·{" "}
-                        {s.role === "admin"
+                        {coversNetwork(s.role)
                           ? "Toutes les promotions"
                           : `Promotion ${s.graduation_year}`}
                       </span>
                     </div>
                     {s.user_id === context.user_id ? (
-                      <small>Vous</small>
-                    ) : s.role === "admin" ? (
-                      <small>Géré en base</small>
-                    ) : (
+                      <button className="hub-text-button" onClick={() => setLeaving(true)}>
+                        Quitter l’équipe
+                      </button>
+                    ) : canRemoveRole(context.role, s.role) ? (
                       <button
                         className="hub-text-button danger-text"
                         onClick={() =>
@@ -774,6 +794,8 @@ export function Team({ context, revision }: Common) {
                       >
                         Retirer le rôle
                       </button>
+                    ) : (
+                      <small>{protectedRowLabel(s.role)}</small>
                     )}
                   </div>
                 ))}
@@ -783,8 +805,8 @@ export function Team({ context, revision }: Common) {
             ))}
         </section>
         <section className="hub-panel hub-form-panel">
-          <h2>Nommer un modérateur</h2>
-          <p>Choisissez un membre actif de la promotion à modérer.</p>
+          <h2>{roles.length > 1 ? "Attribuer un rôle" : "Nommer un modérateur"}</h2>
+          <p>Choisissez un membre actif du réseau.</p>
           <label className="hub-field">
             Rechercher un membre
             <input
@@ -835,43 +857,61 @@ export function Team({ context, revision }: Common) {
               {fullName(selected)}
             </p>
           )}
-          <label className="hub-field">
-            Promotion à modérer
-            <select
-              value={promotion}
-              disabled={!selected}
-              onChange={(e) => setPromotion(e.target.value)}
-            >
-              <option value="">Sélectionner un membre d’abord</option>
-              {promos.data?.promotions
-                .filter((p) => p.year === selected?.graduation_year)
-                .map((p) => (
-                  <option key={p.year} value={p.year}>
-                    {p.year}
+          {roles.length > 1 && (
+            <label className="hub-field">
+              Rôle
+              <select value={role} onChange={(e) => setRole(e.target.value as Role)}>
+                {roles.map((option) => (
+                  <option
+                    key={option}
+                    value={option}
+                    disabled={option === "super_admin" && superAdmins >= SUPER_ADMIN_LIMIT}
+                  >
+                    {option === "super_admin"
+                      ? `${roleName(option)} (${superAdmins}/${SUPER_ADMIN_LIMIT})`
+                      : roleName(option)}
                   </option>
                 ))}
-            </select>
-            <small>
-              Le modérateur doit appartenir à la promotion qu’il modère.
-            </small>
-          </label>
-          <p className="hub-form-hint">
-            Le modérateur valide les nouveaux comptes, consulte et suspend les membres de sa promotion uniquement.
-          </p>
+              </select>
+            </label>
+          )}
+          {role === "moderator" && (
+            <label className="hub-field">
+              Promotion à modérer
+              <select
+                value={promotion}
+                disabled={!selected}
+                onChange={(e) => setPromotion(e.target.value)}
+              >
+                <option value="">Sélectionner un membre d’abord</option>
+                {promos.data?.promotions
+                  .filter((p) => p.year === selected?.graduation_year)
+                  .map((p) => (
+                    <option key={p.year} value={p.year}>
+                      {p.year}
+                    </option>
+                  ))}
+              </select>
+              <small>
+                Le modérateur doit appartenir à la promotion qu’il modère.
+              </small>
+            </label>
+          )}
+          <p className="hub-form-hint">{ROLE_HINTS[role]}</p>
           <button
             className="hub-button primary"
-            disabled={!selected || !promotion}
+            disabled={!selected || (role === "moderator" && !promotion)}
             onClick={() =>
               selected &&
               setPending({
                 id: selected.id,
                 name: fullName(selected),
-                role: "moderator",
-                promotion: Number(promotion),
+                role,
+                promotion: role === "moderator" ? Number(promotion) : null,
               })
             }
           >
-            Nommer modérateur <ArrowUpRight size={16} />
+            Nommer {roleName(role).toLowerCase()} <ArrowUpRight size={16} />
           </button>
         </section>
       </div>
@@ -879,10 +919,10 @@ export function Team({ context, revision }: Common) {
         <Confirm
           title={
             pending.role
-              ? `Nommer ${pending.name} modérateur ?`
+              ? `Nommer ${pending.name} ${roleName(pending.role).toLowerCase()} ?`
               : `Retirer le rôle de ${pending.name} ?`
           }
-          label={pending.role ? "Nommer modérateur" : "Retirer le rôle"}
+          label={pending.role ? `Nommer ${roleName(pending.role).toLowerCase()}` : "Retirer le rôle"}
           danger={!pending.role}
           onClose={() => setPending(null)}
           onConfirm={async () => {
@@ -897,10 +937,23 @@ export function Team({ context, revision }: Common) {
             setSelected(null);
           }}
         >
+          <p>{changeConsequence(pending)}</p>
+        </Confirm>
+      )}
+      {leaving && (
+        <Confirm
+          title="Quitter l’équipe ?"
+          label="Quitter l’équipe"
+          danger
+          onClose={() => setLeaving(false)}
+          onConfirm={async () => {
+            await rpc("hub_leave_team");
+            window.location.reload();
+          }}
+        >
           <p>
-            {pending.role
-              ? `Cette personne pourra modérer la promotion ${pending.promotion}.`
-              : "Cette personne perdra son accès au hub. Son compte alumni restera actif."}
+            Vous perdrez votre accès au hub, et votre compte membre restera actif. Pour revenir, un membre de
+            l’équipe devra vous nommer de nouveau.
           </p>
         </Confirm>
       )}
@@ -1191,7 +1244,7 @@ export function AuditLog({ context, revision }: Common) {
         <div>
           <h1>Chaque décision laisse une trace.</h1>
           <p>
-            {context.role === "admin"
+            {coversNetwork(context.role)
               ? "Le journal des actions de l’équipe."
               : `Les actions de modération de la promotion ${context.graduation_year}.`}
           </p>

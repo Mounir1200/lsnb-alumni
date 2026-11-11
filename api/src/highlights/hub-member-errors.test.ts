@@ -8,7 +8,11 @@ test("each error of the hub's member and team functions has the team's wording",
     ["Remove the moderator role before correcting their promotion", /rôle de modérateur avant de corriger/],
     ["You cannot moderate yourself", /vos propres droits/],
     ["You cannot change your own staff role", /vos propres droits/],
-    ["Administrator roles are managed in the database", /directement dans la base de données/],
+    ["There can be at most 3 super administrators", /déjà trois super administrateurs/],
+    ["A super administrator leaves the team by resigning or through the database", /quitte l’équipe lui-même/],
+    ["Forbidden: you may only manage roles below your own", /en dessous du vôtre/],
+    ["Administrators work network-wide, without a promotion", /tout le réseau/],
+    ["The last super administrator cannot leave the team", /dernier super administrateur/],
     ["Moderators must belong to their assigned promotion", /appartenir à la promotion/],
     ["Staff must have an active completed profile", /profil complet/],
     ["Member not found", /n’existe plus/],
@@ -19,7 +23,8 @@ test("each error of the hub's member and team functions has the team's wording",
 });
 
 test("errors from other hub functions keep their own wording", () => {
-  for (const message of ["Report not found", "Forbidden: staff access required", "Maintenance needs a message between 5 and 500 characters"]) {
+  for (const message of ["Report not found", "Forbidden: staff access required", "Maintenance needs a message between 5 and 500 characters",
+    "Administrator roles are managed in the database"]) {
     assert.equal(memberErrorMessage(message), null, message);
   }
 });
