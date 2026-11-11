@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { createRpcJobStore, notificationChannel, ROUND_CAPACITY, runNotificationRound, type NotificationChannel, type NotificationConfig } from "../notifications/delivery.js";
+import { APPROVAL_QUEUE_RPCS, createApprovalNotificationSender, type ApprovalNotificationJob } from "../approvals/notifications.js";
 import { createRequestNotificationSender, REQUEST_QUEUE_RPCS, type RequestNotificationJob } from "../requests/notifications.js";
 import { createNotificationSender, createNotificationStore, loadNotificationConfig } from "./notifications.js";
 import { createRoundLimit, type RoundLimit } from "./roundLimit.js";
@@ -24,11 +25,12 @@ export function createNotificationScheduler(apiKey: string, run: () => Promise<D
   };
 }
 
-/** Unread-message alerts first, then request emails, within one round's capacity. */
+/** Unread-message alerts first, then request emails, then approval e-mails to the team, within one round's capacity. */
 export function notificationChannels(config: NotificationConfig): NotificationChannel[] {
   return [
     notificationChannel(createNotificationStore(config), createNotificationSender(config)),
     notificationChannel(createRpcJobStore<RequestNotificationJob>(config, REQUEST_QUEUE_RPCS), createRequestNotificationSender(config)),
+    notificationChannel(createRpcJobStore<ApprovalNotificationJob>(config, APPROVAL_QUEUE_RPCS), createApprovalNotificationSender(config)),
   ];
 }
 
