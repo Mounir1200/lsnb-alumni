@@ -62,7 +62,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     moderator = await seed('Modérateur', 2020)
     samePromo = await seed('Membre', 2020)
     otherPromo = await seed('Autre', 2021)
-    await db.query("insert into private.hub_staff(user_id,role,graduation_year) values($1,'admin',null),($2,'moderator',2020)", [admin, moderator])
+    await db.query("insert into private.hub_staff(user_id,role,graduation_year) values($1,'super_admin',null),($2,'moderator',2020)", [admin, moderator])
   })
   after(async () => { await db?.close() })
 
@@ -74,7 +74,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(rpc(fake, 'hub_set_staff', [fake, 'admin', null]), /staff access required/)
     await assert.rejects(asUser(fake, () => db.query("insert into private.hub_staff(user_id,role) values($1,'admin')", [fake])), /permission denied/)
     await assert.rejects(asUser(fake, () => db.exec('select * from private.hub_audit')), /permission denied/)
-    assert.equal((await rpc(admin, 'hub_context')).role, 'admin')
+    assert.equal((await rpc(admin, 'hub_context')).role, 'super_admin')
     assert.equal((await rpc(moderator, 'hub_context')).graduation_year, 2020)
   })
 
@@ -88,7 +88,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     } finally { await db.exec('reset role') }
   })
 
-  it('scopes member search, staff list, dashboard and audit to the moderator promotion', async () => {
+  it('scopes member search, staff list and audit to the moderator promotion', async () => {
     const list = await rpc(moderator, 'hub_members')
     assert.equal(list.total, 2)
     assert.ok(list.items.every((p: any) => p.graduation_year === 2020))
@@ -96,7 +96,6 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     assert.equal((await rpc(admin, 'hub_members')).total, 4)
     assert.equal((await rpc(admin, 'hub_members', ['autre', null, 'all', 1])).items[0].id, otherPromo)
     assert.equal((await rpc(moderator, 'hub_staff')).length, 1)
-    assert.equal((await rpc(moderator, 'hub_dashboard')).members, 2)
     await moderate(admin, otherPromo)
     await moderate(moderator, samePromo)
     assert.equal((await rpc(moderator, 'hub_audit')).total, 1)
@@ -157,7 +156,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(asUser(samePromo, () => db.query("insert into storage.objects(bucket_id,name) values('avatars',$1)", [`${samePromo}/second.png`])), /row-level security/)
     assert.equal((await asUser(samePromo, () => db.query('delete from storage.objects returning id'))).rows.length, 0)
     await assert.rejects(rpc(samePromo, 'record_member_activity', ['home']), /Site unavailable/)
-    assert.equal((await rpc(admin, 'hub_context')).role, 'admin')
+    assert.equal((await rpc(admin, 'hub_context')).role, 'super_admin')
     assert.equal((await rpc(admin, 'hub_members')).total, 4)
     await moderate(moderator, samePromo)
     await maintenance(false)
@@ -212,18 +211,6 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(rpc(admin, 'hub_set_staff', [otherPromo, 'moderator', 2021]), /active completed profile/)
   })
 
-  it('leaves the administrator role to direct database access', async () => {
-    const secondAdmin = await seed('Seconde', 2018)
-    await db.query("insert into private.hub_staff(user_id,role) values($1,'admin')", [secondAdmin])
-    await assert.rejects(rpc(admin, 'hub_set_staff', [samePromo, 'admin', null]), /managed in the database/)
-    await assert.rejects(rpc(admin, 'hub_set_staff', [moderator, 'admin', null]), /managed in the database/)
-    await assert.rejects(rpc(admin, 'hub_set_staff', [secondAdmin, null, null]), /managed in the database/)
-    await assert.rejects(rpc(admin, 'hub_set_staff', [secondAdmin, 'moderator', 2018]), /managed in the database/)
-    const staff = await rpc(admin, 'hub_staff')
-    assert.deepEqual(staff.filter((s: any) => s.role === 'admin').map((s: any) => s.user_id).sort(), [admin, secondAdmin].sort())
-    assert.equal(staff.find((s: any) => s.user_id === moderator).role, 'moderator')
-  })
-
   it('allows only administrators to correct promotions, with an audit trail and moderator reassignment protection', async () => {
     await assert.rejects(rpc(moderator, 'hub_change_promotion', [samePromo, 2021, 'Correction vérifiée du dossier']), /staff access required/)
     await assert.rejects(rpc(admin, 'hub_change_promotion', [moderator, 2021, 'Correction vérifiée du dossier']), /Remove the moderator role/)
@@ -246,7 +233,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     assert.equal((await rpc(admin, 'hub_audit')).total, 1)
   })
 
-  it('counts real UTC activity once per user/route/minute and zero-fills 30 days within scope', async () => {
+  it('counts real UTC activity once per user/route/minute and zero-fills 30 days across the network', async () => {
     await rpc(samePromo, 'record_member_activity', ['directory'])
     await rpc(samePromo, 'record_member_activity', ['directory'])
     await rpc(samePromo, 'record_member_activity', ['offers'])
@@ -254,16 +241,16 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     await assert.rejects(rpc(samePromo, 'record_member_activity', ['/profile/private?token=secret']), /Invalid activity route/)
     const dash = await rpc(moderator, 'hub_dashboard')
     assert.equal(dash.activity.length, 30)
-    assert.equal(dash.active_30d, 1)
-    assert.equal(dash.activity.at(-1).views, 2)
-    assert.equal(dash.activity.at(-1).active_members, 1)
-    assert.equal(dash.activity.at(-1).registrations, 2)
+    assert.equal(dash.active_30d, 2)
+    assert.equal(dash.activity.at(-1).views, 3)
+    assert.equal(dash.activity.at(-1).active_members, 2)
+    assert.equal(dash.activity.at(-1).registrations, 4)
     assert.equal(dash.activity[0].views, 0)
-    assert.deepEqual(dash.promotions, [{ year: 2020, members: 2, active: 2 }])
+    assert.deepEqual(dash.promotions, [{ year: 2021, members: 1, active: 1 }, { year: 2020, members: 2, active: 2 }, { year: 2019, members: 1, active: 1 }])
     assert.equal((await rpc(admin, 'hub_dashboard')).active_30d, 2)
     await db.query("update private.member_activity set last_seen=clock_timestamp()-interval '2 minutes' where user_id=$1 and route='directory'", [samePromo])
     await rpc(samePromo, 'record_member_activity', ['directory'])
-    assert.equal((await rpc(moderator, 'hub_dashboard')).activity.at(-1).views, 3)
+    assert.equal((await rpc(moderator, 'hub_dashboard')).activity.at(-1).views, 4)
   })
 
   it('validates and caps pagination without exposing extra fields', async () => {

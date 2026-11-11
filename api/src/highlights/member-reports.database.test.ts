@@ -14,7 +14,7 @@ const DAILY_REPORTS = 5
 type StoredReport = { reporter_id: string | null; reason: string; details: string; status: string; conversation_id: string | null; evidence: Uint8Array | null }
 type HubMessage = { from: string; text: string }
 type HubReport = {
-  id: string; reason: string; details: string; status: string; resolution: string | null
+  id: string; reason: string; details: string; status: string; resolution: string | null; can_act: boolean
   reported: { id: string; graduation_year: number | null }; reporter: { id: string } | null; messages: HubMessage[] | null
 }
 
@@ -126,11 +126,12 @@ describe('Settling reports in the hub', { concurrency: false }, () => {
   })
   after(async () => { await db?.close() })
 
-  it('shows administrators every report, and moderators those about their promotion except team members', async () => {
+  it('shows administrators every report, and alerts moderators to members of other promotions, never to the team', async () => {
     assert.equal((await hubReports(admin)).total, 3)
     const seenByModerator = await hubReports(moderator)
-    assert.deepEqual(seenByModerator.items.map((item) => item.reported.id), [samePromotion])
-    assert.equal(seenByModerator.items[0]?.reporter?.id, reporter)
+    assert.deepEqual(seenByModerator.items.map((item) => [item.reported.id, item.can_act]).sort(),
+      [[samePromotion, true], [otherPromotion, false]].sort())
+    assert.equal(seenByModerator.items.find((item) => item.can_act)?.reporter?.id, reporter)
     await assert.rejects(hubReports(reporter), /staff access required/)
   })
 
@@ -150,14 +151,14 @@ describe('Settling reports in the hub', { concurrency: false }, () => {
   })
 
   it('settles a report once, with an outcome and a note, and writes it to the journal', async () => {
-    const [item] = (await hubReports(moderator)).items
+    const item = (await hubReports(moderator)).items.find((entry) => entry.can_act)
     await assert.rejects(settle(moderator, item!.id, 'ignored'), /outcome/)
     await assert.rejects(settle(moderator, item!.id, 'resolved', 'Vu.'), /10 to 500/)
     await settle(moderator, item!.id)
     await assert.rejects(settle(admin, item!.id), /already settled/)
     const handled = await hubReports(admin, 'handled')
     assert.deepEqual(handled.items.map((entry) => [entry.status, entry.resolution]), [['resolved', 'Membre averti, propos retirés.']])
-    assert.equal((await hubReports(moderator)).total, 0)
+    assert.deepEqual((await hubReports(moderator)).items.map((entry) => entry.can_act), [false])
     const journal = await db.query<{ action: string; target_id: string; reason: string }>(
       "select action, target_id, reason from private.hub_audit where action like 'report_%'")
     assert.deepEqual(journal.rows, [{ action: 'report_resolved', target_id: samePromotion, reason: 'Membre averti, propos retirés.' }])
