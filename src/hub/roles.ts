@@ -1,4 +1,4 @@
-// The hub mirrors the database's rules (20261111090000_hub_role_levels.sql) to
+// The hub mirrors the database's rules (20261111005314_hub_role_levels.sql) to
 // show each team member only what they may do. The database still decides.
 export type Role = "super_admin" | "admin" | "moderator";
 

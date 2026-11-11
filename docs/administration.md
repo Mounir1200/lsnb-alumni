@@ -19,7 +19,7 @@ La maintenance ferme le site et ses accès aux données, tout en laissant les fo
 
 ## Droits et parcours
 
-Trois niveaux, chacun avec les droits des niveaux du dessous (`supabase/migrations/20261111090000_hub_role_levels.sql`, et côté hub `src/hub/roles.ts`).
+Trois niveaux, chacun avec les droits des niveaux du dessous (`supabase/migrations/20261111005314_hub_role_levels.sql`, et côté hub `src/hub/roles.ts`).
 
 | Action | Super administrateur (3 au plus) | Administrateur | Modérateur |
 | --- | --- | --- | --- |

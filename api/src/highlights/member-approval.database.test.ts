@@ -3,7 +3,7 @@ import { after, before, beforeEach, describe, it } from 'node:test'
 import type { PGlite } from '@electric-sql/pglite'
 import { applyMigration, asMember, createMigratedDatabase, seedMember, sendRequest } from './testDatabase.ts'
 
-const APPROVAL_MIGRATION = '20261110191000_member_approval.sql'
+const APPROVAL_MIGRATION = '20261111005158_member_approval.sql'
 const GOOGLE_SIGN_UP = `insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data)
   values (gen_random_uuid(), $1, '{"full_name":"Awa Test"}', '{"provider":"google"}') returning id`
 
