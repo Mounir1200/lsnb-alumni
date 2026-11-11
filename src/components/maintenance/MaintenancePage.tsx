@@ -1,6 +1,7 @@
 import { ArrowUpRight, RefreshCw } from "lucide-react";
 import { SITE_NAME } from "../../lib/site";
 import type { SiteStatus } from "../../lib/siteAvailability";
+import { teamHubUrl } from "../../lib/teamHub";
 import { CounterLoader } from "./CounterLoader";
 import "./Maintenance.css";
 
@@ -19,7 +20,7 @@ export function MaintenancePage({
   error?: boolean;
   preview?: boolean;
 }) {
-  const hubUrl = import.meta.env.VITE_HUB_URL;
+  const hubUrl = teamHubUrl();
   return (
     <div className="maintenance-page">
       <header className="maintenance-header">
