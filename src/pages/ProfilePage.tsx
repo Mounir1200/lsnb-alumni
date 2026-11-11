@@ -17,6 +17,7 @@ import { ProfileMilestones } from "../components/profile/ProfileMilestones";
 import { ProfileRequestButtons, type MentoringStatus } from "../components/profile/ProfileRequestButtons";
 import { ProfileStory } from "../components/profile/ProfileStory";
 import { ProfileTrajectory } from "../components/profile/ProfileTrajectory";
+import { TeamHubLink } from "../components/profile/TeamHubLink";
 import "../components/profile/Profile.css";
 import { MemberSafety } from "../components/safety/MemberSafety";
 import { Avatar } from "../components/ui/Avatar";
@@ -253,6 +254,7 @@ export function ProfilePage() {
                   <ButtonLink to="/espace/relations" size="lg" variant="ghost">
                     <Users size={18} aria-hidden="true" /> Relations
                   </ButtonLink>
+                  <TeamHubLink userId={profile.id} />
                 </div>
               ) : profile.isDemo === false && !isActiveMember ? (
                 <ButtonLink to={getProfileCompletionPath(`/alumni/${profileId}`)} size="lg">Compléter mon profil</ButtonLink>
