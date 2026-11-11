@@ -24,6 +24,8 @@ export type Member = {
   is_suspended: boolean;
   profile_completed: boolean;
   approval_pending: boolean;
+  /** Waiting for approval with a confirmed address: only then does the team see it in "À valider". */
+  awaits_approval?: boolean;
   created_at: string;
   city: string | null;
   country: string | null;
@@ -141,6 +143,7 @@ const sampleMembers: Member[] = import.meta.env.DEV ? [
   is_suspended: index === 5,
   profile_completed: true,
   approval_pending: index >= 8,
+  awaits_approval: index >= 8,
   specialty: index >= 8 ? "Terminale D" : "Génie civil",
   created_at: new Date(now.getTime() - index * 86400000).toISOString(),
   city: String(city),

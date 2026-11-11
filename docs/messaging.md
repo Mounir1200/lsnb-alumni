@@ -49,7 +49,7 @@ Le planificateur GitHub peut retarder ou omettre une exécution : en pratique, i
 
 1. Appliquer dans l'ordre les migrations `20261023221107_private_messaging`, `20261023221132_end_to_end_messaging`, `20261023221136_messaging_identity_verification`, puis `20261024191932_device_bound_messaging`. Vérifier ensuite la présence du secret `messaging_message_key_v1` dans Vault, les droits des fonctions et la politique `realtime.messages`.
 2. Déployer le site juste après la dernière migration : l'ancien site appelle des fonctions qui n'existent plus.
-3. Render API : conserver `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `FRONTEND_ORIGINS`. Pour les alertes, ajouter `BREVO_API_KEY`, `MESSAGING_FROM_EMAIL`, `MESSAGING_SITE_URL=https://lsnb-alumni-web.onrender.com`, `MESSAGING_EMAIL_ENABLED=true`. Ne jamais utiliser de préfixe `VITE_` pour un secret.
+3. Render API : conserver `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `FRONTEND_ORIGINS`. Pour les alertes, ajouter `BREVO_API_KEY`, `MESSAGING_FROM_EMAIL`, `MESSAGING_SITE_URL=https://lsnb-alumni-web.onrender.com`, `MESSAGING_EMAIL_ENABLED=true`. Facultatif : `MESSAGING_HUB_URL`, l’adresse du hub où mènent les e-mails de validation (par défaut `https://lsnb-alumni-hub.onrender.com`). Ne jamais utiliser de préfixe `VITE_` pour un secret.
 4. GitHub Actions : secret `BREVO_API_KEY` seulement ; variables `MESSAGING_API_URL=https://lsnb-alumni-api.onrender.com` et `MESSAGING_EMAIL_ENABLED=true`. Le workflow refuse de tourner si le dépôt devient privé.
 5. Supabase Vault : ranger le jeton de déclenchement, calculé par la base à partir de la clé Brevo, dans l'éditeur SQL du projet, puis supprimer cette requête de l'historique de l'éditeur, car elle contient la clé :
    ```sql

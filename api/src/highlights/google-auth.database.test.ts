@@ -60,7 +60,7 @@ describe('Google OAuth profile provisioning and completion', { concurrency: fals
       grant usage on schema auth to anon, authenticated, service_role;
       create schema storage;
       create table auth.users (
-        id uuid primary key, email text,
+        id uuid primary key, email text, email_confirmed_at timestamptz default clock_timestamp(),
         raw_user_meta_data jsonb not null default '{}',
         raw_app_meta_data jsonb not null default '{}'
       );

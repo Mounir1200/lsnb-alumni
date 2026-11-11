@@ -118,3 +118,22 @@ export function renderMessageNotificationEmail(conversationUrl: string, settings
     text: `LSNB ALUMNI\n\nUn message vous attend.\n\nVous avez des messages non lus sur LSNB Alumni. Retrouvez votre conversation et répondez directement depuis le site.\n\nOuvrir la conversation :\n${conversationUrl}\n\nLe contenu des messages reste sur le site. Aucun extrait ni nom d’expéditeur n’est inclus dans cet e-mail.\n\nVous recevez ce rappel parce que les alertes e-mail sont activées. Pour les désactiver, ouvrez les réglages de votre messagerie :\n${settingsUrl}\n\nLSNB Alumni\nLycée Scientifique National de Bobo-Dioulasso`,
   });
 }
+
+/**
+ * Tells a team member that newcomers wait for approval in their scope. Like
+ * the other e-mails, it carries no name: the hub shows who they are.
+ */
+export function renderApprovalNotificationEmail(waiting: number, promotion: number | null, actionUrl: string): BrandedEmail {
+  const subject = waiting === 1 ? "Une inscription attend votre validation" : `${waiting} inscriptions attendent votre validation`;
+  const scope = promotion === null ? "Dans le réseau" : `Dans la promotion ${promotion}`;
+  const count = waiting === 1 ? "un nouveau compte attend d’être validé" : `${waiting} nouveaux comptes attendent d’être validés`;
+  const introduction = `${scope}, ${count}. Vérifiez que chaque personne a bien fréquenté le lycée, puis validez ou refusez son inscription dans le hub de l’équipe. Tant qu’un compte n’est pas validé, personne ne le voit.`;
+  const action = "Voir les inscriptions";
+  const note = "Par discrétion, cet e-mail ne contient aucun nom : vous les trouverez dans le hub.";
+  const footer = "Vous recevez cet e-mail parce que vous faites partie de l’équipe du réseau, au plus une fois toutes les 12 heures.";
+  return renderEmail({
+    subject, preheader: `${scope}, ${count}.`, label: "Équipe du réseau", title: `${subject}.`, introduction,
+    action, actionUrl, note, footer,
+    text: `LSNB ALUMNI\n\n${subject}.\n\n${introduction}\n\n${action} :\n${actionUrl}\n\n${note}\n\n${footer}\n\nLSNB Alumni\nLycée Scientifique National de Bobo-Dioulasso`,
+  });
+}

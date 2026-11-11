@@ -30,7 +30,7 @@ export async function createMigratedDatabase({ before, messaging = false }: { be
     grant usage on schema public to anon, authenticated, service_role;
     create schema auth; grant usage on schema auth to anon, authenticated, service_role;
     create schema storage;
-    create table auth.users (id uuid primary key, email text,
+    create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz default clock_timestamp(),
       raw_user_meta_data jsonb not null default '{}', raw_app_meta_data jsonb not null default '{}');
     create function auth.uid() returns uuid language sql as
       'select nullif(current_setting(''request.jwt.claim.sub'', true), '''')::uuid';

@@ -4,7 +4,17 @@ export type NotificationConfig = {
   apiKey: string;
   fromEmail: string;
   siteUrl: string;
+  /** Where approval e-mails send the team: the hub's origin. */
+  hubUrl: string;
 };
+
+/** The production hub, unless MESSAGING_HUB_URL names another one. */
+export const DEFAULT_HUB_URL = "https://lsnb-alumni-hub.onrender.com";
+
+/** An origin we may link to: HTTPS, no credentials, path, query or fragment. */
+function isPlainOrigin(url: URL) {
+  return url.protocol === "https:" && !url.username && !url.password && !url.search && !url.hash && url.pathname === "/";
+}
 
 // Errors intentionally exclude upstream bodies, addresses, message text and keys.
 export class NotificationError extends Error {
@@ -26,18 +36,17 @@ export function loadNotificationConfig(env: NodeJS.ProcessEnv = process.env): No
   const secretKey = env.SUPABASE_SECRET_KEY?.trim();
   let siteUrl: URL;
   let supabaseUrl: URL;
+  let hubUrl: URL;
   try {
     siteUrl = new URL(env.MESSAGING_SITE_URL ?? "");
     supabaseUrl = new URL(env.SUPABASE_URL ?? "");
+    hubUrl = new URL(env.MESSAGING_HUB_URL?.trim() || DEFAULT_HUB_URL);
   } catch { throw new NotificationError("configuration"); }
   if (!apiKey || !secretKey || !fromEmail || !emailPattern.test(fromEmail)
-    || siteUrl.protocol !== "https:" || supabaseUrl.protocol !== "https:"
-    || siteUrl.username || siteUrl.password || supabaseUrl.username || supabaseUrl.password
-    || siteUrl.search || siteUrl.hash || siteUrl.pathname !== "/"
-    || supabaseUrl.search || supabaseUrl.hash || supabaseUrl.pathname !== "/") {
+    || !isPlainOrigin(siteUrl) || !isPlainOrigin(supabaseUrl) || !isPlainOrigin(hubUrl)) {
     throw new NotificationError("configuration");
   }
-  return { apiKey, fromEmail, secretKey, siteUrl: siteUrl.origin, supabaseUrl: supabaseUrl.origin };
+  return { apiKey, fromEmail, secretKey, siteUrl: siteUrl.origin, supabaseUrl: supabaseUrl.origin, hubUrl: hubUrl.origin };
 }
 
 /** Calls a service-role RPC; the secret key only ever goes to Supabase. */

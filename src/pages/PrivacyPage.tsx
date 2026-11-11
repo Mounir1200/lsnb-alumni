@@ -182,7 +182,10 @@ export function PrivacyPage() {
         <li>
           Un nouveau compte attend d’être validé par le modérateur de sa promotion ou par un
           administrateur, qui vérifie que la personne a bien fréquenté le lycée. D’ici là, personne
-          ne voit son profil, et il ne peut ni consulter les profils, ni écrire aux membres.
+          ne voit son profil, et il ne peut ni consulter les profils, ni écrire aux membres. Une fois
+          l’adresse e-mail confirmée, les modérateurs de la promotion et les administrateurs en sont
+          prévenus par un e-mail qui ne contient aucun nom : il compte seulement les comptes qui
+          attendent.
         </li>
         <li>
           Dans l’espace d’administration, un modérateur voit les membres de sa promotion : nom,

@@ -42,7 +42,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
       grant usage on schema public to anon, authenticated, service_role;
       create schema auth; grant usage on schema auth to anon, authenticated, service_role;
       create schema storage; grant usage on schema storage to authenticated;
-      create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb not null default '{}',raw_app_meta_data jsonb not null default '{}');
+      create table auth.users(id uuid primary key,email text, email_confirmed_at timestamptz default clock_timestamp(),raw_user_meta_data jsonb not null default '{}',raw_app_meta_data jsonb not null default '{}');
       create function auth.uid() returns uuid language sql as 'select nullif(current_setting(''request.jwt.claim.sub'',true),'''')::uuid';
       create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
       create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);
