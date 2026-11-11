@@ -37,11 +37,16 @@ Migration : `supabase/migrations/20261110115213_member_reports.sql`.
 
 Écran « Signalements » (`src/hub/reports.tsx`), fonctions `public.hub_reports()` et `public.hub_resolve_report()`.
 
-| Action | Administrateur | Modérateur |
-| --- | --- | --- |
-| Lire les signalements et les conversations signalées | Tous | Ceux qui visent sa promotion, sauf ceux qui visent un membre de l’équipe |
-| Marquer résolu ou classer sans suite, avec une note | Oui | Dans sa portée, sauf ses propres signalements |
-| Retirer l’accès du membre signalé depuis la fiche | Oui | Membres de sa promotion (règles habituelles) |
+Un membre de l’équipe agit sur un signalement qui vise quelqu’un en dessous de lui, dans sa portée, jamais sur lui-même ; les super administrateurs traitent aussi ceux qui visent l’un d’eux (`private.report_in_scope`).
+
+| Action | Super administrateur | Administrateur | Modérateur |
+| --- | --- | --- | --- |
+| Lire le détail (description, auteur, conversation) | Tous, sauf ceux qui le visent | Tous, sauf ceux qui visent un administrateur | Sa promotion, sauf l’équipe |
+| Être averti (nom, promotion, motif, état) | — | — | Tous les membres signalés des autres promotions |
+| Marquer résolu ou classer sans suite, avec une note | Dans sa portée | Dans sa portée | Dans sa portée, sauf ses propres signalements |
+| Retirer l’accès du membre signalé depuis la fiche | Oui | Oui | Membres de sa promotion |
+
+Les badges du menu du hub comptent les signalements ouverts et les comptes à valider de chacun (`hub_context`, relu chaque minute).
 
 Chaque décision est inscrite dans le journal (`report_resolved`, `report_dismissed`) avec la note. Un signalement ne se traite qu’une fois. L’aperçu local `?demo=admin` ou `?demo=moderator` montre des signalements fictifs, retirés du build de production.
 
@@ -72,7 +77,7 @@ L’équipe n’est pas prévenue par e-mail d’un nouveau signalement : elle c
 2. Fait le même jour, sur la production : la RLS est active ; aucune table de blocage ou de signalement n’est accessible à `anon` ; `authenticated` ne peut que lire et supprimer ses propres blocages et ne lit aucun signalement ; seules `block_member`, `report_member`, `messaging_report_conversation`, `hub_reports` et `hub_resolve_report` lui sont ouvertes ; les fonctions internes ne le sont pas. Les avertissements de sécurité Supabase ne signalent rien de nouveau hors de ces fonctions ouvertes, de même nature que celles de la messagerie et du hub.
 3. Appliquer le modèle d’e-mail de réinitialisation.
 4. Déployer le site, puis le hub (publication manuelle sur Render).
-5. Avant de déployer les retours du testeur : appliquer, dans cet ordre, `20261110190000_hub_admins_from_database.sql`, `20261110191000_member_approval.sql` et `20261110192000_account_deletion.sql`, puis renommer les fichiers d’après les versions enregistrées par Supabase. La validation change le site déjà en ligne : un nouvel inscrit y resterait invisible sans écran pour l’expliquer, donc déployer le site et le hub juste après.
+5. Avant de déployer les retours du testeur : appliquer, dans cet ordre, `20261110191000_member_approval.sql`, `20261110192000_account_deletion.sql` et `20261111090000_hub_role_levels.sql`, puis renommer les fichiers d’après les versions enregistrées par Supabase. La validation change le site déjà en ligne : un nouvel inscrit y resterait invisible sans écran pour l’expliquer, donc déployer le site et le hub juste après. Les deux administrateurs actuels restent administrateurs : nommer ensuite le premier super administrateur en SQL (`docs/administration.md`), sans quoi personne n’accède à la maintenance ni aux logs.
 
 ## Vérifications
 

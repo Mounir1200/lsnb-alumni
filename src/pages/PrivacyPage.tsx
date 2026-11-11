@@ -174,8 +174,9 @@ export function PrivacyPage() {
       </p>
       <h2>Modération</h2>
       <p>
-        L’équipe de modération réunit des administrateurs, qui couvrent tout le réseau, et des
-        modérateurs, chacun rattaché à une promotion.
+        L’équipe réunit au plus trois super administrateurs, qui s’occupent aussi du fonctionnement
+        technique du site, des administrateurs, qui couvrent tout le réseau, et des modérateurs,
+        chacun rattaché à une promotion.
       </p>
       <ul>
         <li>
@@ -213,10 +214,13 @@ export function PrivacyPage() {
       <p>
         Un signalement contient votre nom, celui du membre signalé, le motif, votre description et
         la date. Si vous signalez depuis une conversation, ses {REPORTED_MESSAGE_COUNT} derniers messages, les vôtres compris,
-        sont copiés dans le signalement et chiffrés comme les messages. Les signalements sont lus par
-        les administrateurs et par les modérateurs de la promotion du membre signalé ; un signalement
-        qui vise un membre de l’équipe n’est lu que par les administrateurs. Le membre signalé ne voit
-        ni le signalement, ni son auteur.
+        sont copiés dans le signalement et chiffrés comme les messages. Le signalement complet est lu
+        par les administrateurs et par les modérateurs de la promotion du membre signalé, qui seuls
+        peuvent agir. Les autres modérateurs sont seulement avertis qu’un membre est signalé : son
+        nom, sa promotion, le motif et l’état du signalement, jamais votre description, vos messages
+        ni votre nom. Un signalement qui vise un membre de l’équipe va au niveau supérieur : les
+        administrateurs pour un modérateur, les super administrateurs pour un administrateur. Le
+        membre signalé ne voit ni le signalement, ni son auteur.
       </p>
       <p>
         Le traitement d’un signalement (résolu ou classé, avec une note) est inscrit dans le journal de
@@ -229,8 +233,7 @@ export function PrivacyPage() {
         Pour comprendre l’utilisation du réseau, le site compte, pour chaque membre connecté, ses
         visites par jour et par rubrique : accueil, annuaire, profils, offres, Highlight et espace
         membre. Il ne collecte ni le texte des recherches, ni le contenu des messages, ni l’identité
-        des profils consultés. Le tableau de bord n’affiche que des totaux ; un modérateur ne voit
-        que ceux de sa promotion.
+        des profils consultés. Le tableau de bord n’affiche que des totaux, pour tout le réseau.
       </p>
       <h2 id="vos-droits">Vos droits</h2>
       <ul>
