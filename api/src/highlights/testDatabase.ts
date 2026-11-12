@@ -29,13 +29,16 @@ export async function createMigratedDatabase({ before, messaging = false }: { be
     create role anon; create role authenticated; create role service_role bypassrls;
     grant usage on schema public to anon, authenticated, service_role;
     create schema auth; grant usage on schema auth to anon, authenticated, service_role;
-    create schema storage;
+    create schema storage; grant usage on schema storage to anon, authenticated;
     create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz default clock_timestamp(),
       raw_user_meta_data jsonb not null default '{}', raw_app_meta_data jsonb not null default '{}');
     create function auth.uid() returns uuid language sql as
       'select nullif(current_setting(''request.jwt.claim.sub'', true), '''')::uuid';
     create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-    create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
+    -- As on Supabase: one object per bucket and name, table rights granted, row-level security on.
+    create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, unique (bucket_id, name));
+    grant select, insert, update, delete on storage.objects to anon, authenticated;
+    alter table storage.objects enable row level security;
     create function storage.foldername(text) returns text[] language sql as 'select string_to_array($1, ''/'')';
   `)
   if (messaging) await db.exec(messagingStubs)
