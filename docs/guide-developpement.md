@@ -110,7 +110,7 @@ Repères dans le code : `src/lib/avatarRepository.ts` pour l'envoi/suppression ;
 
 ### Qui peut accéder à quoi ?
 
-Les règles **RLS** sont les permissions appliquées par la base : profils actifs lisibles par les membres connectés ; modification de son propre profil ; e-mail accessible à son propriétaire ou aux membres connectés si sa visibilité est activée ; demandes lisibles par leurs deux participants. **Les photos sont publiques pour toute personne ayant leur URL**, même sans connexion. L'envoi, le remplacement et la suppression sont réservés au propriétaire.
+Les règles **RLS** sont les permissions appliquées par la base : profils actifs lisibles par les membres connectés ; modification de son propre profil ; e-mail accessible à son propriétaire ou aux membres connectés si sa visibilité est activée ; demandes lisibles par leurs deux participants. **Les photos sont publiques pour toute personne ayant leur URL**, même sans connexion, mais personne ne peut lister le bucket : chaque membre n'y voit que sa propre photo. L'envoi, le remplacement et la suppression sont réservés au propriétaire, et seulement au chemin `<identifiant-du-membre>/avatar` : un compte ne peut pas y stocker d'autres fichiers.
 
 <!-- pagebreak -->
 
