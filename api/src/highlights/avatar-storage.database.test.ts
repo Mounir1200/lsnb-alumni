@@ -16,6 +16,11 @@ describe('Member photos in Storage', { concurrency: false }, () => {
   // What the site's upload does: replace the file when it exists, and read back what was written.
   const upload = (id: string, name: string) => asMember(db, id, () => db.query(`insert into storage.objects (bucket_id, name)
     values ('avatars', $1) on conflict (bucket_id, name) do update set name = excluded.name returning id`, [name]))
+  // The least a direct Storage call can do: write without reading anything, so only the rules on writes can refuse it.
+  const store = (id: string, name: string, bucket = 'avatars') => asMember(db, id, () =>
+    db.query('insert into storage.objects (bucket_id, name) values ($1, $2)', [bucket, name]))
+  const renameOwnObjects = (id: string, name: string) => asMember(db, id, () => db.query('update storage.objects set name = $1', [name]))
+  const storedNames = async () => (await db.query<{ name: string }>('select name from storage.objects order by name')).rows.map((row) => row.name)
 
   before(async () => { db = await createMigratedDatabase() })
   after(async () => { await db?.close() })
@@ -41,5 +46,20 @@ describe('Member photos in Storage', { concurrency: false }, () => {
     const removed = await asMember(db, alumna, () =>
       db.query("delete from storage.objects where bucket_id = 'avatars' and name = $1 returning id", [avatar(alumna)]))
     assert.equal(removed.rows.length, 1)
+  })
+
+  it('keeps a member to one photo, at the path the site uses, so no account can fill the shared storage', async () => {
+    const photos = await storedNames()
+    for (const name of [`${alumna}/second`, `${alumna}/avatar.png`, `${alumna}/photos/avatar`, avatar(pupil)]) {
+      await assert.rejects(store(alumna, name), /row-level security/, name)
+    }
+    await assert.rejects(store(alumna, avatar(alumna), 'documents'), /row-level security/, 'another bucket')
+    assert.deepEqual(await storedNames(), photos)
+  })
+
+  it('never lets a member turn their photo into another file', async () => {
+    const photos = await storedNames()
+    await assert.rejects(renameOwnObjects(alumna, `${alumna}/copy`), /row-level security/)
+    assert.deepEqual(await storedNames(), photos)
   })
 })

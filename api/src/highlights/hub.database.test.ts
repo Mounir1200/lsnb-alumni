@@ -140,11 +140,11 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     assert.equal((await asUser(otherPromo, () => db.query('select id from public.offers'))).rows.length, 0)
     assert.equal((await asUser(otherPromo, () => db.query('select profile_id from public.profile_contacts where profile_id=$1', [samePromo]))).rows.length, 0)
     await assert.rejects(rpc(samePromo, 'record_member_activity', ['directory']), /account suspended/)
-    await assert.rejects(asUser(samePromo, () => db.query("insert into storage.objects(bucket_id,name) values('avatars',$1)", [`${samePromo}/avatar.png`])), /row-level security/)
+    await assert.rejects(asUser(samePromo, () => db.query("insert into storage.objects(bucket_id,name) values('avatars',$1)", [`${samePromo}/avatar`])), /row-level security/)
   })
 
   it('enforces maintenance in all direct member tables while preserving hub administration', async () => {
-    await asUser(samePromo, () => db.query("insert into storage.objects(bucket_id,name) values('avatars',$1)", [`${samePromo}/avatar.png`]))
+    await asUser(samePromo, () => db.query("insert into storage.objects(bucket_id,name) values('avatars',$1)", [`${samePromo}/avatar`]))
     await maintenance()
     assert.equal((await value('select public.public_site_status() as value')).active, true)
     for (const table of ['profiles','profile_contacts','connection_requests','mentorships','offers']) {
@@ -153,7 +153,7 @@ describe('Administration hub PostgreSQL authorization and maintenance', { concur
     assert.equal((await asUser(samePromo, () => db.query('update public.profiles set city=\'Lille\' where id=$1 returning id', [samePromo]))).rows.length, 0)
     await assert.rejects(asUser(samePromo, () => db.query(`insert into public.connection_requests(requester_id,recipient_id,request_kind,message)
       values($1,$2,'contact','Bonjour, une demande de contact pour vous.')`, [samePromo, otherPromo])), /row-level security|active completed profiles/)
-    await assert.rejects(asUser(samePromo, () => db.query("insert into storage.objects(bucket_id,name) values('avatars',$1)", [`${samePromo}/second.png`])), /row-level security/)
+    await assert.rejects(asUser(samePromo, () => db.query("insert into storage.objects(bucket_id,name) values('avatars',$1)", [`${samePromo}/avatar`])), /row-level security/)
     assert.equal((await asUser(samePromo, () => db.query('delete from storage.objects returning id'))).rows.length, 0)
     await assert.rejects(rpc(samePromo, 'record_member_activity', ['home']), /Site unavailable/)
     assert.equal((await rpc(admin, 'hub_context')).role, 'super_admin')

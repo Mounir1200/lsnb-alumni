@@ -18,4 +18,12 @@ drop policy "Avatar images are public" on storage.objects;
 create policy "Members read their own avatar" on storage.objects for select to authenticated
 using (private.is_own_avatar(bucket_id, name));
 
+-- Writing accepted any name under one's own folder, so any account, even one
+-- waiting for approval, could fill the shared storage with as many 4 MB files
+-- as it liked. Uploads and renames now keep to that one photo.
+alter policy "Members can upload their avatar" on storage.objects
+with check (private.is_own_avatar(bucket_id, name));
+alter policy "Members can update their avatar" on storage.objects
+using (private.is_own_avatar(bucket_id, name)) with check (private.is_own_avatar(bucket_id, name));
+
 commit;
