@@ -154,6 +154,16 @@ describe('Email notifications for requests and acceptances', { concurrency: fals
     assert.deepEqual(await claim(), [], 'withdrawing a request does not give its e-mail back')
   })
 
+  it('sends nothing more between two members once one of them blocks the other', async () => {
+    const awa = await seedMember(db, { email: 'awa@example.test' })
+    const binta = await seedMember(db, { email: 'binta@example.test' })
+    const request = await sendRequest(db, awa, binta)
+    for (const job of await claim()) await finish(job)
+    await answerRequest(db, binta, request.id)
+    await asMember(db, binta, () => db.query('select public.block_member($1)', [awa]))
+    assert.deepEqual(await claim(), [], 'the acceptance no longer leaves once Binta has blocked Awa')
+  })
+
   it('emails an acceptance once a day per pair, so removing the connection and asking again sends nothing more', async () => {
     const awa = await seedMember(db, { email: 'awa@example.test' })
     const binta = await seedMember(db, { email: 'binta@example.test' })
