@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
+import { useSignOut } from "../../auth/useSignOut";
 import { SITE_NAME } from "../../lib/site";
 import { supabase } from "../../lib/supabase";
 import {
@@ -14,6 +15,7 @@ import {
   parseSiteStatus,
   type SiteStatus,
 } from "../../lib/siteAvailability";
+import { SignOutFailure } from "../auth/SignOutFailure";
 import { MaintenancePage } from "./MaintenancePage";
 
 export function SiteAvailability({ children }: { children: ReactNode }) {
@@ -143,21 +145,7 @@ export function SiteAvailability({ children }: { children: ReactNode }) {
       />
     );
   if (!error && state && state.userId === user?.id && !state.active)
-    return (
-      <div className="availability-screen">
-        <div>
-          <span className="maintenance-kicker">{SITE_NAME}</span>
-          <h1>Votre accès a été retiré.</h1>
-          <p>
-            L’équipe de modération a suspendu votre accès au réseau. Vous pouvez
-            lui demander de vérifier votre appartenance à la promotion.
-          </p>
-          <button onClick={() => void supabase?.auth.signOut()}>
-            Se déconnecter
-          </button>
-        </div>
-      </div>
-    );
+    return <SuspendedAccount />;
   if (!allowed || isLoading)
     return (
       <div className="availability-screen">
@@ -182,4 +170,25 @@ export function SiteAvailability({ children }: { children: ReactNode }) {
       </div>
     );
   return children;
+}
+
+/** A suspended member can only sign out; a failure is said under the button. */
+function SuspendedAccount() {
+  const { signOut, isSigningOut, hasFailed } = useSignOut();
+  return (
+    <div className="availability-screen">
+      <div>
+        <span className="maintenance-kicker">{SITE_NAME}</span>
+        <h1>Votre accès a été retiré.</h1>
+        <p>
+          L’équipe de modération a suspendu votre accès au réseau. Vous pouvez
+          lui demander de vérifier votre appartenance à la promotion.
+        </p>
+        <button onClick={() => void signOut()} disabled={isSigningOut}>
+          {isSigningOut ? "Déconnexion…" : "Se déconnecter"}
+        </button>
+        {hasFailed && <SignOutFailure />}
+      </div>
+    </div>
+  );
 }

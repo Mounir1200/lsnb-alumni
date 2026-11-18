@@ -224,7 +224,8 @@
 .availability-screen button:hover {
   background: #173e350b;
 }
-.maintenance-actions button:disabled {
+.maintenance-actions button:disabled,
+.availability-screen button:disabled {
   opacity: 0.5;
   cursor: default;
 }
