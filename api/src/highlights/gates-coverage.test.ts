@@ -1,15 +1,50 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createClient } from "@supabase/supabase-js";
+import { AuthRetryableFetchError, createClient } from "@supabase/supabase-js";
 import { signOutAndLeave } from "../../../src/auth/signOut.ts";
 import { fetchPublicProfiles } from "../../../src/lib/publicProfiles.ts";
 import { createServiceRpc, NotificationError } from "../notifications/delivery.js";
 
+const networkDown = () => new AuthRetryableFetchError("Failed to fetch", 0);
+
+/** What this browser holds after a sign-out attempt, as supabase-js reports it. */
+function browserAuth(signOut: () => Promise<{ error: Error | null }>, holdsSession: boolean) {
+  return {
+    signOut,
+    // A session kept here is expired and its refresh fails while the network is down.
+    getSession: async () => ({ data: { session: null }, error: holdsSession ? networkDown() : null }),
+  };
+}
+
+async function signOutSteps(auth: ReturnType<typeof browserAuth>) {
+  const steps: string[] = [];
+  const hasSignedOut = await signOutAndLeave(auth, () => steps.push("drafts"), () => steps.push("home"));
+  return { steps, hasSignedOut };
+}
+
 test("signing out ends the session before clearing drafts and leaving", async () => {
   const steps: string[] = [];
-  await signOutAndLeave({ signOut: async () => { steps.push("session"); return { error: null }; } },
+  const hasSignedOut = await signOutAndLeave(browserAuth(async () => { steps.push("session"); return { error: null }; }, false),
     () => steps.push("drafts"), () => steps.push("home"));
   assert.deepEqual(steps, ["session", "drafts", "home"]);
+  assert.equal(hasSignedOut, true);
+});
+
+test("a sign-out that leaves the session in this browser keeps the page and the drafts, and says it failed", async () => {
+  // supabase-js refreshes an expired session before signing out and stops there when the refresh fails.
+  const result = await signOutSteps(browserAuth(async () => ({ error: networkDown() }), true));
+  assert.deepEqual(result, { steps: [], hasSignedOut: false });
+});
+
+test("a sign-out the server could not confirm still leaves once this browser dropped the session", async () => {
+  // With a valid token, supabase-js forgets the session here even when the logout call fails.
+  const result = await signOutSteps(browserAuth(async () => ({ error: networkDown() }), false));
+  assert.deepEqual(result, { steps: ["drafts", "home"], hasSignedOut: true });
+});
+
+test("a sign-out that throws while the session stays here is reported as failed too", async () => {
+  const result = await signOutSteps(browserAuth(async () => { throw new Error("lock timeout"); }, true));
+  assert.deepEqual(result, { steps: [], hasSignedOut: false });
 });
 
 function publicClient(response: () => Response) {

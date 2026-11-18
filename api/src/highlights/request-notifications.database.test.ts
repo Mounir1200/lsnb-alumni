@@ -33,13 +33,28 @@ const roundCalls = async () => (await db.query<RoundCall>(
 const withdraw = (requester: string, requestId: string) =>
   asMember(db, requester, () => db.query('delete from public.connection_requests where id = $1', [requestId]))
 
+/** `askers` members each ask `recipientsEach` other members to connect; every request is announced. */
+async function announceRequests(askers: number, recipientsEach: number) {
+  const requests: { requester: string; id: string }[] = []
+  for (let asker = 0; asker < askers; asker++) {
+    const requester = await seedMember(db, { email: `asker${asker}@example.test` })
+    for (let index = 0; index < recipientsEach; index++) {
+      const recipient = await seedMember(db, { email: `member${asker}-${index}@example.test` })
+      requests.push({ requester, id: (await sendRequest(db, requester, recipient)).id })
+    }
+  }
+  return requests
+}
+
 describe('Email notifications for requests and acceptances', { concurrency: false }, () => {
   before(async () => {
     db = await createMigratedDatabase()
     await db.exec(SUPABASE_STUBS)
   })
   beforeEach(async () => {
-    await db.exec('truncate public.weekly_highlights, auth.users, net.calls cascade; update private.hub_maintenance set enabled = false, ends_at = null')
+    // The day's e-mail budget belongs to no member: empty it with the members.
+    await db.exec(`truncate public.weekly_highlights, auth.users, net.calls, private.request_email_budget cascade;
+      update private.hub_maintenance set enabled = false, ends_at = null`)
     await storeToken(TOKEN)
   })
   after(async () => { await db?.close() })
@@ -128,17 +143,39 @@ describe('Email notifications for requests and acceptances', { concurrency: fals
     assert.deepEqual(await claim(), [])
   })
 
-  it('keeps request emails within their daily budget', async () => {
+  it('keeps request emails within their daily budget, which a withdrawn request does not refill', async () => {
+    // Each member announces requests to ten members a day: six of them use up the day's sixty e-mails.
+    const announced = await announceRequests(6, 10)
+    await sendRequest(db, await seedMember(db, { email: 'asker6@example.test' }), await seedMember(db, { email: 'late@example.test' }))
+    let claimed = 0
+    for (let round = 0; round < 4; round++) claimed += (await claim()).length
+    assert.equal(claimed, 60, 'the sixty-first e-mail waits for the next day')
+    await withdraw(announced[0]!.requester, announced[0]!.id)
+    assert.deepEqual(await claim(), [], 'withdrawing a request does not give its e-mail back')
+  })
+
+  it('sends nothing more between two members once one of them blocks the other', async () => {
     const awa = await seedMember(db, { email: 'awa@example.test' })
     const binta = await seedMember(db, { email: 'binta@example.test' })
-    await db.exec(`set session_replication_role = replica;
-      insert into public.connection_requests (requester_id, recipient_id, request_kind, message, status)
-        select '${awa}', '${binta}', 'connection', 'Une ancienne demande déjà traitée.', 'declined' from generate_series(1, 60);
-      insert into private.request_email_queue (request_id, recipient_id, event, status, attempts, first_attempt_at, finished_at)
-        select id, recipient_id, 'received', 'sent', 1, clock_timestamp(), clock_timestamp() from public.connection_requests;
-      set session_replication_role = origin;`)
-    await sendRequest(db, awa, binta)
-    assert.deepEqual(await claim(), [])
+    const request = await sendRequest(db, awa, binta)
+    for (const job of await claim()) await finish(job)
+    await answerRequest(db, binta, request.id)
+    await asMember(db, binta, () => db.query('select public.block_member($1)', [awa]))
+    assert.deepEqual(await claim(), [], 'the acceptance no longer leaves once Binta has blocked Awa')
+  })
+
+  it('emails an acceptance once a day per pair, so removing the connection and asking again sends nothing more', async () => {
+    const awa = await seedMember(db, { email: 'awa@example.test' })
+    const binta = await seedMember(db, { email: 'binta@example.test' })
+    const reconnect = async () => {
+      await asMember(db, awa, () => db.query('delete from public.member_connections'))
+      await answerRequest(db, binta, (await sendRequest(db, awa, binta)).id)
+      return summary(await claim())
+    }
+    assert.deepEqual(await reconnect(), ['accepted connection awa@example.test'])
+    assert.deepEqual(await reconnect(), [], 'the same day, a new acceptance sends nothing')
+    await db.exec("update private.request_announcements set announced_at = announced_at - interval '1 day'")
+    assert.deepEqual(await reconnect(), ['accepted connection awa@example.test'], 'a day later, it is announced again')
   })
 
   it('lets only the server role claim or finish notifications', async () => {

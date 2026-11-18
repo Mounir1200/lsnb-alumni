@@ -18,6 +18,7 @@ Migration : `supabase/migrations/20261110115109_member_blocks.sql`.
 
 - Un membre bloque depuis un profil ou une conversation (`MemberSafety`). Personne n’est prévenu.
 - `public.block_member()` est la seule entrée. Elle enregistre le blocage puis met fin aux liens du couple : les demandes en attente du membre bloqué sont refusées (leurs e-mails d’annonce partent alors à la corbeille, la file vérifie l’état de la demande), celles du bloqueur sont retirées, la connexion est supprimée et les mentorats actifs prennent fin, signés par le bloqueur. Relancée, elle ne change rien.
+- Le blocage et toute nouvelle demande entre les deux membres prennent le même verrou, propre au couple : une demande envoyée pendant un blocage attend qu’il soit écrit, puis est refusée. La file d’e-mails n’envoie plus rien à propos d’une demande entre deux membres dont l’un a bloqué l’autre (`20261118143817_block_request_lock.sql`). Les tests embarqués n’ont qu’une connexion et ne peuvent pas rejouer cette course.
 - Des déclencheurs refusent ensuite, dans les deux sens, toute demande, toute acceptation et tout message entre les deux membres (code d’erreur `LS423`), quel que soit le chemin d’écriture. Refuser une demande reste possible.
 - `public.member_blocks` n’est lisible et supprimable que par l’auteur du blocage (RLS). La liste et le déblocage sont dans « Mes relations ». Lever un blocage ne rétablit pas les liens terminés.
 - Les fiches restent visibles : seules les prises de contact sont bloquées. Le membre bloqué peut le déduire d’un refus d’envoi.
@@ -48,7 +49,7 @@ Un membre de l’équipe agit sur un signalement qui vise quelqu’un en dessous
 
 Les badges du menu du hub comptent les signalements ouverts et les comptes à valider de chacun (`hub_context`, relu chaque minute).
 
-Chaque décision est inscrite dans le journal (`report_resolved`, `report_dismissed`) avec la note. Un signalement ne se traite qu’une fois. L’aperçu local `?demo=admin` ou `?demo=moderator` montre des signalements fictifs, retirés du build de production.
+Chaque décision est inscrite dans le journal (`report_resolved`, `report_dismissed`) avec la note. Le journal ne montre ces entrées qu’à ceux qui peuvent agir sur le signalement (`private.report_in_scope`), comme l’écran « Signalements » : jamais au membre de l’équipe visé ni à ses pairs (`20261118143706_report_journal_scope.sql`). Un signalement ne se traite qu’une fois. L’aperçu local `?demo=admin` ou `?demo=moderator` montre des signalements fictifs, retirés du build de production.
 
 L’équipe n’est pas prévenue par e-mail d’un nouveau signalement : elle consulte le hub. Une alerte déclenchée à l’arrivée du signalement serait l’évolution suivante, en respectant le quota Brevo partagé.
 

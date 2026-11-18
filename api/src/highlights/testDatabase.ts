@@ -121,7 +121,11 @@ export async function asSession<T>(db: PGlite, member: { id: string; session: st
 
 /** A member just signed in on a device registered for messaging, as the browser does after sign-in. */
 export async function seedMessagingMember(db: PGlite, options: MemberOptions = {}): Promise<MessagingMember> {
-  const id = await seedMember(db, options)
+  return signInForMessaging(db, await seedMember(db, options))
+}
+
+/** The member signs in on one more device, which registers for messaging right away. */
+export async function signInForMessaging(db: PGlite, id: string): Promise<MessagingMember> {
   const session = (await db.query<{ id: string }>('insert into auth.sessions (id, user_id) values (gen_random_uuid(), $1) returning id', [id])).rows[0]!.id
   const registered = await asSession(db, { id, session }, async () => (await db.query<{ value: { session_id: string; key: string; server_time: number } }>(
     'select to_jsonb(public.messaging_register_device()) as value')).rows[0]!.value)

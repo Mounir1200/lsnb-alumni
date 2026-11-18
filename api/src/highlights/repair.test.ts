@@ -225,3 +225,21 @@ test("retry and failure recording RPC payloads contain only bounded diagnostic f
       p_repair_token: "token", p_failure_code: "rate_limited", p_http_status: 429, p_retry_after_seconds: 180 } },
   ]);
 });
+
+test("a repair reads a list once saved nested as text before asking for a portrait", async () => {
+  // Snapshots taken before the database kept these lists flat may hold nested arrays.
+  const nested = { ...source, specialties: ["Statistiques", ["Mathématiques"]], mentoring_topics: [["Orientation"]] };
+  const received: SourceProfile[] = [];
+  const store = createHighlightStore({ url: "https://example.supabase.co", secretKey: "sb_secret_test" },
+    (async (url, init) => {
+      const { p_slot: slot } = JSON.parse(String(init?.body ?? "{}")) as { p_slot?: number };
+      if (!String(url).includes("claim_highlight_fallback_repair")) return Response.json(true);
+      return Response.json({ outcome: "claimed", repair_token: `token-${slot}`, article: {
+        slot, profile_id: `member-${slot}`, source_profile: nested, title: "Original", paragraphs: ["Texte de secours."],
+        generation_method: "fallback", ai_attempted_at: "2026-08-31T00:00:00Z", generated_at: "2026-08-31T00:00:30Z",
+      } });
+    }) as typeof fetch);
+  await repairWeeklyHighlight({ store, now, generate: async (profile) => { received.push(profile); return generated; } });
+  assert.deepEqual(received.map((profile) => [profile.specialties, profile.mentoring_topics]),
+    [[["Statistiques"], []], [["Statistiques"], []]]);
+});

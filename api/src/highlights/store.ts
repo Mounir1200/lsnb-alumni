@@ -1,4 +1,6 @@
-import type { GeneratedArticle, HighlightClaim, HighlightRepairClaim, HighlightRepairStore, PublicHighlight, StoredArticle } from "./types.js";
+import type {
+  GeneratedArticle, HighlightClaim, HighlightRepairClaim, HighlightRepairStore, PublicHighlight, SourceProfile, StoredArticle,
+} from "./types.js";
 import { weekEnd } from "./week.js";
 
 export type HighlightStorageConfig = { url: string; secretKey: string };
@@ -9,6 +11,20 @@ export class HighlightStorageError extends Error {
     super(`Highlight storage request failed (${status}).`);
     this.name = "HighlightStorageError";
   }
+}
+
+// A snapshot is immutable and the database did not always keep a member's lists
+// flat: only their text is read, so one nested list cannot stop an edition.
+function textItems(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function readSourceProfile(profile: SourceProfile): SourceProfile {
+  return { ...profile, specialties: textItems(profile.specialties), mentoring_topics: textItems(profile.mentoring_topics) };
+}
+
+function readArticle(article: StoredArticle): StoredArticle {
+  return { ...article, source_profile: readSourceProfile(article.source_profile) };
 }
 
 type PublishedArticle = StoredArticle & {
@@ -69,7 +85,10 @@ export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: 
         articles: articles.sort((a, b) => a.slot - b.slot).map(toPublicArticle),
       } satisfies PublicHighlight;
     },
-    claim: (weekStart) => request<HighlightClaim>("rpc/claim_weekly_highlight", { p_week_start: weekStart }),
+    claim: async (weekStart) => {
+      const claim = await request<HighlightClaim>("rpc/claim_weekly_highlight", { p_week_start: weekStart });
+      return claim.articles ? { ...claim, articles: claim.articles.map(readArticle) } : claim;
+    },
     claimAi: (weekStart, slot, leaseToken) => request<boolean>("rpc/claim_ai_highlight", {
       p_week_start: weekStart, p_slot: slot, p_lease_token: leaseToken,
     }),
@@ -81,10 +100,13 @@ export function createHighlightStore(config: HighlightStorageConfig, fetchImpl: 
     publish: (weekStart, leaseToken) => request<boolean>("rpc/publish_weekly_highlight", {
       p_week_start: weekStart, p_lease_token: leaseToken,
     }),
-    claimRepair: (weekStart, slot, retryFailed = false) => request<HighlightRepairClaim>("rpc/claim_highlight_fallback_repair", {
-      p_week_start: weekStart, p_slot: slot,
-      ...(retryFailed ? { p_retry_failed: true } : {}),
-    }),
+    claimRepair: async (weekStart, slot, retryFailed = false) => {
+      const claim = await request<HighlightRepairClaim>("rpc/claim_highlight_fallback_repair", {
+        p_week_start: weekStart, p_slot: slot,
+        ...(retryFailed ? { p_retry_failed: true } : {}),
+      });
+      return claim.article ? { ...claim, article: readArticle(claim.article) } : claim;
+    },
     recordRepairFailure: (weekStart, slot, repairToken, failure) => request<boolean>("rpc/record_highlight_repair_failure", {
       p_week_start: weekStart, p_slot: slot, p_repair_token: repairToken,
       p_failure_code: failure.code, p_http_status: failure.httpStatus, p_retry_after_seconds: failure.retryAfterSeconds,

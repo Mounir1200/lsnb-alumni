@@ -194,6 +194,29 @@ test("storage failure never exposes provider response or credentials", async () 
   });
 });
 
+test("a list a member once saved nested no longer stops the week's edition", async () => {
+  // Snapshots taken before the database kept these lists flat may hold nested arrays.
+  const nested = { ...source, specialties: [["Mathématiques", "Statistiques"]], offers_mentoring: true, mentoring_topics: [["Orientation"]] };
+  const saved: number[] = [];
+  let published = false;
+  const store = createHighlightStore({ url: "https://example.supabase.co", secretKey: "sb_secret_test" }, (async (url, init) => {
+    const body = JSON.parse(String(init?.body ?? "{}")) as { p_slot?: number };
+    switch (new URL(String(url)).pathname.split("/").at(-1)) {
+      case "claim_weekly_highlight":
+        return Response.json({ outcome: "claimed", lease_token: "lease", articles: [1, 2].map((slot) => ({
+          slot, profile_id: `member-${slot}`, source_profile: slot === 1 ? nested : source,
+          title: null, paragraphs: null, generation_method: null, ai_attempted_at: null, generated_at: null,
+        })) });
+      case "save_highlight_article": saved.push(body.p_slot!); return Response.json(true);
+      case "publish_weekly_highlight": published = true; return Response.json(true);
+      default: return Response.json(true);
+    }
+  }) as typeof fetch);
+  const result = await generateWeeklyHighlight({ store,
+    generate: async () => { throw new HighlightGenerationError("provider", "http_error", 503); } });
+  assert.deepEqual([result.outcome, result.fallbacks, saved, published], ["published", 2, [1, 2], true]);
+});
+
 test("saved fallbacks report safe failure diagnostics and interrupted attempts separately", async () => {
   const { store, articles } = fixture();
   articles[1]!.ai_attempted_at = "2026-09-07T00:00:00Z";

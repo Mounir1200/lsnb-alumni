@@ -4,6 +4,7 @@ import { Link, NavLink, useLocation, type Location } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { useSignOut } from "../../auth/useSignOut";
 import { cn } from "../../lib/cn";
+import { SignOutFailure } from "../auth/SignOutFailure";
 import { usePendingRequests } from "../mentoring/PendingRequestsProvider";
 import { UnreadMessagesBadge, useMessaging } from "../messaging/MessagingProvider";
 import { BrandMark } from "../ui/BrandMark";
@@ -97,8 +98,10 @@ function MenuTile({ item, badge }: { item: NavigationItem; badge?: ReactNode }) 
   );
 }
 
-function SignOutButton({ className }: { className: string }) {
-  const { signOut, isSigningOut } = useSignOut();
+type SignOutControls = ReturnType<typeof useSignOut>;
+
+function SignOutButton({ className, controls }: { className: string; controls: SignOutControls }) {
+  const { signOut, isSigningOut } = controls;
   return (
     <button type="button" className={className} title="Se déconnecter" onClick={() => void signOut()} disabled={isSigningOut}>
       <LogOut size={16} aria-hidden="true" />
@@ -129,6 +132,10 @@ export function SiteHeader() {
   const { user, isLoading } = useAuth();
   const { count: pendingRequests } = usePendingRequests();
   const { unread } = useMessaging();
+  // One sign-out for both buttons, so its failure is said wherever the member asked,
+  // and only while this browser still holds the session.
+  const signOutControls = useSignOut();
+  const isSignOutFailureShown = signOutControls.hasFailed && Boolean(user);
   const relationsBadge = <PendingCount count={pendingRequests} />;
 
   // The key changes on every navigation, including a tap on the current page.
@@ -170,7 +177,7 @@ export function SiteHeader() {
               <ButtonLink to={`/alumni/${user.id}`} size="sm" variant="light">
                 Mon espace
               </ButtonLink>
-              <SignOutButton className="site-header__signout" />
+              <SignOutButton className="site-header__signout" controls={signOutControls} />
             </>
           ) : !isLoading ? (
             <>
@@ -199,6 +206,8 @@ export function SiteHeader() {
         </button>
       </div>
 
+      {isSignOutFailureShown && !menuOpen && <div className="page-shell"><SignOutFailure /></div>}
+
       {menuOpen && (
         <div id="mobile-navigation" className="site-header__mobile-panel is-open">
           <nav aria-label="Navigation mobile" className="page-shell">
@@ -214,7 +223,7 @@ export function SiteHeader() {
             <div className="site-header__mobile-account">
               {user ? (
                 <>
-                  <SignOutButton className="site-header__mobile-signout" />
+                  <SignOutButton className="site-header__mobile-signout" controls={signOutControls} />
                   <ButtonLink to={`/alumni/${user.id}`} variant="light">Mon espace</ButtonLink>
                 </>
               ) : (
@@ -224,6 +233,7 @@ export function SiteHeader() {
                 </>
               )}
             </div>
+            {isSignOutFailureShown && <SignOutFailure />}
           </nav>
         </div>
       )}
