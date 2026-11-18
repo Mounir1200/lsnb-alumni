@@ -27,6 +27,9 @@ const hubReports = async (staff: string, status = 'open') => asMember(db, staff,
   (await db.query<{ value: { items: HubReport[]; total: number } }>('select public.hub_reports($1, 1) as value', [status])).rows[0]!.value)
 const settle = (staff: string, reportId: string, outcome = 'resolved', note = 'Membre averti, propos retirés.') =>
   asMember(db, staff, () => db.query('select public.hub_resolve_report($1, $2, $3)', [reportId, outcome, note]))
+const journalNotes = async (staff: string) => asMember(db, staff, async () =>
+  (await db.query<{ value: { items: { action: string; reason: string | null }[] } }>('select public.hub_audit(1) as value')).rows[0]!.value
+    .items.filter((entry) => entry.action.startsWith('report_')).map((entry) => entry.reason))
 const makeStaff = (member: string, role: 'admin' | 'moderator', promotion: number | null) =>
   db.query('insert into private.hub_staff (user_id, role, graduation_year) values ($1, $2, $3)', [member, role, promotion])
 
@@ -115,7 +118,7 @@ describe('Settling reports in the hub', { concurrency: false }, () => {
 
   before(async () => { db = await createMigratedDatabase({ messaging: true }) })
   beforeEach(async () => {
-    await db.exec('truncate public.weekly_highlights, auth.users cascade; truncate private.member_reports')
+    await db.exec('truncate public.weekly_highlights, auth.users cascade; truncate private.member_reports, private.hub_audit')
     admin = await seedMember(db, { graduationYear: 2019 }); await makeStaff(admin, 'admin', null)
     moderator = await seedMember(db, { graduationYear: 2021 }); await makeStaff(moderator, 'moderator', 2021)
     colleague = await seedMember(db, { graduationYear: 2021 }); await makeStaff(colleague, 'moderator', 2021)
@@ -162,6 +165,23 @@ describe('Settling reports in the hub', { concurrency: false }, () => {
     const journal = await db.query<{ action: string; target_id: string; reason: string }>(
       "select action, target_id, reason from private.hub_audit where action like 'report_%'")
     assert.deepEqual(journal.rows, [{ action: 'report_resolved', target_id: samePromotion, reason: 'Membre averti, propos retirés.' }])
+  })
+
+  it('keeps the journal of a report about a team member to those who may act on it', async () => {
+    await report(await seedMember(db, { graduationYear: 2023 }), colleague, 'scam')
+    const [first, second] = (await hubReports(admin)).items.filter((item) => item.reported.id === colleague)
+    await settle(admin, first!.id, 'resolved', 'Rappel au règlement fait au modérateur.')
+    await settle(admin, second!.id, 'dismissed', 'Signalement sans fondement.')
+    assert.deepEqual((await journalNotes(admin)).sort(), ['Rappel au règlement fait au modérateur.', 'Signalement sans fondement.'])
+    // Neither the reported moderator nor a peer of the same rank reads it, as in hub_reports.
+    assert.deepEqual(await journalNotes(colleague), [])
+    assert.deepEqual(await journalNotes(moderator), [])
+  })
+
+  it('still shows a settled report about a member to the moderators of their promotion', async () => {
+    const aboutMember = (await hubReports(moderator)).items.find((item) => item.reported.id === samePromotion)!
+    await settle(moderator, aboutMember.id)
+    for (const staff of [moderator, colleague, admin]) assert.deepEqual(await journalNotes(staff), ['Membre averti, propos retirés.'])
   })
 
   it('keeps moderators to their scope and out of the reports they filed', async () => {
