@@ -10,7 +10,8 @@ import { RouteStop } from "../components/visual/RouteStop";
 import { getPostAuthPath } from "../lib/auth";
 import { SITE_NAME } from "../lib/site";
 import { normalizeCareerSteps, type CareerStepDraft } from "../lib/careerSteps";
-import { completeMemberProfile, loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
+import { loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
+import { completeMemberProfile } from "../lib/profileCompletion";
 import { PROFILE_LIMITS } from "../lib/profileLimits";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { supabase } from "../lib/supabase";
@@ -47,12 +48,12 @@ export function CompleteProfilePage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!role || busy || !user || profile?.id !== user.id) return;
+    if (!supabase || !role || busy || !user || profile?.id !== user.id) return;
     const data = new FormData(event.currentTarget);
     setBusy(true);
     setError(null);
     try {
-      await completeMemberProfile(user.id, {
+      await completeMemberProfile(supabase, user.id, {
         firstName: String(data.get("firstName") ?? ""), lastName: String(data.get("lastName") ?? ""),
         memberRole: role, graduationYear: Number(data.get("graduationYear")),
         specialty: String(data.get("specialty") ?? ""), city: String(data.get("city") ?? ""),

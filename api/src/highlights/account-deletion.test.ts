@@ -46,6 +46,8 @@ test("reads whether the account can be erased now, and trusts no other answer", 
   }
   await assert.rejects(deletionStatus(fakeClient([], { status: { data: "erase_everyone", error: null } })), /Réessayez/);
   await assert.rejects(deletionStatus(fakeClient([], { status: { data: null, error: { message: "offline" } } })), /Réessayez/);
+  await assert.rejects(deletionStatus(fakeClient([], { status: { data: "ready", error: { message: "partial" } } })), /Réessayez/,
+    "an answer that came with an error is never trusted");
 });
 
 test("signing in again to erase the account leads back to the deletion section of the profile editor", () => {
