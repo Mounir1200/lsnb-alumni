@@ -20,7 +20,9 @@ import {
 import { StrictMode, useEffect, useRef, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import type { Session } from "@supabase/supabase-js";
+import { TurnstileField, useTurnstile } from "../components/auth/TurnstileField";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { captchaMessage } from "../lib/turnstile";
 import {
   type Context,
   type SiteStatus,
@@ -85,22 +87,27 @@ function Login({
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [authError, setAuthError] = useState("");
+  const captcha = useTurnstile();
   async function signIn(event: FormEvent) {
     event.preventDefault();
     if (!supabase) return;
+    const { auth } = supabase;
     setBusy(true);
     setAuthError("");
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+      const { error } = await captcha.send((options) =>
+        auth.signInWithPassword({ email: email.trim(), password, options }),
+      );
       if (error)
         setAuthError(
-          "Connexion impossible. Vérifiez votre adresse et votre mot de passe.",
+          captchaMessage(error) ??
+            "Connexion impossible. Vérifiez votre adresse et votre mot de passe.",
         );
-    } catch {
-      setAuthError("Le service est inaccessible. Réessayez dans un instant.");
+    } catch (error) {
+      setAuthError(
+        captchaMessage(error) ??
+          "Le service est inaccessible. Réessayez dans un instant.",
+      );
     } finally {
       setBusy(false);
     }
@@ -191,6 +198,7 @@ function Login({
                   disabled={busy}
                 />
               </label>
+              <TurnstileField captcha={captcha} />
               <button
                 className="hub-button primary"
                 disabled={busy || !isSupabaseConfigured}
