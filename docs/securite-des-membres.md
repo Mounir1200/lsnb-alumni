@@ -75,6 +75,20 @@ L’équipe n’est pas prévenue par e-mail d’un nouveau signalement : elle c
 - Le lien revient sur `/auth/callback?next=/nouveau-mot-de-passe`. Le membre confirme qu’il s’agit de son compte, choisit un mot de passe d’au moins 8 caractères, puis ses autres appareils sont déconnectés (`signOut({ scope: "others" })`), ce qui coupe aussi leur messagerie. Un lien expiré l’indique et propose d’en demander un autre.
 - À configurer dans Supabase (Authentication → Emails → Reset Password) : l’objet « Réinitialisez votre mot de passe LSNB Alumni » dans Subject, et tout le contenu de `docs/email-templates/reset-password.html` dans Body. Le fichier JSON voisin sert seulement à l’API de gestion (détails dans `docs/email-templates/README.md`). Les URL de retour sont sur le même domaine que le site, déjà autorisé.
 
+## Vérification anti-robot
+
+- Pourquoi : une rafale d’inscriptions automatiques viderait le quota d’e-mails de Supabase (audit du 21 novembre, M3). Les limites de débit et le cache de l’API ne protègent pas Supabase Auth.
+- Où : l’inscription (`/rejoindre`), la connexion et le renvoi de l’e-mail de confirmation (`/connexion`), le mot de passe oublié (`/mot-de-passe-oublie`) et la connexion du hub montrent Cloudflare Turnstile au-dessus de leur bouton. Le jeton part dans `options.captchaToken` de `signUp`, `signInWithPassword`, `resend` et `resetPasswordForEmail`, et Supabase le vérifie auprès de Cloudflare. La connexion Google n’est pas concernée.
+- Un jeton ne sert qu’une fois : après chaque envoi, le widget recommence. Tant que la vérification n’est pas terminée, ou si le script de Cloudflare ne se charge pas, le formulaire l’explique au lieu d’envoyer une demande que Supabase refuserait ; un jeton refusé par Supabase (`captcha_failed`) est expliqué de la même façon (`src/lib/turnstile.ts`, `src/components/auth/TurnstileField.tsx`).
+- La clé de site vient de `VITE_TURNSTILE_SITE_KEY`, déclarée pour le site et le hub dans `render.yaml` (`sync: false`). Sans clé, ni widget ni jeton : les formulaires fonctionnent comme avant. Les deux politiques CSP autorisent `https://challenges.cloudflare.com` dans `script-src` et `frame-src`.
+- En local : `VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA`, la clé de test de Cloudflare qui réussit toujours, sur n’importe quel domaine.
+
+À activer dans cet ordre (responsable du projet) :
+
+1. Cloudflare → Turnstile : ajouter un widget en mode « Managed » pour les domaines du site et du hub, puis noter la clé de site et la clé secrète.
+2. Render : renseigner `VITE_TURNSTILE_SITE_KEY` sur `lsnb-alumni-web` et `lsnb-alumni-hub`, puis déployer les deux (le hub à la main). Vérifier que le widget affiche « Réussi » sur `/connexion` et sur le hub.
+3. Supabase → Authentication → Bot and Abuse Protection : activer la protection CAPTCHA, choisir Turnstile et coller la clé secrète. Jamais avant l’étape 2 : sans jeton, Supabase refuserait toutes les connexions et inscriptions par e-mail.
+
 ## Mise en production
 
 1. Fait le 10 novembre 2026 : `20261110115109_member_blocks.sql`, puis `20261110115213_member_reports.sql`, appliquées dans cet ordre (les fichiers portent les versions enregistrées par Supabase). Elles ne cassent pas le site déjà en ligne : elles ajoutent des tables, des fonctions et des déclencheurs.
@@ -92,4 +106,4 @@ npm run build:hub
 npm run test:api
 ```
 
-Tests ajoutés : `account-deletion.database.test.ts` (connexion récente, dernier super administrateur, file des photos), `avatar-removal.test.ts`, `member-approval.database.test.ts`, `account-deletion.database.test.ts`, `account-deletion.test.ts`, `member-status.test.ts`, `invitations.test.ts`, `hub-member-errors.test.ts`, `member-blocks.database.test.ts`, `member-reports.database.test.ts`, `safety.repository.test.ts`, `safety.test.ts`, `password-recovery.test.ts`, `auth-errors.test.ts`, `hub-report-errors.test.ts`, et des cas dans les tests de messagerie et de relations. Les fenêtres et l’écran du hub ont été contrôlés dans le navigateur en démonstration, à 1024 et 375 px. Le parcours complet avec de vrais comptes (lien de réinitialisation reçu, blocage et signalement entre deux comptes) reste à valider sur l’environnement réel.
+Tests ajoutés : `account-deletion.database.test.ts` (connexion récente, dernier super administrateur, file des photos), `avatar-removal.test.ts`, `member-approval.database.test.ts`, `account-deletion.database.test.ts`, `account-deletion.test.ts`, `member-status.test.ts`, `invitations.test.ts`, `hub-member-errors.test.ts`, `member-blocks.database.test.ts`, `member-reports.database.test.ts`, `safety.repository.test.ts`, `safety.test.ts`, `password-recovery.test.ts`, `auth-errors.test.ts`, `hub-report-errors.test.ts`, `turnstile.test.ts` (vérification anti-robot), `security-headers.test.ts` (CSP et clé Turnstile), et des cas dans les tests de messagerie et de relations. Les fenêtres et l’écran du hub ont été contrôlés dans le navigateur en démonstration, à 1024 et 375 px. Le parcours complet avec de vrais comptes (lien de réinitialisation reçu, blocage et signalement entre deux comptes) reste à valider sur l’environnement réel.
