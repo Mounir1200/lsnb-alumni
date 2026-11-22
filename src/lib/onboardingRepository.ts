@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
-import { toCareerStepRows, type CareerStep } from "./careerSteps";
+import type { CareerStep } from "./careerSteps";
 import type { MemberRole } from "./invitations";
+import { completionExtras } from "./profileCompletion";
 import { normalizeProfileLink } from "./profileLinks";
 
 export type OnboardingProfile = {
@@ -17,7 +18,7 @@ export type ProfileCompletion = {
   firstName: string; lastName: string; memberRole: "alumni" | "student";
   graduationYear: number; specialty: string; city: string; country: string;
   experience: string; gender: "male" | "female" | "unspecified";
-  offersMentoring: boolean; contactVisible: boolean; termsAccepted: boolean;
+  offersMentoring: boolean; contactVisible: boolean; termsAccepted: boolean; listedPublicly: boolean;
   linkedinUrl?: string; portfolioUrl?: string;
   careerSteps: CareerStep[];
 };
@@ -44,12 +45,12 @@ export async function completeMemberProfile(userId: string, profile: ProfileComp
   });
   if (error) throw new Error("Le profil n’a pas pu être enregistré. Vérifiez les champs et réessayez.");
 
-  // The completion RPC is unchanged; steps are then saved on the member's own row.
-  // A retry is safe: the RPC ignores an already completed profile.
-  if (profile.careerSteps.length === 0) return;
-  const { error: stepsError } = await supabase.from("profiles")
-    .update({ career_steps: toCareerStepRows(profile.careerSteps) }).eq("id", userId);
-  if (stepsError) {
-    throw new Error("Votre profil est enregistré, mais pas les étapes de votre parcours. Réessayez pour les enregistrer.");
+  // The completion RPC is unchanged; steps and the public directory choice are then
+  // saved on the member's own row. A retry is safe: the RPC ignores an already completed profile.
+  const extras = completionExtras(profile);
+  if (Object.keys(extras).length === 0) return;
+  const { error: extrasError } = await supabase.from("profiles").update(extras).eq("id", userId);
+  if (extrasError) {
+    throw new Error("Votre profil est enregistré, mais pas vos étapes de parcours ni votre choix pour l’annuaire public. Réessayez pour les enregistrer.");
   }
 }

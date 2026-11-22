@@ -59,6 +59,8 @@ export async function applyMigration(db: PGlite, file: string) {
 
 export type MemberOptions = {
   student?: boolean; mentor?: boolean; inactive?: boolean; pending?: boolean; email?: string; firstName?: string; graduationYear?: number
+  /** Ticks "Apparaître dans l'annuaire public" at sign-up; nobody is listed otherwise. */
+  listed?: boolean
 }
 
 /**
@@ -80,6 +82,7 @@ export async function seedMember(db: PGlite, options: MemberOptions = {}) {
     JSON.stringify({
       first_name: options.firstName ?? 'Membre', last_name: 'Test', member_role: options.student ? 'student' : 'alumni',
       offers_mentoring: options.mentor ?? false, graduation_year: options.graduationYear,
+      ...(options.listed ? { listed_publicly: true } : {}),
     }),
   ])
   const id = result.rows[0]!.id

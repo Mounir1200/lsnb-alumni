@@ -627,7 +627,7 @@ export function EditProfilePage() {
 
             {form.memberRole === "alumni" && (
               <p className="highlight-disclosure">
-                Votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
+                Si vous apparaissez dans l’annuaire public, votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
                 sans connexion. Les informations de votre parcours sont alors transmises à
                 OpenAI pour rédiger le portrait. Les champs de contact ne sont pas transmis ;
                 évitez d’ajouter des coordonnées privées dans le texte de votre parcours.

@@ -27,12 +27,15 @@ export function PrivacyPage() {
       </p>
       <h2>Annuaire public</h2>
       <p>
-        Sans connexion, les visiteurs voient la liste des anciens élèves : nom, photo, promotion,
-        spécialité, domaine, ville, pays et disponibilité pour le mentorat. Le parcours, les liens,
-        les relations et les coordonnées restent réservés aux membres validés. Les élèves actuels
-        n’apparaissent jamais dans cette liste publique. Chaque ancien élève peut s’en retirer à tout
-        moment depuis « Modifier mon profil » ; sa fiche reste alors visible des seuls membres, et il
-        n’est plus présenté dans Highlight.
+        Sans connexion, les visiteurs voient la liste des anciens élèves qui ont choisi d’y figurer :
+        nom, photo, promotion, spécialité, domaine, ville, pays et disponibilité pour le mentorat. Le
+        parcours, les liens, les relations et les coordonnées restent réservés aux membres validés.
+        Les élèves actuels n’apparaissent jamais dans cette liste publique. Un ancien élève n’y figure
+        que s’il coche « Apparaître dans l’annuaire public », à l’inscription ou plus tard depuis
+        « Modifier mon profil » ; la case n’est jamais cochée d’avance. Les premiers comptes, ouverts
+        quand cette option était activée d’office, gardent leur réglage. Chacun peut changer d’avis à
+        tout moment : hors de l’annuaire public, sa fiche reste visible des seuls membres, et il n’est
+        pas présenté dans Highlight.
       </p>
       <h2>Connexions et e-mails</h2>
       <p>
@@ -114,8 +117,8 @@ export function PrivacyPage() {
       </p>
       <h3>Qui est tiré au sort</h3>
       <p>
-        Le tirage se fait parmi les anciens élèves dont le compte est actif et qui figurent dans
-        l’annuaire public ; les élèves actuels n’y participent pas. Il retient d’abord les personnes
+        Le tirage se fait parmi les anciens élèves dont le compte est actif et qui ont choisi de
+        figurer dans l’annuaire public ; les élèves actuels n’y participent pas. Il retient d’abord les personnes
         les moins souvent présentées et, quand le genre déclaré le permet, forme un duo femme-homme.
         Un genre non renseigné reste éligible et n’est jamais déduit du nom ni de la photo. Se retirer
         de l’annuaire public, ou voir son accès suspendu, retire aussi de Highlight, y compris un
@@ -246,8 +249,8 @@ export function PrivacyPage() {
           écrivez-nous.
         </li>
         <li>
-          <b>Limiter la diffusion.</b> Un ancien élève peut quitter l’annuaire public et Highlight,
-          et chacun peut masquer son moyen de contact, depuis « Modifier mon profil ».
+          <b>Limiter la diffusion.</b> Un ancien élève choisit s’il figure dans l’annuaire public, et
+          donc dans Highlight, et chacun peut masquer son moyen de contact, depuis « Modifier mon profil ».
         </li>
         <li>
           <b>Effacer.</b> « Supprimer mon compte », en bas de « Modifier mon profil », efface

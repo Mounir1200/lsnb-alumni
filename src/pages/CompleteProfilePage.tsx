@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { PublicListingField } from "../components/profile/ProfileDraft";
 import { CharterConsent } from "../components/safety/CharterConsent";
 import { Button } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -25,6 +26,7 @@ export function CompleteProfilePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [careerSteps, setCareerSteps] = useState<CareerStepDraft[]>([]);
+  const [listedPublicly, setListedPublicly] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -57,7 +59,7 @@ export function CompleteProfilePage() {
         country: String(data.get("country") ?? ""), experience: String(data.get("experience") ?? ""),
         gender: String(data.get("gender") ?? "unspecified") as "male" | "female" | "unspecified",
         offersMentoring: data.get("offersMentoring") === "on", contactVisible: data.get("contactVisible") === "on",
-        termsAccepted: data.get("termsAccepted") === "on",
+        termsAccepted: data.get("termsAccepted") === "on", listedPublicly,
         linkedinUrl: normalizeProfileLink(String(data.get("linkedinUrl") ?? ""), "linkedin") ?? undefined,
         portfolioUrl: normalizeProfileLink(String(data.get("portfolioUrl") ?? ""), "portfolio") ?? undefined,
         careerSteps: normalizeCareerSteps(careerSteps),
@@ -128,10 +130,11 @@ export function CompleteProfilePage() {
               </div>
               <p id="complete-links-help" className="account-form__login">Ces liens facultatifs seront visibles par les membres du réseau sur votre profil. Utilisez HTTPS ; les adresses locales ou privées sont refusées. Vous pouvez laisser les deux champs vides et les ajouter plus tard.</p>
               {role === "alumni" && <label className="form-check form-check--mentor"><input name="offersMentoring" type="checkbox" disabled={busy} /><span><b>Je souhaite proposer du mentorat</b>Je pourrai accepter ou refuser les demandes.</span></label>}
+              {role === "alumni" && <PublicListingField checked={listedPublicly} onChange={setListedPublicly} />}
               <label className="form-check"><input name="contactVisible" type="checkbox" disabled={busy} /><span><b>Rendre mon contact visible aux membres</b>Ce choix peut être modifié plus tard.</span></label>
               <label className="form-consent"><input name="termsAccepted" type="checkbox" required disabled={busy} /><span>J’accepte que ces informations soient utilisées pour mon profil dans l’{SITE_NAME}. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span></label>
               <CharterConsent disabled={busy} />
-              {role === "alumni" && <p className="highlight-disclosure">Votre parcours peut figurer dans un Highlight public rédigé avec OpenAI à partir de votre profil. Les champs de contact ne sont pas transmis ; évitez les coordonnées privées dans le parcours. <Link to="/confidentialite#highlights">En savoir plus</Link></p>}
+              {role === "alumni" && <p className="highlight-disclosure">Si vous apparaissez dans l’annuaire public, votre parcours peut figurer dans un Highlight public rédigé avec OpenAI à partir de votre profil. Les champs de contact ne sont pas transmis ; évitez les coordonnées privées dans le parcours. <Link to="/confidentialite#highlights">En savoir plus</Link></p>}
               {error && <div className="form-status form-status--error" role="alert">{error}</div>}
               <Button type="submit" size="lg" disabled={busy}>{busy && <LoaderCircle className="spin" aria-hidden="true" />} Enregistrer et continuer</Button>
               <p className="account-form__login">Vous pourrez ajouter ou modifier votre photo depuis votre espace membre.</p>

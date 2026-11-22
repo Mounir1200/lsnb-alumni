@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { PublicListingField } from "../components/profile/ProfileDraft";
 import { CharterConsent } from "../components/safety/CharterConsent";
 import { Button } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -28,6 +29,7 @@ export function JoinPage() {
   const navigate = useNavigate();
   const [role, setRole] = useState<"alumni" | "student">("alumni");
   const [offersMentoring, setOffersMentoring] = useState(searchParams.get("mentorat") === "true");
+  const [listedPublicly, setListedPublicly] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>();
   const [status, setStatus] = useState<SubmissionStatus>({ kind: "idle" });
@@ -78,6 +80,8 @@ export function JoinPage() {
         experience: String(data.get("experience") ?? "").trim(),
         offers_mentoring: role === "alumni" && offersMentoring,
         contact_visible: data.get("contactVisible") === "on",
+        // Applied by the database once the account exists; only an alumnus can be listed.
+        listed_publicly: role === "alumni" && listedPublicly,
         linkedin_url: normalizeProfileLink(String(data.get("linkedinUrl") ?? ""), "linkedin"),
         portfolio_url: normalizeProfileLink(String(data.get("portfolioUrl") ?? ""), "portfolio"),
         // Copied to the profile by the database once the account exists.
@@ -93,6 +97,7 @@ export function JoinPage() {
         form.reset();
         setPhoto(null);
         setCareerSteps([]);
+        setListedPublicly(false);
         return;
       }
 
@@ -281,6 +286,7 @@ export function JoinPage() {
                 <span><b>Je souhaite proposer du mentorat</b>Je pourrai accepter ou refuser chaque demande selon ma disponibilité.</span>
               </label>
             )}
+            {role === "alumni" && <PublicListingField checked={listedPublicly} onChange={setListedPublicly} />}
 
             <label className="form-check">
               <input type="checkbox" name="contactVisible" />
@@ -304,7 +310,7 @@ export function JoinPage() {
 
             {role === "alumni" && (
               <p className="highlight-disclosure">
-                Votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
+                Si vous apparaissez dans l’annuaire public, votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
                 sans connexion. Les informations de votre parcours sont alors transmises à
                 OpenAI pour rédiger le portrait. Les champs de contact ne sont pas transmis ;
                 évitez d’ajouter des coordonnées privées dans le texte de votre parcours.
