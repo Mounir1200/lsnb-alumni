@@ -8,14 +8,14 @@ export type ApiConfig = {
   highlightStorage?: { url: string; secretKey: string };
 };
 
-function parsePort(value: string | undefined) {
-  const port = Number.parseInt(value ?? "", 10);
+function parsePort(value = "") {
+  const port = Number.parseInt(value, 10);
   return Number.isInteger(port) && port > 0 && port <= 65_535 ? port : DEFAULT_PORT;
 }
 
 /** The sites allowed to call the API from a browser. None by default: a forgotten variable must not open it to localhost. */
-function parseOrigins(value: string | undefined) {
-  const origins = (value ?? "")
+function parseOrigins(value = "") {
+  const origins = value
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);

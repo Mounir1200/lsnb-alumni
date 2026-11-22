@@ -30,6 +30,15 @@ test("the client is the address Cloudflare saw, whatever X-Forwarded-For claims"
   }
 });
 
+test("a CF-Connecting-IP that is not an address counts as the connection's own address", async (context) => {
+  const app = await buildApp({ config, logger: false });
+  context.after(() => app.close());
+  for (let call = 0; call <= 60; call++) {
+    const response = await app.inject({ url: "/api/v1/site-status", headers: { "cf-connecting-ip": `made-up-${call}` } });
+    assert.equal(response.statusCode, call < 60 ? 200 : 429, `request ${call + 1}`);
+  }
+});
+
 test("server logs allow twenty tries a minute, refused before Auth is asked", async (context) => {
   let authCalls = 0;
   const adminBackend: AdminBackend = {

@@ -1,9 +1,9 @@
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
-import Fastify, { LogController, type FastifyServerOptions } from "fastify";
+import Fastify, { LogController, type FastifyReply, type FastifyRequest, type FastifyServerOptions } from "fastify";
 import { randomUUID } from "node:crypto";
 import { createAdminBackend, effectiveSiteStatus, type AdminBackend } from "./admin/backend.js";
-import { createOperationalLog } from "./admin/logs.js";
+import { createOperationalLog, type OperationalLog } from "./admin/logs.js";
 import { registerAdminRoutes } from "./admin/routes.js";
 import { loadConfig, type ApiConfig } from "./config.js";
 import { createHighlightStore } from "./highlights/store.js";
@@ -48,6 +48,51 @@ function withRememberedStatus(backend: AdminBackend | undefined, now: () => numb
   return { authorize: (token) => backend.authorize(token), siteStatus: () => siteStatus(undefined) };
 }
 
+const LOGGED_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
+const QUIET_ROUTES = ["/health", "/api/v1/admin/logs", "/api/v1/site-status"];
+
+/**
+ * Default Fastify request/error logging includes URLs or errors. Only allowlisted metadata
+ * is recorded here; unknown paths and all query strings remain private.
+ */
+function recordRequest(log: OperationalLog, request: FastifyRequest, reply: FastifyReply) {
+  const path = request.routeOptions.url;
+  if (reply.statusCode < 400 && QUIET_ROUTES.includes(path ?? "")) return;
+  log.record(reply.statusCode >= 500 ? "error" : reply.statusCode >= 400 ? "warn" : "info", "api.request", {
+    method: LOGGED_METHODS.includes(request.method) ? request.method : "OTHER",
+    path: path ?? "unmatched", status: reply.statusCode,
+    duration_ms: reply.elapsedTime, request_id: request.id,
+  });
+}
+
+/** A client mistake keeps its 4xx status; anything else is a 500 that tells nothing about its cause. */
+function replyWithError(log: OperationalLog, error: unknown, reply: FastifyReply) {
+  const suggested = (error as { statusCode?: number }).statusCode;
+  const status = suggested && suggested >= 400 && suggested < 500 ? suggested : 500;
+  if (status === 500) log.record("error", "api.unhandled_error");
+  reply.header("cache-control", "no-store").code(status).send({ error: errorMessage(status) });
+}
+
+/** Missing server-only secrets leave the notification trigger disabled. */
+function notificationSchedulerFrom(options: BuildAppOptions) {
+  if (options.notificationScheduler) return options.notificationScheduler;
+  try { return configuredNotificationScheduler(); } catch { return undefined; }
+}
+
+/**
+ * What the public routes read, from a ten-second memory: however many visitors ask,
+ * Supabase is read once per period.
+ */
+function publicReads(options: BuildAppOptions, config: ApiConfig, now: () => Date) {
+  const storage = config.highlightStorage;
+  const highlightStore = options.highlightStore ?? (storage ? createHighlightStore(storage) : undefined);
+  const nowMs = () => now().getTime();
+  return {
+    currentHighlight: highlightStore && keepFor((week: string) => highlightStore.current(week), PUBLIC_READ_TTL_MS, nowMs),
+    adminBackend: withRememberedStatus(options.adminBackend ?? (storage ? createAdminBackend(storage) : undefined), nowMs),
+  };
+}
+
 export async function buildApp(options: BuildAppOptions = {}) {
   const config = options.config ?? loadConfig();
   const app = Fastify({
@@ -59,26 +104,12 @@ export async function buildApp(options: BuildAppOptions = {}) {
   });
   const now = options.now ?? (() => new Date());
   app.decorate("operationsLog", createOperationalLog(now));
-  // Default Fastify request/error logging includes URLs or errors. Only allowlisted metadata
-  // is recorded here; unknown paths and all query strings remain private.
-  app.addHook("onResponse", async (request, reply) => {
-    if (reply.statusCode < 400 && ["/health", "/api/v1/admin/logs", "/api/v1/site-status"].includes(request.routeOptions.url ?? "")) return;
-    app.operationsLog.record(reply.statusCode >= 500 ? "error" : reply.statusCode >= 400 ? "warn" : "info", "api.request", {
-      method: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"].includes(request.method) ? request.method : "OTHER",
-      path: request.routeOptions.url ?? "unmatched", status: reply.statusCode,
-      duration_ms: reply.elapsedTime, request_id: request.id,
-    });
-  });
+  app.addHook("onResponse", async (request, reply) => recordRequest(app.operationsLog, request, reply));
   app.setNotFoundHandler(async (_request, reply) => {
     reply.header("cache-control", "no-store");
     return reply.code(404).send({ error: "Ressource introuvable." });
   });
-  app.setErrorHandler((error, _request, reply) => {
-    const suggested = (error as { statusCode?: number }).statusCode;
-    const status = suggested && suggested >= 400 && suggested < 500 ? suggested : 500;
-    if (status === 500) app.operationsLog.record("error", "api.unhandled_error");
-    reply.header("cache-control", "no-store").code(status).send({ error: errorMessage(status) });
-  });
+  app.setErrorHandler((error, _request, reply) => replyWithError(app.operationsLog, error, reply));
   app.addHook("onReady", async () => { app.operationsLog.record("info", "api.ready"); });
   app.addHook("onClose", async () => { app.operationsLog.record("info", "api.stopped"); });
 
@@ -103,20 +134,9 @@ export async function buildApp(options: BuildAppOptions = {}) {
     version: "v1",
   }));
 
-  const highlightStore = options.highlightStore ?? (config.highlightStorage
-    ? createHighlightStore(config.highlightStorage)
-    : undefined);
-  // Public reads answer from a ten-second memory: however many visitors ask, Supabase is read once per period.
-  const nowMs = () => now().getTime();
-  const currentHighlight = highlightStore && keepFor((week: string) => highlightStore.current(week), PUBLIC_READ_TTL_MS, nowMs);
-  const adminBackend = withRememberedStatus(options.adminBackend ?? (config.highlightStorage ? createAdminBackend(config.highlightStorage) : undefined), nowMs);
+  const { currentHighlight, adminBackend } = publicReads(options, config, now);
   await registerAdminRoutes(app, adminBackend, now);
-  let notificationScheduler = options.notificationScheduler;
-  if (!notificationScheduler) {
-    try { notificationScheduler = configuredNotificationScheduler(); }
-    catch { /* Missing server-only secrets leave the trigger disabled. */ }
-  }
-  await registerNotificationSchedulerRoute(app, notificationScheduler);
+  await registerNotificationSchedulerRoute(app, notificationSchedulerFrom(options));
 
   app.get("/api/v1/highlights/current", async (request, reply) => {
     // Texts are persisted in Postgres. No browser/CDN cache can prolong a withdrawn profile.
