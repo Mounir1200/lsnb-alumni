@@ -75,8 +75,11 @@ Si le dépôt est déjà sur votre ordinateur, ouvrez simplement un terminal dan
 
 ```bash
 npm --prefix api ci
+cp api/.env.example api/.env
 npm run dev:api
 ```
+
+Le serveur refuse de démarrer sans `FRONTEND_ORIGINS`, la liste des sites autorisés à l’appeler (le modèle `api/.env.example` contient celles de Vite). Il limite chaque client à 60 requêtes par minute (20 pour les journaux du hub) et garde dix secondes en mémoire le statut du site et le Highlight de la semaine.
 
 Consulter `http://localhost:4000/health` pour vérifier que ce serveur répond. Le laisser ouvert pendant son utilisation.
 
@@ -101,8 +104,8 @@ L'identifiant du compte relie ces informations au bon membre. À l'inscription, 
 ### Comment la photo est-elle stockée ?
 
 1. Le site vérifie le fichier : **JPEG, PNG ou WebP, 4 Mo maximum**. Une fois le membre connecté, il l'envoie dans `avatars`, au chemin `<identifiant-du-membre>/avatar`.
-2. Supabase fournit l'adresse publique du fichier. **La table `profiles` conserve uniquement cette adresse dans `photo_url`**, puis le site la lit pour afficher l'image.
-3. Remplacer la photo écrase le fichier au même emplacement et actualise son adresse d'affichage. Supprimer la photo retire le fichier et vide `photo_url`.
+2. Supabase fournit l'adresse publique du fichier. **La table `profiles` conserve uniquement cette adresse dans `photo_url`**, puis le site la lit pour afficher l'image. La base n'accepte que cette adresse-là (le stockage du projet, au chemin du membre) ou la photo Google d'un compte créé avec Google (`private.is_allowed_photo_url`).
+3. Remplacer la photo écrase le fichier au même emplacement et actualise son adresse d'affichage. Supprimer la photo retire le fichier et vide `photo_url`. À la suppression d'un compte, c'est l'API qui retire le fichier (`api/src/accounts/avatarRemoval.ts`).
 
 **Avant confirmation de l'e-mail :** si aucune session n'est encore ouverte, la photo attend dans **IndexedDB**, un stockage local du navigateur, associée à l'e-mail d'inscription. Elle peut être reprise pendant sept jours, dans le même navigateur. Le code prévoit de supprimer cette copie après l'envoi, ou lors de sa lecture si elle a expiré. Sur un autre appareil, il faut sélectionner la photo à nouveau.
 
@@ -110,7 +113,7 @@ Repères dans le code : `src/lib/avatarRepository.ts` pour l'envoi/suppression ;
 
 ### Qui peut accéder à quoi ?
 
-Les règles **RLS** sont les permissions appliquées par la base : profils actifs lisibles par les membres connectés ; modification de son propre profil ; e-mail accessible à son propriétaire ou aux membres connectés si sa visibilité est activée ; demandes lisibles par leurs deux participants. **Les photos sont publiques pour toute personne ayant leur URL**, même sans connexion, mais personne ne peut lister le bucket : chaque membre n'y voit que sa propre photo. L'envoi, le remplacement et la suppression sont réservés au propriétaire, et seulement au chemin `<identifiant-du-membre>/avatar` : un compte ne peut pas y stocker d'autres fichiers.
+Les règles **RLS** sont les permissions appliquées par la base : les visiteurs n'ont aucun droit sur les tables (l'annuaire public passe par une fonction et ne montre que les anciens élèves qui ont coché « Apparaître dans l'annuaire public ») ; profils actifs lisibles par les membres connectés ; modification de son propre profil ; e-mail accessible à son propriétaire ou aux membres connectés si sa visibilité est activée ; demandes lisibles par leurs deux participants. **Les photos sont publiques pour toute personne ayant leur URL**, même sans connexion, mais personne ne peut lister le bucket : chaque membre n'y voit que sa propre photo. L'envoi, le remplacement et la suppression sont réservés au propriétaire, et seulement au chemin `<identifiant-du-membre>/avatar` : un compte ne peut pas y stocker d'autres fichiers.
 
 <!-- pagebreak -->
 
