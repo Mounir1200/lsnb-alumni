@@ -57,6 +57,21 @@ export async function applyMigration(db: PGlite, file: string) {
   await db.exec(await readFile(new URL(file, migrationsUrl), 'utf8'))
 }
 
+/**
+ * Swaps the trigger function that asks the API for a notification round (pg_net in
+ * production) for a counter, and returns how to read how many rounds were asked for.
+ */
+export async function countRoundRequests(db: PGlite) {
+  await db.exec(`
+    create table if not exists private.round_requests (requested_at timestamptz not null default clock_timestamp());
+    truncate private.round_requests;
+    create or replace function private.start_notification_round() returns trigger
+    language plpgsql security definer set search_path = '' as $$
+    begin insert into private.round_requests default values; return null; end; $$;
+  `)
+  return async () => Number((await db.query<{ n: number }>('select count(*)::int as n from private.round_requests')).rows[0]!.n)
+}
+
 export type MemberOptions = {
   student?: boolean; mentor?: boolean; inactive?: boolean; pending?: boolean; email?: string; firstName?: string; graduationYear?: number
   /** Ticks "Apparaître dans l'annuaire public" at sign-up; nobody is listed otherwise. */

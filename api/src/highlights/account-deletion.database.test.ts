@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import type { PGlite } from '@electric-sql/pglite'
-import { answerRequest, asMember, asSession, createMigratedDatabase, seedMember, sendRequest } from './testDatabase.ts'
+import { answerRequest, asMember, asSession, countRoundRequests, createMigratedDatabase, seedMember, sendRequest } from './testDatabase.ts'
 
 describe('Members deleting their own account', { concurrency: false }, () => {
   let db: PGlite
@@ -109,6 +109,12 @@ describe('Members deleting their own account', { concurrency: false }, () => {
       await db.query('select public.finish_avatar_removal($1, $2, true)', [retry!.job_id, retry!.lease_token])
     } finally { await db.exec('reset role') }
     assert.equal(await count('select count(*)::int as n from private.avatar_removal_queue'), 0)
+  })
+
+  it('asks the API for a round as soon as a photo waits, so it goes within minutes', async () => {
+    const rounds = await countRoundRequests(db)
+    await asSignedIn(await signIn(leaving), 'delete_my_account')
+    assert.equal(await rounds(), 1)
   })
 
   it('gives a photo removal up after its eighth failed attempt', async () => {

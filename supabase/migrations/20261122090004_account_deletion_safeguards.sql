@@ -105,10 +105,11 @@ $$;
 create trigger queue_avatar_removal after delete on public.profiles
 for each row execute function private.queue_avatar_removal();
 
--- A removal due now starts a round at once, as e-mails do.
-create trigger start_avatar_removal_round after insert or update of status on private.avatar_removal_queue
-for each row when (new.status = 'pending' and new.next_attempt_at <= now())
-execute function private.start_notification_round();
+-- A queued photo starts a round at once, as request e-mails do; a retry waits
+-- for a later round. (Comparing next_attempt_at with now(), the transaction's
+-- start, would never fire: the row is written after the transaction began.)
+create trigger start_avatar_removal_round after insert on private.avatar_removal_queue
+for each row execute function private.start_notification_round();
 
 create function public.claim_avatar_removals(p_limit integer default 5)
 returns table(job_id uuid, lease_token uuid, owner_id uuid)
