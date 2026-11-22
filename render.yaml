@@ -16,6 +16,32 @@ services:
         sync: false
       - key: VITE_HUB_URL
         sync: false
+    # Security headers (audit of 21 November, M4, Z1, Z4); the hub sends the same ones.
+    # The home page shows the school's photo from its own site (src/data/homePhotos.ts).
+    # The Content Security Policy only reports for now: once the live site's console
+    # shows no "[Report Only]" refusal, it becomes Content-Security-Policy.
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Content-Security-Policy-Report-Only
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://yesumbhssechcrlgpgqj.supabase.co https://*.googleusercontent.com https://www.lobspaalga.com; connect-src 'self' https://yesumbhssechcrlgpgqj.supabase.co wss://yesumbhssechcrlgpgqj.supabase.co https://lsnb-alumni-api.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
     routes:
       - type: rewrite
         source: /*
@@ -55,6 +81,18 @@ services:
       - path: /*
         name: X-Frame-Options
         value: DENY
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Content-Security-Policy-Report-Only
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://yesumbhssechcrlgpgqj.supabase.co https://*.googleusercontent.com; connect-src 'self' https://yesumbhssechcrlgpgqj.supabase.co wss://yesumbhssechcrlgpgqj.supabase.co https://lsnb-alumni-api.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
     routes:
       - type: rewrite
         source: /*
