@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { getLoginError, resendSignupConfirmation } from "../../../src/lib/emailConfirmation.ts";
+import { requestPasswordReset } from "../../../src/lib/passwordRecovery.ts";
 import {
   captchaMessage, createTurnstileLoader, initialCaptchaState, mountTurnstile, readSiteKey, withCaptcha,
   type CaptchaState, type TurnstileApi, type TurnstileRenderOptions,
@@ -8,6 +10,8 @@ import {
 // Cloudflare's always-pass test site key, and the token its widget hands out.
 const SITE_KEY = "1x00000000000000000000AA";
 const TOKEN = "XXXX.DUMMY.TOKEN.XXXX";
+const CALLBACK = "https://network.example.test/auth/callback";
+const EMAIL = "member@example.test";
 
 const settled = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -74,6 +78,35 @@ test("a CAPTCHA that Supabase refused is worded for members; other errors are le
   assert.match(captchaMessage(refused) ?? "", /vérification anti-robot a échoué/);
   for (const error of [{ code: "invalid_credentials" }, new Error("captcha_failed"), { code: "constructor" }, null]) {
     assert.equal(captchaMessage(error), null, String(error));
+  }
+});
+
+test("confirmation resends and reset links carry the form's token", async () => {
+  const calls: unknown[][] = [];
+  const record = async (...args: unknown[]) => { calls.push(args); return { error: null }; };
+  const auth = { resend: record, resetPasswordForEmail: record } as never;
+  await resendSignupConfirmation(auth, EMAIL, CALLBACK, { captchaToken: TOKEN });
+  await requestPasswordReset(auth, EMAIL, CALLBACK, { captchaToken: TOKEN });
+  assert.deepEqual(calls, [
+    [{ type: "signup", email: EMAIL, options: { emailRedirectTo: CALLBACK, captchaToken: TOKEN } }],
+    [EMAIL, { redirectTo: CALLBACK, captchaToken: TOKEN }],
+  ]);
+});
+
+test("sign-in, confirmation resends and reset links explain a CAPTCHA that Supabase refused, without its English detail", async () => {
+  const refused = { code: "captcha_failed", message: "captcha protection: request disallowed (timeout-or-duplicate)" };
+  const explains = (message: string) => {
+    assert.match(message, /vérification anti-robot a échoué/);
+    assert.doesNotMatch(message, /captcha protection/);
+  };
+  explains(getLoginError(refused));
+  const auth = { resend: async () => ({ error: refused }), resetPasswordForEmail: async () => ({ error: refused }) } as never;
+  for (const request of [resendSignupConfirmation(auth, EMAIL, CALLBACK, {}), requestPasswordReset(auth, EMAIL, CALLBACK, {})]) {
+    await assert.rejects(request, (error: unknown) => {
+      assert.ok(error instanceof Error);
+      explains(error.message);
+      return true;
+    });
   }
 });
 

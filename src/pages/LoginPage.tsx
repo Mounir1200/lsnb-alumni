@@ -54,7 +54,7 @@ export function LoginPage() {
 
     setStatus({ kind: "loading", message: "Envoi d’un nouveau lien…" });
     try {
-      await resendSignupConfirmation(createEmailLinkAuth(), email, getAuthCallbackUrl(searchParams.has("next") ? nextPath : null));
+      await resendSignupConfirmation(createEmailLinkAuth(), email, getAuthCallbackUrl(searchParams.has("next") ? nextPath : null), {});
       resend.start(RESEND_DELAY_SECONDS);
       setStatus({ kind: "success", message: CONFIRMATION_RESEND_SUCCESS });
     } catch (error) {

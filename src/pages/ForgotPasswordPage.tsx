@@ -26,7 +26,7 @@ export function ForgotPasswordPage() {
     }
     setStatus({ kind: "loading", message: "Envoi du lien…" });
     try {
-      await requestPasswordReset(createEmailLinkAuth(), email, getAuthCallbackUrl(NEW_PASSWORD_PATH));
+      await requestPasswordReset(createEmailLinkAuth(), email, getAuthCallbackUrl(NEW_PASSWORD_PATH), {});
       resend.start(RESEND_DELAY_SECONDS);
       setStatus({ kind: "success", message: RESET_LINK_SENT });
     } catch (error) {
