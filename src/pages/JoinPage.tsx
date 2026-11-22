@@ -11,6 +11,7 @@ import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository";
 import { normalizeCareerSteps, toCareerStepRows, type CareerStepDraft } from "../lib/careerSteps";
 import { savePendingAvatar } from "../lib/pendingAvatarStore";
+import { PROFILE_LIMITS } from "../lib/profileLimits";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { SITE_NAME } from "../lib/site";
 import { registerEmailAccount } from "../lib/emailConfirmation";
@@ -208,8 +209,8 @@ export function JoinPage() {
             </fieldset>
 
             <div className="form-row">
-              <label className="field-group"><span>Prénom</span><input name="firstName" autoComplete="given-name" required /></label>
-              <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" required /></label>
+              <label className="field-group"><span>Prénom</span><input name="firstName" autoComplete="given-name" maxLength={PROFILE_LIMITS.name} required /></label>
+              <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" maxLength={PROFILE_LIMITS.name} required /></label>
             </div>
 
             <label className="field-group">
@@ -227,12 +228,12 @@ export function JoinPage() {
                 <span>{role === "alumni" ? "Année du bac" : "Année prévue du bac"}</span>
                 <input name="graduationYear" type="number" min="2017" max="2040" required />
               </label>
-              <label className="field-group"><span>Spécialité ou domaine</span><input name="specialty" placeholder="Ex. génie civil" required /></label>
+              <label className="field-group"><span>Spécialité ou domaine</span><input name="specialty" placeholder="Ex. génie civil" maxLength={PROFILE_LIMITS.specialty} required /></label>
             </div>
 
             <div className="form-row">
-              <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" required /></label>
-              <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" required /></label>
+              <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" maxLength={PROFILE_LIMITS.place} required /></label>
+              <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" maxLength={PROFILE_LIMITS.place} required /></label>
             </div>
 
             <label className="field-group">
@@ -240,6 +241,7 @@ export function JoinPage() {
               <textarea
                 name="experience"
                 rows={5}
+                maxLength={PROFILE_LIMITS.experience}
                 placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager."
                 aria-describedby="join-story-help"
                 required

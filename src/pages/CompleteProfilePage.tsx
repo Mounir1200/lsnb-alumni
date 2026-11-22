@@ -10,6 +10,7 @@ import { getPostAuthPath } from "../lib/auth";
 import { SITE_NAME } from "../lib/site";
 import { normalizeCareerSteps, type CareerStepDraft } from "../lib/careerSteps";
 import { completeMemberProfile, loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
+import { PROFILE_LIMITS } from "../lib/profileLimits";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { supabase } from "../lib/supabase";
 
@@ -101,19 +102,19 @@ export function CompleteProfilePage() {
                 <label className={role === "student" ? "is-selected" : ""}><input type="radio" name="role" value="student" required checked={role === "student"} onChange={() => setRole("student")} /><b>Élève</b><span>Actuellement au LSNB</span></label>
               </fieldset>
               <div className="form-row">
-                <label className="field-group"><span>Prénom</span><input name="firstName" autoComplete="given-name" defaultValue={profile.first_name} maxLength={100} required disabled={busy} /></label>
-                <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" defaultValue={profile.last_name} maxLength={100} required disabled={busy} /></label>
+                <label className="field-group"><span>Prénom</span><input name="firstName" autoComplete="given-name" defaultValue={profile.first_name} maxLength={PROFILE_LIMITS.name} required disabled={busy} /></label>
+                <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" defaultValue={profile.last_name} maxLength={PROFILE_LIMITS.name} required disabled={busy} /></label>
               </div>
               <label className="field-group"><span>Genre (facultatif)</span><select name="gender" defaultValue="unspecified" disabled={busy}><option value="unspecified">Je préfère ne pas préciser</option><option value="female">Femme</option><option value="male">Homme</option></select><small>Ce choix sert à équilibrer les duos Highlight et à adapter les pronoms et les accords de votre portrait. Sans précision, le texte utilise votre prénom et des formulations neutres.</small></label>
               <div className="form-row">
                 <label className="field-group"><span>{role === "student" ? "Année prévue du bac" : "Année du bac"}</span><input name="graduationYear" type="number" min={2017} max={2040} required disabled={busy} /></label>
-                <label className="field-group"><span>Spécialité ou domaine</span><input name="specialty" maxLength={200} placeholder="Ex. génie civil" required disabled={busy} /></label>
+                <label className="field-group"><span>Spécialité ou domaine</span><input name="specialty" maxLength={PROFILE_LIMITS.specialty} placeholder="Ex. génie civil" required disabled={busy} /></label>
               </div>
               <div className="form-row">
-                <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" maxLength={150} required disabled={busy} /></label>
-                <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" maxLength={150} required disabled={busy} /></label>
+                <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" maxLength={PROFILE_LIMITS.place} required disabled={busy} /></label>
+                <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" maxLength={PROFILE_LIMITS.place} required disabled={busy} /></label>
               </div>
-              <label className="field-group"><span>Votre parcours en quelques phrases</span><textarea name="experience" rows={5} maxLength={5000} placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager." aria-describedby="complete-story-help" required disabled={busy} /><small id="complete-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small></label>
+              <label className="field-group"><span>Votre parcours en quelques phrases</span><textarea name="experience" rows={5} maxLength={PROFILE_LIMITS.experience} placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager." aria-describedby="complete-story-help" required disabled={busy} /><small id="complete-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small></label>
               <CareerStepsEditor steps={careerSteps} onChange={setCareerSteps} disabled={busy} />
               <div className="form-row">
                 <label className="field-group">

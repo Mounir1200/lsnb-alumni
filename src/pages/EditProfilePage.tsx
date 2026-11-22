@@ -32,6 +32,7 @@ import {
 import { normalizeCareerSteps, toCareerStepDrafts } from "../lib/careerSteps";
 import { loadProfileDraft, resumableDraft, type EditorForm } from "../lib/profileDraft";
 import { MENTORING_SECTION_ID } from "../lib/invitations";
+import { PROFILE_LIMITS, profileListsError } from "../lib/profileLimits";
 import { normalizeProfileLink } from "../lib/profileLinks";
 
 type SaveStatus = {
@@ -194,6 +195,11 @@ export function EditProfilePage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form) return;
+    const listsError = profileListsError(parseList(form.specialties), parseList(form.mentoringTopics));
+    if (listsError) {
+      setStatus({ kind: "error", message: listsError });
+      return;
+    }
 
     setStatus({ kind: "loading", message: "Enregistrement de vos modifications…" });
 
@@ -373,6 +379,7 @@ export function EditProfilePage() {
                   value={form.firstName}
                   onChange={(event) => updateField("firstName", event.target.value)}
                   autoComplete="given-name"
+                  maxLength={PROFILE_LIMITS.name}
                   required
                 />
               </label>
@@ -382,6 +389,7 @@ export function EditProfilePage() {
                   value={form.lastName}
                   onChange={(event) => updateField("lastName", event.target.value)}
                   autoComplete="family-name"
+                  maxLength={PROFILE_LIMITS.name}
                   required
                 />
               </label>
@@ -407,6 +415,7 @@ export function EditProfilePage() {
                   value={form.domain}
                   onChange={(event) => updateField("domain", event.target.value)}
                   placeholder="Ex. Technologies numériques"
+                  maxLength={PROFILE_LIMITS.domain}
                   required
                 />
               </label>
@@ -418,6 +427,7 @@ export function EditProfilePage() {
                 value={form.specialty}
                 onChange={(event) => updateField("specialty", event.target.value)}
                 placeholder="Ex. intelligence artificielle"
+                maxLength={PROFILE_LIMITS.specialty}
                 required
               />
             </label>
@@ -439,6 +449,7 @@ export function EditProfilePage() {
                   value={form.city}
                   onChange={(event) => updateField("city", event.target.value)}
                   autoComplete="address-level2"
+                  maxLength={PROFILE_LIMITS.place}
                   required
                 />
               </label>
@@ -448,6 +459,7 @@ export function EditProfilePage() {
                   value={form.country}
                   onChange={(event) => updateField("country", event.target.value)}
                   autoComplete="country-name"
+                  maxLength={PROFILE_LIMITS.place}
                   required
                 />
               </label>
@@ -461,6 +473,7 @@ export function EditProfilePage() {
                 onChange={(event) => updateField("experience", event.target.value)}
                 placeholder="Études, transitions, activité actuelle et ce que vous pouvez partager."
                 aria-describedby="edit-story-help"
+                maxLength={PROFILE_LIMITS.experience}
                 required
               />
               <small id="edit-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small>
