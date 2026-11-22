@@ -40,13 +40,16 @@ export async function createMigratedDatabase({ before, messaging = false }: { be
     grant select, insert, update, delete on storage.objects to anon, authenticated;
     alter table storage.objects enable row level security;
     create function storage.foldername(text) returns text[] language sql as 'select string_to_array($1, ''/'')';
+    -- As on Supabase (pg_default_acl in production): what postgres creates in public is
+    -- open to the API roles, every privilege included, until a migration revokes it.
+    alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+    alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+    alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
   `)
   if (messaging) await db.exec(messagingStubs)
   for (const file of (await readdir(migrationsUrl)).filter((name) => name.endsWith('.sql')).sort()) {
     if (before === undefined || file < before) await applyMigration(db, file)
   }
-  // Supabase grants table access by default; RLS and the triggers still apply.
-  await db.exec('grant select, insert, update on public.profiles, public.profile_contacts to authenticated')
   return db
 }
 
