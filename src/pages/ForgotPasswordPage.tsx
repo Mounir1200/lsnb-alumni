@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AccountPage } from "../components/auth/AccountPage";
+import { TurnstileField, useTurnstile } from "../components/auth/TurnstileField";
 import { Button } from "../components/ui/Button";
 import { FormStatus, type FormStatusValue } from "../components/ui/FormStatus";
 import { useCountdown } from "../hooks/useCountdown";
@@ -16,6 +17,7 @@ export function ForgotPasswordPage() {
   const [email, setEmail] = useState(() => emailFromRouterState(location.state));
   const [status, setStatus] = useState<FormStatusValue>({ kind: "idle" });
   const resend = useCountdown();
+  const captcha = useTurnstile();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -26,7 +28,7 @@ export function ForgotPasswordPage() {
     }
     setStatus({ kind: "loading", message: "Envoi du lien…" });
     try {
-      await requestPasswordReset(createEmailLinkAuth(), email, getAuthCallbackUrl(NEW_PASSWORD_PATH), {});
+      await captcha.send((options) => requestPasswordReset(createEmailLinkAuth(), email, getAuthCallbackUrl(NEW_PASSWORD_PATH), options));
       resend.start(RESEND_DELAY_SECONDS);
       setStatus({ kind: "success", message: RESET_LINK_SENT });
     } catch (error) {
@@ -46,6 +48,7 @@ export function ForgotPasswordPage() {
           <input name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         </label>
 
+        <TurnstileField captcha={captcha} />
         <FormStatus status={status} />
 
         <Button type="submit" size="lg" disabled={status.kind === "loading" || resend.secondsLeft > 0}>

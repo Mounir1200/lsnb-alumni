@@ -1,0 +1,4 @@
+/* Room for Cloudflare's widget (65 px high) before its script arrives, so the form does not jump. */
+.turnstile-field {
+  min-height: 65px;
+}

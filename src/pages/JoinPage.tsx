@@ -3,6 +3,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
+import { TurnstileField, useTurnstile } from "../components/auth/TurnstileField";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { PublicListingField } from "../components/profile/ProfileDraft";
 import { CharterConsent } from "../components/safety/CharterConsent";
@@ -17,6 +18,7 @@ import { normalizeProfileLink } from "../lib/profileLinks";
 import { SITE_NAME } from "../lib/site";
 import { registerEmailAccount } from "../lib/emailConfirmation";
 import { createEmailLinkAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
+import { captchaMessage } from "../lib/turnstile";
 
 type SubmissionStatus = {
   kind: "idle" | "loading" | "success" | "error";
@@ -35,6 +37,7 @@ export function JoinPage() {
   const [status, setStatus] = useState<SubmissionStatus>({ kind: "idle" });
   const [googleBusy, setGoogleBusy] = useState(false);
   const [careerSteps, setCareerSteps] = useState<CareerStepDraft[]>([]);
+  const captcha = useTurnstile();
   const nextPath = getPostAuthPath(searchParams.get("next"));
   const loginPath = searchParams.has("next") ? `/connexion?next=${encodeURIComponent(nextPath)}` : "/connexion";
 
@@ -103,15 +106,14 @@ export function JoinPage() {
 
       const email = String(data.get("email") ?? "").trim();
       const password = String(data.get("password") ?? "");
-      const { data: authData, error: authError, signInRequired } = await registerEmailAccount(supabase.auth, createEmailLinkAuth(), {
+      const emailRedirectTo = getAuthCallbackUrl(searchParams.has("next") ? nextPath : null);
+      const sessionAuth = supabase.auth;
+      const { data: authData, error: authError, signInRequired } = await captcha.send((captchaOptions) => registerEmailAccount(sessionAuth, createEmailLinkAuth(), {
         email,
         password,
-        options: {
-          data: profile,
-          emailRedirectTo: getAuthCallbackUrl(searchParams.has("next") ? nextPath : null),
-        },
-      });
-      if (authError) throw authError;
+        options: { data: profile, emailRedirectTo, ...captchaOptions },
+      }));
+      if (authError) throw new Error(captchaMessage(authError) ?? authError.message);
 
       let photoQueued = false;
       if (photo && authData.user) {
@@ -318,6 +320,7 @@ export function JoinPage() {
               </p>
             )}
 
+            <TurnstileField captcha={captcha} />
             {status.kind !== "idle" && status.message && (
               <div className={`form-status form-status--${status.kind}`} role="status">
                 {status.kind === "success" && <Check aria-hidden="true" />}
