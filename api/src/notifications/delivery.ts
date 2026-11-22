@@ -142,16 +142,24 @@ export function notificationChannel<Job>(store: JobStore<Job>, send: (job: Job) 
   return { deliver: (limit) => deliverJobs(store, send, limit) };
 }
 
-/** Channels share one round's capacity in order: earlier ones are served first. */
+/**
+ * Channels share one round's capacity in order: earlier ones are served first.
+ * A channel that cannot be served does not stop the others; the round reports
+ * its failure once they had their turn.
+ */
 export async function runNotificationRound(channels: NotificationChannel[], capacity = ROUND_CAPACITY): Promise<DeliveryCounts> {
   const total: DeliveryCounts = { claimed: 0, delivered: 0, failed: 0 };
+  const failures: unknown[] = [];
   for (const channel of channels) {
     const remaining = capacity - total.claimed;
     if (remaining <= 0) break;
-    const counts = await channel.deliver(remaining);
+    let counts: DeliveryCounts;
+    try { counts = await channel.deliver(remaining); }
+    catch (error) { failures.push(error); continue; }
     total.claimed += counts.claimed;
     total.delivered += counts.delivered;
     total.failed += counts.failed;
   }
+  if (failures.length > 0) throw failures[0];
   return total;
 }

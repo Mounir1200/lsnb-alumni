@@ -53,3 +53,18 @@ describe("Removing the photo of an erased account", () => {
     assert.equal(calls[0]!.url, "https://project.supabase.co/rest/v1/rpc/claim_avatar_removals");
   });
 });
+
+describe("A notification round with a failing channel", () => {
+  const channelThatFails = { deliver: async () => { throw new Error("claim RPC missing"); } };
+  const channelThatSends = (sent: string[]) => ({ deliver: async (limit: number) => { sent.push(`up to ${limit}`); return { claimed: 2, delivered: 2, failed: 0 }; } });
+
+  it("still serves the channels after it, then reports the failure", async () => {
+    const sent: string[] = [];
+    await assert.rejects(runNotificationRound([channelThatFails, channelThatSends(sent)]), /claim RPC missing/);
+    assert.deepEqual(sent, ["up to 5"]);
+  });
+
+  it("answers the counts when every channel worked", async () => {
+    assert.deepEqual(await runNotificationRound([channelThatSends([]), channelThatSends([])]), { claimed: 4, delivered: 4, failed: 0 });
+  });
+});
