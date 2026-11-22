@@ -1,5 +1,4 @@
 const DEFAULT_PORT = 4000;
-const DEFAULT_ORIGIN = "http://localhost:5173";
 
 export type ApiConfig = {
   host: string;
@@ -14,13 +13,22 @@ function parsePort(value: string | undefined) {
   return Number.isInteger(port) && port > 0 && port <= 65_535 ? port : DEFAULT_PORT;
 }
 
+/** The sites allowed to call the API from a browser. None by default: a forgotten variable must not open it to localhost. */
 function parseOrigins(value: string | undefined) {
-  const origins = (value ?? DEFAULT_ORIGIN)
+  const origins = (value ?? "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
 
   return new Set(origins);
+}
+
+/** The web server refuses to start without them (the weekly job needs none). */
+export function requireAllowedOrigins(config: ApiConfig): ApiConfig {
+  if (config.allowedOrigins.size === 0) {
+    throw new Error("FRONTEND_ORIGINS must list the sites allowed to call the API, separated by commas.");
+  }
+  return config;
 }
 
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env): ApiConfig {

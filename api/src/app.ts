@@ -9,6 +9,8 @@ import { loadConfig, type ApiConfig } from "./config.js";
 import { createHighlightStore } from "./highlights/store.js";
 import type { HighlightStore } from "./highlights/types.js";
 import { currentWeekStart } from "./highlights/week.js";
+import { keepFor, PUBLIC_READ_TTL_MS } from "./keepFor.js";
+import { registerRequestLimits } from "./requestLimits.js";
 import { configuredNotificationScheduler, registerNotificationSchedulerRoute, type NotificationScheduler } from "./messaging/scheduler.js";
 
 type BuildAppOptions = {
@@ -33,6 +35,18 @@ const healthSchema = {
     },
   },
 } as const;
+
+function errorMessage(status: number) {
+  if (status >= 500) return "Le serveur est momentanément indisponible.";
+  return status === 429 ? "Trop de requêtes. Réessayez dans une minute." : "Requête invalide.";
+}
+
+/** The site status changes rarely and is read by every public route: it is remembered too. Access checks never are. */
+function withRememberedStatus(backend: AdminBackend | undefined, now: () => number): AdminBackend | undefined {
+  if (!backend) return undefined;
+  const siteStatus = keepFor(() => backend.siteStatus(), PUBLIC_READ_TTL_MS, now);
+  return { authorize: (token) => backend.authorize(token), siteStatus: () => siteStatus(undefined) };
+}
 
 export async function buildApp(options: BuildAppOptions = {}) {
   const config = options.config ?? loadConfig();
@@ -63,12 +77,13 @@ export async function buildApp(options: BuildAppOptions = {}) {
     const suggested = (error as { statusCode?: number }).statusCode;
     const status = suggested && suggested >= 400 && suggested < 500 ? suggested : 500;
     if (status === 500) app.operationsLog.record("error", "api.unhandled_error");
-    reply.header("cache-control", "no-store").code(status).send({ error: status >= 500 ? "Le serveur est momentanément indisponible." : "Requête invalide." });
+    reply.header("cache-control", "no-store").code(status).send({ error: errorMessage(status) });
   });
   app.addHook("onReady", async () => { app.operationsLog.record("info", "api.ready"); });
   app.addHook("onClose", async () => { app.operationsLog.record("info", "api.stopped"); });
 
   await app.register(helmet);
+  await registerRequestLimits(app);
   await app.register(cors, {
     credentials: true,
     origin(origin, callback) {
@@ -77,7 +92,8 @@ export async function buildApp(options: BuildAppOptions = {}) {
     },
   });
 
-  app.get("/health", { schema: healthSchema }, async (_request, reply) => {
+  // Render polls it to know the API is up: a limit there would get a busy API restarted.
+  app.get("/health", { schema: healthSchema, config: { rateLimit: false } }, async (_request, reply) => {
     reply.header("cache-control", "no-store");
     return { status: "ok", service: "lsnb-alumni-api" };
   });
@@ -90,7 +106,10 @@ export async function buildApp(options: BuildAppOptions = {}) {
   const highlightStore = options.highlightStore ?? (config.highlightStorage
     ? createHighlightStore(config.highlightStorage)
     : undefined);
-  const adminBackend = options.adminBackend ?? (config.highlightStorage ? createAdminBackend(config.highlightStorage) : undefined);
+  // Public reads answer from a ten-second memory: however many visitors ask, Supabase is read once per period.
+  const nowMs = () => now().getTime();
+  const currentHighlight = highlightStore && keepFor((week: string) => highlightStore.current(week), PUBLIC_READ_TTL_MS, nowMs);
+  const adminBackend = withRememberedStatus(options.adminBackend ?? (config.highlightStorage ? createAdminBackend(config.highlightStorage) : undefined), nowMs);
   await registerAdminRoutes(app, adminBackend, now);
   let notificationScheduler = options.notificationScheduler;
   if (!notificationScheduler) {
@@ -115,9 +134,9 @@ export async function buildApp(options: BuildAppOptions = {}) {
         return reply.code(503).send({ error: "Le statut du site est momentanément indisponible." });
       }
     }
-    if (!highlightStore) return { highlight: null };
+    if (!currentHighlight) return { highlight: null };
     try {
-      return { highlight: await highlightStore.current(currentWeekStart(options.now?.())) };
+      return { highlight: await currentHighlight(currentWeekStart(options.now?.())) };
     } catch {
       app.operationsLog.record("error", "highlights.unavailable");
       return reply.code(503).send({ error: "Les Highlights sont momentanément indisponibles." });

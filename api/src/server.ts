@@ -1,8 +1,8 @@
 import "dotenv/config";
 import { buildApp } from "./app.js";
-import { loadConfig } from "./config.js";
+import { loadConfig, requireAllowedOrigins } from "./config.js";
 
-const config = loadConfig();
+const config = requireAllowedOrigins(loadConfig());
 const app = await buildApp({ config });
 
 async function shutdown(signal: NodeJS.Signals) {
