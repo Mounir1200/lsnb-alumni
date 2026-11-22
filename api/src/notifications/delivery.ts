@@ -49,11 +49,15 @@ export function loadNotificationConfig(env: NodeJS.ProcessEnv = process.env): No
   return { apiKey, fromEmail, secretKey, siteUrl: siteUrl.origin, supabaseUrl: supabaseUrl.origin, hubUrl: hubUrl.origin };
 }
 
+/** What makes Supabase serve a request as the service: legacy JWT keys also go as a bearer token. */
+export function serviceHeaders(secretKey: string): Record<string, string> {
+  return { apikey: secretKey, "content-type": "application/json", ...(secretKey.startsWith("eyJ") ? { Authorization: `Bearer ${secretKey}` } : {}) };
+}
+
 /** Calls a service-role RPC; the secret key only ever goes to Supabase. */
 export function createServiceRpc(config: Pick<NotificationConfig, "supabaseUrl" | "secretKey">, fetchImpl: typeof fetch = fetch) {
   return async function rpc<T>(name: string, body: object): Promise<T> {
-    const headers: Record<string, string> = { apikey: config.secretKey, "content-type": "application/json" };
-    if (config.secretKey.startsWith("eyJ")) headers.Authorization = `Bearer ${config.secretKey}`;
+    const headers = serviceHeaders(config.secretKey);
     let response: Response;
     try {
       response = await fetchImpl(`${config.supabaseUrl}/rest/v1/rpc/${name}`, {

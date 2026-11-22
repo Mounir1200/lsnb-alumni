@@ -15,6 +15,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { DeleteAccountSection } from "../components/profile/DeleteAccount";
+import { DELETE_ACCOUNT_SECTION_ID } from "../lib/accountDeletion";
 import { DraftHint, DraftResumeNotice, PublicListingField, useProfileDraftAutosave } from "../components/profile/ProfileDraft";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -34,6 +35,8 @@ import { loadProfileDraft, resumableDraft, type EditorForm } from "../lib/profil
 import { MENTORING_SECTION_ID } from "../lib/invitations";
 import { PROFILE_LIMITS, profileListsError } from "../lib/profileLimits";
 import { normalizeProfileLink } from "../lib/profileLinks";
+
+const LANDING_SECTIONS = [MENTORING_SECTION_ID, DELETE_ACCOUNT_SECTION_ID];
 
 type SaveStatus = {
   kind: "idle" | "loading" | "success" | "warning" | "error";
@@ -126,11 +129,13 @@ export function EditProfilePage() {
   // Every change is kept on this device until it is saved or discarded.
   const hasUnsavedChanges = useProfileDraftAutosave(user?.id, form, savedForm);
 
-  // "Proposer un mentorat" lands on the mentoring choice once the form is shown.
+  // "Proposer un mentorat" lands on the mentoring choice, and signing in again to
+  // erase the account on the deletion section, once the form is shown.
   const { hash } = useLocation();
   const isFormShown = Boolean(form);
   useEffect(() => {
-    if (isFormShown && hash === `#${MENTORING_SECTION_ID}`) document.getElementById(MENTORING_SECTION_ID)?.scrollIntoView({ block: "start" });
+    const section = hash.slice(1);
+    if (isFormShown && LANDING_SECTIONS.includes(section)) document.getElementById(section)?.scrollIntoView({ block: "start" });
   }, [isFormShown, hash]);
 
   useEffect(() => {
@@ -636,7 +641,7 @@ export function EditProfilePage() {
             )}
           </form>
 
-          <DeleteAccountSection userId={user.id} isListedOption={form.memberRole === "alumni"} />
+          <DeleteAccountSection isListedOption={form.memberRole === "alumni"} />
         </section>
       </div>
     </div>
