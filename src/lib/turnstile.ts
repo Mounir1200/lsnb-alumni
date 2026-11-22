@@ -55,9 +55,9 @@ export function initialCaptchaState(siteKey: string | null): CaptchaState {
   return siteKey ? { kind: "waiting" } : { kind: "off" };
 }
 
-/** Words a CAPTCHA problem, from the form or from Supabase, for members; null for any other error. */
-export function captchaMessage(error: unknown): string | null {
-  return CAPTCHA_MESSAGES.get(errorCode(error)) ?? null;
+/** Words a CAPTCHA problem, from the form or from Supabase, for members; undefined for any other error. */
+export function captchaMessage(error: unknown): string | undefined {
+  return CAPTCHA_MESSAGES.get(errorCode(error));
 }
 
 function notReady(code: "captcha_waiting" | "captcha_unavailable") {

@@ -100,12 +100,12 @@ function Login({
       );
       if (error)
         setAuthError(
-          captchaMessage(error) ??
+          captchaMessage(error) ||
             "Connexion impossible. Vérifiez votre adresse et votre mot de passe.",
         );
     } catch (error) {
       setAuthError(
-        captchaMessage(error) ??
+        captchaMessage(error) ||
           "Le service est inaccessible. Réessayez dans un instant.",
       );
     } finally {

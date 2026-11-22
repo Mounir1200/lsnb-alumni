@@ -77,7 +77,7 @@ test("a CAPTCHA that Supabase refused is worded for members; other errors are le
   const refused = { code: "captcha_failed", message: "captcha protection: request disallowed (timeout-or-duplicate)" };
   assert.match(captchaMessage(refused) ?? "", /vérification anti-robot a échoué/);
   for (const error of [{ code: "invalid_credentials" }, new Error("captcha_failed"), { code: "constructor" }, null]) {
-    assert.equal(captchaMessage(error), null, String(error));
+    assert.equal(captchaMessage(error), undefined, String(error));
   }
 });
 

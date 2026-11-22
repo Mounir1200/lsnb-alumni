@@ -25,7 +25,7 @@ export function getLoginError(error: unknown) {
   if (code === "email_not_confirmed") return "Confirmez d’abord votre adresse e-mail. Vous pouvez demander un nouveau lien ci-dessous.";
   if (code === "invalid_credentials") return "L’adresse e-mail ou le mot de passe est incorrect.";
   if (isRateLimited(error)) return "Trop de tentatives rapprochées. Patientez un peu avant de réessayer.";
-  return captchaMessage(error) ?? "La connexion n’a pas abouti. Vérifiez votre connexion internet et réessayez.";
+  return captchaMessage(error) || "La connexion n’a pas abouti. Vérifiez votre connexion internet et réessayez.";
 }
 
 /** Trims the typed address and refuses one that cannot receive a link. */
@@ -48,7 +48,7 @@ export async function sendAccountEmail(send: () => Promise<{ error: unknown }>, 
 function accountEmailError(failure: unknown, subject: string) {
   if (failure === OFFLINE) return `${subject} n’a pas pu être envoyé. Vérifiez votre connexion internet et réessayez.`;
   if (isRateLimited(failure)) return "Patientez une minute avant de demander un nouveau lien.";
-  return captchaMessage(failure) ?? `${subject} n’a pas pu être envoyé. Réessayez dans un instant.`;
+  return captchaMessage(failure) || `${subject} n’a pas pu être envoyé. Réessayez dans un instant.`;
 }
 
 export async function resendSignupConfirmation(auth: Pick<SupabaseClient["auth"], "resend">, email: string, redirectTo: string, captcha: CaptchaOptions) {

@@ -113,7 +113,7 @@ export function JoinPage() {
         password,
         options: { data: profile, emailRedirectTo, ...captchaOptions },
       }));
-      if (authError) throw new Error(captchaMessage(authError) ?? authError.message);
+      if (authError) throw new Error(captchaMessage(authError) || authError.message);
 
       let photoQueued = false;
       if (photo && authData.user) {
