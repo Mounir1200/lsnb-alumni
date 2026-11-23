@@ -59,3 +59,28 @@ test("storage outages return a safe retriable error", async (context) => {
   assert.equal(response.body.includes("secret"), false);
   assert.equal(response.headers["cache-control"], "no-store");
 });
+
+test("an unexpected failure answers 500 without its cause and is logged as an error; a client mistake keeps its 4xx", async (context) => {
+  const app = await buildApp({ config: testConfig, logger: false });
+  context.after(() => app.close());
+  app.get("/unexpected", async () => { throw new Error("database password in the message"); });
+  app.get("/conflict", async () => { throw Object.assign(new Error("conflict"), { statusCode: 409 }); });
+  app.get("/odd-status", async () => { throw Object.assign(new Error("odd"), { statusCode: 600 }); });
+  app.get("/redirect-status", async () => { throw Object.assign(new Error("redirect"), { statusCode: 302 }); });
+  app.get("/boundary", async () => { throw Object.assign(new Error("boundary"), { statusCode: 400 }); });
+  app.get("/just-below", async () => { throw Object.assign(new Error("just below"), { statusCode: 499 }); });
+  app.get("/not-client", async () => { throw Object.assign(new Error("not client"), { statusCode: 500 }); });
+
+  const failure = await app.inject("/unexpected");
+  assert.equal(failure.statusCode, 500);
+  assert.deepEqual(failure.json(), { error: "Le serveur est momentanément indisponible." });
+  for (const [url, status] of [["/conflict", 409], ["/boundary", 400], ["/just-below", 499], ["/odd-status", 500], ["/redirect-status", 500], ["/not-client", 500]] as const) {
+    assert.equal((await app.inject(url)).statusCode, status, url);
+  }
+  assert.deepEqual((await app.inject("/conflict")).json(), { error: "Requête invalide." });
+  const entries = app.operationsLog.snapshot("all", 100).entries as { level: string; event: string; status?: number; path?: string }[];
+  const requests = entries.filter((entry) => entry.event === "api.request");
+  assert.equal(requests.find((entry) => entry.path === "/unexpected")?.level, "error");
+  assert.equal(requests.find((entry) => entry.path === "/conflict")?.level, "warn");
+  assert.ok(entries.some((entry) => entry.event === "api.unhandled_error"));
+});

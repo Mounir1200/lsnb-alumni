@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { createRpcJobStore, notificationChannel, ROUND_CAPACITY, runNotificationRound, type NotificationChannel, type NotificationConfig } from "../notifications/delivery.js";
+import { AVATAR_REMOVAL_RPCS, createAvatarRemover, type AvatarRemovalJob } from "../accounts/avatarRemoval.js";
+import { ACCOUNT_APPROVED_RPCS, createAccountApprovedSender, type AccountApprovedJob } from "../approvals/accountApproved.js";
 import { APPROVAL_QUEUE_RPCS, createApprovalNotificationSender, type ApprovalNotificationJob } from "../approvals/notifications.js";
 import { createRequestNotificationSender, REQUEST_QUEUE_RPCS, type RequestNotificationJob } from "../requests/notifications.js";
 import { createNotificationSender, createNotificationStore, loadNotificationConfig } from "./notifications.js";
@@ -25,9 +27,16 @@ export function createNotificationScheduler(apiKey: string, run: () => Promise<D
   };
 }
 
-/** Unread-message alerts first, then request emails, then approval e-mails to the team, within one round's capacity. */
+/**
+ * Within one round's capacity: the photos of erased accounts first (no e-mail,
+ * and the erasure is owed), then the e-mail telling a member their account is
+ * approved (they wait for it, and it comes once), unread-message alerts,
+ * request emails and approval e-mails to the team.
+ */
 export function notificationChannels(config: NotificationConfig): NotificationChannel[] {
   return [
+    notificationChannel(createRpcJobStore<AvatarRemovalJob>(config, AVATAR_REMOVAL_RPCS), createAvatarRemover(config)),
+    notificationChannel(createRpcJobStore<AccountApprovedJob>(config, ACCOUNT_APPROVED_RPCS), createAccountApprovedSender(config)),
     notificationChannel(createNotificationStore(config), createNotificationSender(config)),
     notificationChannel(createRpcJobStore<RequestNotificationJob>(config, REQUEST_QUEUE_RPCS), createRequestNotificationSender(config)),
     notificationChannel(createRpcJobStore<ApprovalNotificationJob>(config, APPROVAL_QUEUE_RPCS), createApprovalNotificationSender(config)),

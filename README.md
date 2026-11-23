@@ -62,9 +62,10 @@ Pour tester avec de vraies données, utiliser l'environnement d'essai et les val
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_API_URL=http://localhost:4000
+VITE_TURNSTILE_SITE_KEY=
 ```
 
-Redémarrer le serveur local après une modification de ces valeurs. Sans environnement d'essai fourni, le mode démonstration reste disponible.
+Redémarrer le serveur local après une modification de ces valeurs. Sans environnement d'essai fourni, le mode démonstration reste disponible. Laissée vide, `VITE_TURNSTILE_SITE_KEY` éteint la vérification anti-robot ; pour la voir en local, utiliser la clé de test de Cloudflare `1x00000000000000000000AA`.
 
 Pour personnaliser l’API en local, copier `api/.env.example` vers `api/.env`. `VITE_API_URL`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY` sont utilisés pour la rubrique Highlight. Seul le job hebdomadaire utilise aussi `OPENAI_API_KEY` et `OPENAI_MODEL=gpt-5-nano`. Les clés `SUPABASE_SECRET_KEY` et `OPENAI_API_KEY` sont strictement réservées au backend : elles ne doivent jamais utiliser le préfixe `VITE_` ni être incluses dans le navigateur. Ne pas ajouter les fichiers contenant de vraies valeurs à GitHub.
 

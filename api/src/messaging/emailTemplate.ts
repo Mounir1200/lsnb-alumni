@@ -120,6 +120,24 @@ export function renderMessageNotificationEmail(conversationUrl: string, settings
 }
 
 /**
+ * Tells a member, once, that the team approved their account, and leads to the
+ * sign-in page. Like the other e-mails, it names nobody and holds nothing of
+ * the profile: neither promotion nor reason.
+ */
+export function renderAccountApprovedEmail(signInUrl: string): BrandedEmail {
+  const title = "Votre compte est validé.";
+  const introduction = "L’équipe du réseau a validé votre inscription : votre profil est désormais visible des autres membres. Connectez-vous pour les retrouver dans l’annuaire et entrer en contact avec eux.";
+  const action = "Me connecter";
+  const note = "Connectez-vous comme lors de votre inscription : avec votre adresse e-mail et votre mot de passe, ou avec Google. Mot de passe oublié ? La page de connexion vous permet d’en choisir un nouveau.";
+  const footer = "Vous recevez cet e-mail une seule fois, après la validation de votre inscription.";
+  return renderEmail({
+    subject: "Votre compte LSNB Alumni est validé", preheader: "Vous pouvez maintenant vous connecter et retrouver le réseau.",
+    label: "Bienvenue dans le réseau", title, introduction, action, actionUrl: signInUrl, note, footer,
+    text: `LSNB ALUMNI\n\n${title}\n\n${introduction}\n\n${action} :\n${signInUrl}\n\n${note}\n\n${footer}\n\nLSNB Alumni\nLycée Scientifique National de Bobo-Dioulasso`,
+  });
+}
+
+/**
  * Tells a team member that newcomers wait for approval in their scope. Like
  * the other e-mails, it carries no name: the hub shows who they are.
  */

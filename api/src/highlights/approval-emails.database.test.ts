@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import type { PGlite } from '@electric-sql/pglite'
-import { asMember, createMigratedDatabase, seedMember } from './testDatabase.ts'
+import { asMember, countRoundRequests, createMigratedDatabase, seedMember } from './testDatabase.ts'
 
 type Job = { job_id: string; lease_token: string; email: string; waiting: number; promotion: number | null }
 
@@ -43,6 +43,15 @@ describe('E-mails asking the team to approve newcomers', { concurrency: false },
     assert.deepEqual(await queued(), [])
     await confirm(newcomer)
     assert.deepEqual(await queued(), sorted([owner, admin, moderator]))
+  })
+
+  it('asks the API for a round at once for an e-mail due now, never for one waiting out its twelve hours', async () => {
+    const rounds = await countRoundRequests(db)
+    await signUp('first@example.test', 2020)
+    assert.equal(await rounds(), 3, 'one per team member due an e-mail: the super administrator, the administrator, the moderator')
+    for (const job of await claim()) await finish(job)
+    await signUp('second@example.test', 2020)
+    assert.equal(await rounds(), 3, 'the same three now wait out their twelve hours')
   })
 
   it('puts a Google newcomer forward when their profile is complete', async () => {

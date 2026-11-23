@@ -3,7 +3,9 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
+import { TurnstileField, useTurnstile } from "../components/auth/TurnstileField";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { PublicListingField } from "../components/profile/ProfileDraft";
 import { CharterConsent } from "../components/safety/CharterConsent";
 import { Button } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -11,10 +13,12 @@ import { getAuthCallbackUrl, getPostAuthPath } from "../lib/auth";
 import { getAvatarValidationError, uploadAvatar } from "../lib/avatarRepository";
 import { normalizeCareerSteps, toCareerStepRows, type CareerStepDraft } from "../lib/careerSteps";
 import { savePendingAvatar } from "../lib/pendingAvatarStore";
+import { PROFILE_LIMITS } from "../lib/profileLimits";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { SITE_NAME } from "../lib/site";
 import { registerEmailAccount } from "../lib/emailConfirmation";
 import { createEmailLinkAuth, isSupabaseConfigured, supabase } from "../lib/supabase";
+import { captchaMessage } from "../lib/turnstile";
 
 type SubmissionStatus = {
   kind: "idle" | "loading" | "success" | "error";
@@ -27,11 +31,13 @@ export function JoinPage() {
   const navigate = useNavigate();
   const [role, setRole] = useState<"alumni" | "student">("alumni");
   const [offersMentoring, setOffersMentoring] = useState(searchParams.get("mentorat") === "true");
+  const [listedPublicly, setListedPublicly] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>();
   const [status, setStatus] = useState<SubmissionStatus>({ kind: "idle" });
   const [googleBusy, setGoogleBusy] = useState(false);
   const [careerSteps, setCareerSteps] = useState<CareerStepDraft[]>([]);
+  const captcha = useTurnstile();
   const nextPath = getPostAuthPath(searchParams.get("next"));
   const loginPath = searchParams.has("next") ? `/connexion?next=${encodeURIComponent(nextPath)}` : "/connexion";
 
@@ -77,6 +83,8 @@ export function JoinPage() {
         experience: String(data.get("experience") ?? "").trim(),
         offers_mentoring: role === "alumni" && offersMentoring,
         contact_visible: data.get("contactVisible") === "on",
+        // Applied by the database once the account exists; only an alumnus can be listed.
+        listed_publicly: role === "alumni" && listedPublicly,
         linkedin_url: normalizeProfileLink(String(data.get("linkedinUrl") ?? ""), "linkedin"),
         portfolio_url: normalizeProfileLink(String(data.get("portfolioUrl") ?? ""), "portfolio"),
         // Copied to the profile by the database once the account exists.
@@ -92,20 +100,20 @@ export function JoinPage() {
         form.reset();
         setPhoto(null);
         setCareerSteps([]);
+        setListedPublicly(false);
         return;
       }
 
       const email = String(data.get("email") ?? "").trim();
       const password = String(data.get("password") ?? "");
-      const { data: authData, error: authError, signInRequired } = await registerEmailAccount(supabase.auth, createEmailLinkAuth(), {
+      const emailRedirectTo = getAuthCallbackUrl(searchParams.has("next") ? nextPath : null);
+      const sessionAuth = supabase.auth;
+      const { data: authData, error: authError, signInRequired } = await captcha.send((captchaOptions) => registerEmailAccount(sessionAuth, createEmailLinkAuth(), {
         email,
         password,
-        options: {
-          data: profile,
-          emailRedirectTo: getAuthCallbackUrl(searchParams.has("next") ? nextPath : null),
-        },
-      });
-      if (authError) throw authError;
+        options: { data: profile, emailRedirectTo, ...captchaOptions },
+      }));
+      if (authError) throw new Error(captchaMessage(authError) || authError.message);
 
       let photoQueued = false;
       if (photo && authData.user) {
@@ -208,8 +216,8 @@ export function JoinPage() {
             </fieldset>
 
             <div className="form-row">
-              <label className="field-group"><span>Prénom</span><input name="firstName" autoComplete="given-name" required /></label>
-              <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" required /></label>
+              <label className="field-group"><span>Prénom</span><input name="firstName" autoComplete="given-name" maxLength={PROFILE_LIMITS.name} required /></label>
+              <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" maxLength={PROFILE_LIMITS.name} required /></label>
             </div>
 
             <label className="field-group">
@@ -227,12 +235,12 @@ export function JoinPage() {
                 <span>{role === "alumni" ? "Année du bac" : "Année prévue du bac"}</span>
                 <input name="graduationYear" type="number" min="2017" max="2040" required />
               </label>
-              <label className="field-group"><span>Spécialité ou domaine</span><input name="specialty" placeholder="Ex. génie civil" required /></label>
+              <label className="field-group"><span>Spécialité ou domaine</span><input name="specialty" placeholder="Ex. génie civil" maxLength={PROFILE_LIMITS.specialty} required /></label>
             </div>
 
             <div className="form-row">
-              <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" required /></label>
-              <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" required /></label>
+              <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" maxLength={PROFILE_LIMITS.place} required /></label>
+              <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" maxLength={PROFILE_LIMITS.place} required /></label>
             </div>
 
             <label className="field-group">
@@ -240,6 +248,7 @@ export function JoinPage() {
               <textarea
                 name="experience"
                 rows={5}
+                maxLength={PROFILE_LIMITS.experience}
                 placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager."
                 aria-describedby="join-story-help"
                 required
@@ -279,6 +288,7 @@ export function JoinPage() {
                 <span><b>Je souhaite proposer du mentorat</b>Je pourrai accepter ou refuser chaque demande selon ma disponibilité.</span>
               </label>
             )}
+            {role === "alumni" && <PublicListingField checked={listedPublicly} onChange={setListedPublicly} />}
 
             <label className="form-check">
               <input type="checkbox" name="contactVisible" />
@@ -302,7 +312,7 @@ export function JoinPage() {
 
             {role === "alumni" && (
               <p className="highlight-disclosure">
-                Votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
+                Si vous apparaissez dans l’annuaire public, votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
                 sans connexion. Les informations de votre parcours sont alors transmises à
                 OpenAI pour rédiger le portrait. Les champs de contact ne sont pas transmis ;
                 évitez d’ajouter des coordonnées privées dans le texte de votre parcours.
@@ -310,6 +320,7 @@ export function JoinPage() {
               </p>
             )}
 
+            <TurnstileField captcha={captcha} />
             {status.kind !== "idle" && status.message && (
               <div className={`form-status form-status--${status.kind}`} role="status">
                 {status.kind === "success" && <Check aria-hidden="true" />}

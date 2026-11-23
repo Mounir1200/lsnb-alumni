@@ -148,7 +148,7 @@ test("expired or disabled maintenance immediately restores public data", async (
   assert.equal((await app.inject("/api/v1/site-status")).json().active, false);
   status = { ...paused(null), enabled: false };
   assert.equal((await app.inject("/api/v1/highlights/current")).statusCode, 200);
-  assert.equal(reads, 2);
+  assert.equal(reads, 1, "the second request within ten seconds is answered from memory");
 });
 
 test("indefinite maintenance has no fabricated retry date", async (context) => {

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ControlPlaneError, effectiveSiteStatus, inactiveSiteStatus, type AdminBackend } from "./backend.js";
 import type { OperationalLog, LogLevel } from "./logs.js";
+import { ADMIN_LOG_REQUESTS_PER_MINUTE, MINUTE_MS } from "../requestLimits.js";
 
 declare module "fastify" {
   interface FastifyInstance { operationsLog: OperationalLog }
@@ -17,7 +18,8 @@ export async function registerAdminRoutes(app: FastifyInstance, backend: AdminBa
     }
   });
 
-  app.get<{ Querystring: { level?: string; limit?: string } }>("/api/v1/admin/logs", async (request, reply) => {
+  app.get<{ Querystring: { level?: string; limit?: string } }>("/api/v1/admin/logs",
+    { config: { rateLimit: { max: ADMIN_LOG_REQUESTS_PER_MINUTE, timeWindow: MINUTE_MS } } }, async (request, reply) => {
     reply.header("cache-control", "no-store");
     const token = request.headers.authorization?.match(/^Bearer ([A-Za-z0-9._~-]{1,8192})$/i)?.[1];
     if (!token) return reply.code(401).send({ error: "Authentification requise." });

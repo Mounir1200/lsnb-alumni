@@ -3,6 +3,7 @@ import { getSafeNextPath } from "./auth";
 import { authFailure, isRateLimited, OFFLINE } from "./authErrors";
 import { requireEmailAddress, sendAccountEmail } from "./emailConfirmation";
 import { errorCode } from "./errorCode";
+import type { CaptchaOptions } from "./turnstile";
 
 export const FORGOT_PASSWORD_PATH = "/mot-de-passe-oublie";
 export const NEW_PASSWORD_PATH = "/nouveau-mot-de-passe";
@@ -23,9 +24,9 @@ const PASSWORD_UPDATE_ERRORS: Record<string, string> = {
 };
 
 /** Sends a reset link; `redirectTo` comes back through the auth callback to the new password page. */
-export async function requestPasswordReset(auth: ResetAuth, email: string, redirectTo: string) {
+export async function requestPasswordReset(auth: ResetAuth, email: string, redirectTo: string, captcha: CaptchaOptions) {
   const address = requireEmailAddress(email);
-  await sendAccountEmail(() => auth.resetPasswordForEmail(address, { redirectTo }), "Le lien");
+  await sendAccountEmail(() => auth.resetPasswordForEmail(address, { redirectTo, ...captcha }), "Le lien");
 }
 
 export function passwordProblem(password: string, confirmation: string): string | null {

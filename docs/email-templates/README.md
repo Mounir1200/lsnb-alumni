@@ -8,7 +8,7 @@ L’identité reprend les couleurs du site : bleu `#0c2948`, banco `#c27d38` et 
 - Contenu HTML : `confirm-signup.html`.
 - Variable native Supabase : `{{ .ConfirmationURL }}`. Conserver cette variable telle quelle ; ne pas remplacer le lien par l’URL de la page de connexion.
 - Le fichier `supabase-confirmation-config.json` contient exactement les champs `mailer_subjects_confirmation` et `mailer_templates_confirmation_content` à appliquer à la configuration Auth du projet.
-- Dans Auth, activer la confirmation de l’adresse e-mail (`mailer_autoconfirm: false`) et configurer le SMTP personnalisé. Expéditeur demandé : `LSNB Alumni <mounirdabire47@gmail.com>`. Le compte fournisseur doit autoriser cet expéditeur.
+- Dans Auth, activer la confirmation de l’adresse e-mail (`mailer_autoconfirm: false`) et configurer le SMTP personnalisé. Expéditeur : une adresse vérifiée chez le fournisseur SMTP, au nom LSNB Alumni ; le compte fournisseur doit l’autoriser.
 - Vérifier la Site URL et la liste des Redirect URLs autorisées, notamment l’URL HTTPS de production suivie de `/auth/callback`. Le frontend fournit cette destination à `signUp` et au renvoi de confirmation.
 - `confirm-signup.txt` est la version texte de référence. Le champ de template Auth Supabase accepte le contenu HTML ; ne pas inventer un champ API pour injecter séparément cette version texte.
 

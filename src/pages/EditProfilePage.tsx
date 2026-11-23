@@ -15,6 +15,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
 import { DeleteAccountSection } from "../components/profile/DeleteAccount";
+import { DELETE_ACCOUNT_SECTION_ID } from "../lib/accountDeletion";
 import { DraftHint, DraftResumeNotice, PublicListingField, useProfileDraftAutosave } from "../components/profile/ProfileDraft";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
@@ -32,7 +33,10 @@ import {
 import { normalizeCareerSteps, toCareerStepDrafts } from "../lib/careerSteps";
 import { loadProfileDraft, resumableDraft, type EditorForm } from "../lib/profileDraft";
 import { MENTORING_SECTION_ID } from "../lib/invitations";
+import { PROFILE_LIMITS, profileListsError } from "../lib/profileLimits";
 import { normalizeProfileLink } from "../lib/profileLinks";
+
+const LANDING_SECTIONS = [MENTORING_SECTION_ID, DELETE_ACCOUNT_SECTION_ID];
 
 type SaveStatus = {
   kind: "idle" | "loading" | "success" | "warning" | "error";
@@ -125,11 +129,13 @@ export function EditProfilePage() {
   // Every change is kept on this device until it is saved or discarded.
   const hasUnsavedChanges = useProfileDraftAutosave(user?.id, form, savedForm);
 
-  // "Proposer un mentorat" lands on the mentoring choice once the form is shown.
+  // "Proposer un mentorat" lands on the mentoring choice, and signing in again to
+  // erase the account on the deletion section, once the form is shown.
   const { hash } = useLocation();
   const isFormShown = Boolean(form);
   useEffect(() => {
-    if (isFormShown && hash === `#${MENTORING_SECTION_ID}`) document.getElementById(MENTORING_SECTION_ID)?.scrollIntoView({ block: "start" });
+    const section = hash.slice(1);
+    if (isFormShown && LANDING_SECTIONS.includes(section)) document.getElementById(section)?.scrollIntoView({ block: "start" });
   }, [isFormShown, hash]);
 
   useEffect(() => {
@@ -194,6 +200,11 @@ export function EditProfilePage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form) return;
+    const listsError = profileListsError(parseList(form.specialties), parseList(form.mentoringTopics));
+    if (listsError) {
+      setStatus({ kind: "error", message: listsError });
+      return;
+    }
 
     setStatus({ kind: "loading", message: "Enregistrement de vos modifications…" });
 
@@ -373,6 +384,7 @@ export function EditProfilePage() {
                   value={form.firstName}
                   onChange={(event) => updateField("firstName", event.target.value)}
                   autoComplete="given-name"
+                  maxLength={PROFILE_LIMITS.name}
                   required
                 />
               </label>
@@ -382,6 +394,7 @@ export function EditProfilePage() {
                   value={form.lastName}
                   onChange={(event) => updateField("lastName", event.target.value)}
                   autoComplete="family-name"
+                  maxLength={PROFILE_LIMITS.name}
                   required
                 />
               </label>
@@ -407,6 +420,7 @@ export function EditProfilePage() {
                   value={form.domain}
                   onChange={(event) => updateField("domain", event.target.value)}
                   placeholder="Ex. Technologies numériques"
+                  maxLength={PROFILE_LIMITS.domain}
                   required
                 />
               </label>
@@ -418,6 +432,7 @@ export function EditProfilePage() {
                 value={form.specialty}
                 onChange={(event) => updateField("specialty", event.target.value)}
                 placeholder="Ex. intelligence artificielle"
+                maxLength={PROFILE_LIMITS.specialty}
                 required
               />
             </label>
@@ -439,6 +454,7 @@ export function EditProfilePage() {
                   value={form.city}
                   onChange={(event) => updateField("city", event.target.value)}
                   autoComplete="address-level2"
+                  maxLength={PROFILE_LIMITS.place}
                   required
                 />
               </label>
@@ -448,6 +464,7 @@ export function EditProfilePage() {
                   value={form.country}
                   onChange={(event) => updateField("country", event.target.value)}
                   autoComplete="country-name"
+                  maxLength={PROFILE_LIMITS.place}
                   required
                 />
               </label>
@@ -461,6 +478,7 @@ export function EditProfilePage() {
                 onChange={(event) => updateField("experience", event.target.value)}
                 placeholder="Études, transitions, activité actuelle et ce que vous pouvez partager."
                 aria-describedby="edit-story-help"
+                maxLength={PROFILE_LIMITS.experience}
                 required
               />
               <small id="edit-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small>
@@ -614,7 +632,7 @@ export function EditProfilePage() {
 
             {form.memberRole === "alumni" && (
               <p className="highlight-disclosure">
-                Votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
+                Si vous apparaissez dans l’annuaire public, votre parcours peut être mis à l’honneur dans un Highlight visible par tous,
                 sans connexion. Les informations de votre parcours sont alors transmises à
                 OpenAI pour rédiger le portrait. Les champs de contact ne sont pas transmis ;
                 évitez d’ajouter des coordonnées privées dans le texte de votre parcours.
@@ -623,7 +641,7 @@ export function EditProfilePage() {
             )}
           </form>
 
-          <DeleteAccountSection userId={user.id} isListedOption={form.memberRole === "alumni"} />
+          <DeleteAccountSection isListedOption={form.memberRole === "alumni"} />
         </section>
       </div>
     </div>

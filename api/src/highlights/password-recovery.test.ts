@@ -40,7 +40,7 @@ function rejectsWithout(secret: RegExp, expected: RegExp) {
 
 test("a reset request sends the link to the trimmed address and comes back to the new password page", async () => {
   const { auth, calls } = resetAuth(succeeds);
-  await requestPasswordReset(auth, "  member@example.test ", CALLBACK);
+  await requestPasswordReset(auth, "  member@example.test ", CALLBACK, {});
   assert.deepEqual(calls, [["member@example.test", { redirectTo: CALLBACK }]]);
   assert.match(RESET_LINK_SENT, /^Si un compte existe/);
 });
@@ -48,7 +48,7 @@ test("a reset request sends the link to the trimmed address and comes back to th
 test("a reset request checks the address before contacting the server", async () => {
   const { auth, calls } = resetAuth(succeeds);
   for (const email of ["", "member", "member@", "a b@example.test"]) {
-    await assert.rejects(requestPasswordReset(auth, email, CALLBACK), /adresse e-mail valide/);
+    await assert.rejects(requestPasswordReset(auth, email, CALLBACK, {}), /adresse e-mail valide/);
   }
   assert.equal(calls.length, 0);
 });
@@ -61,7 +61,7 @@ test("reset request failures say what to do without exposing provider details", 
     [async () => { throw new Error("secret network detail"); }, /connexion internet/],
   ];
   for (const [result, expected] of cases) {
-    await assert.rejects(requestPasswordReset(resetAuth(result).auth, "member@example.test", CALLBACK), rejectsWithout(/secret/, expected));
+    await assert.rejects(requestPasswordReset(resetAuth(result).auth, "member@example.test", CALLBACK, {}), rejectsWithout(/secret/, expected));
   }
 });
 

@@ -3,13 +3,16 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { CareerStepsEditor } from "../components/profile/CareerStepsEditor";
+import { PublicListingField } from "../components/profile/ProfileDraft";
 import { CharterConsent } from "../components/safety/CharterConsent";
 import { Button } from "../components/ui/Button";
 import { RouteStop } from "../components/visual/RouteStop";
 import { getPostAuthPath } from "../lib/auth";
 import { SITE_NAME } from "../lib/site";
 import { normalizeCareerSteps, type CareerStepDraft } from "../lib/careerSteps";
-import { completeMemberProfile, loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
+import { loadOnboardingProfile, type OnboardingProfile } from "../lib/onboardingRepository";
+import { completeMemberProfile } from "../lib/profileCompletion";
+import { PROFILE_LIMITS } from "../lib/profileLimits";
 import { normalizeProfileLink } from "../lib/profileLinks";
 import { supabase } from "../lib/supabase";
 
@@ -24,6 +27,7 @@ export function CompleteProfilePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [careerSteps, setCareerSteps] = useState<CareerStepDraft[]>([]);
+  const [listedPublicly, setListedPublicly] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -44,19 +48,19 @@ export function CompleteProfilePage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!role || busy || !user || profile?.id !== user.id) return;
+    if (!supabase || !role || busy || !user || profile?.id !== user.id) return;
     const data = new FormData(event.currentTarget);
     setBusy(true);
     setError(null);
     try {
-      await completeMemberProfile(user.id, {
+      await completeMemberProfile(supabase, user.id, {
         firstName: String(data.get("firstName") ?? ""), lastName: String(data.get("lastName") ?? ""),
         memberRole: role, graduationYear: Number(data.get("graduationYear")),
         specialty: String(data.get("specialty") ?? ""), city: String(data.get("city") ?? ""),
         country: String(data.get("country") ?? ""), experience: String(data.get("experience") ?? ""),
         gender: String(data.get("gender") ?? "unspecified") as "male" | "female" | "unspecified",
         offersMentoring: data.get("offersMentoring") === "on", contactVisible: data.get("contactVisible") === "on",
-        termsAccepted: data.get("termsAccepted") === "on",
+        termsAccepted: data.get("termsAccepted") === "on", listedPublicly,
         linkedinUrl: normalizeProfileLink(String(data.get("linkedinUrl") ?? ""), "linkedin") ?? undefined,
         portfolioUrl: normalizeProfileLink(String(data.get("portfolioUrl") ?? ""), "portfolio") ?? undefined,
         careerSteps: normalizeCareerSteps(careerSteps),
@@ -101,19 +105,19 @@ export function CompleteProfilePage() {
                 <label className={role === "student" ? "is-selected" : ""}><input type="radio" name="role" value="student" required checked={role === "student"} onChange={() => setRole("student")} /><b>Élève</b><span>Actuellement au LSNB</span></label>
               </fieldset>
               <div className="form-row">
-                <label className="field-group"><span>Prénom</span><input name="firstName" autoComplete="given-name" defaultValue={profile.first_name} maxLength={100} required disabled={busy} /></label>
-                <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" defaultValue={profile.last_name} maxLength={100} required disabled={busy} /></label>
+                <label className="field-group"><span>Prénom</span><input name="firstName" autoComplete="given-name" defaultValue={profile.first_name} maxLength={PROFILE_LIMITS.name} required disabled={busy} /></label>
+                <label className="field-group"><span>Nom</span><input name="lastName" autoComplete="family-name" defaultValue={profile.last_name} maxLength={PROFILE_LIMITS.name} required disabled={busy} /></label>
               </div>
               <label className="field-group"><span>Genre (facultatif)</span><select name="gender" defaultValue="unspecified" disabled={busy}><option value="unspecified">Je préfère ne pas préciser</option><option value="female">Femme</option><option value="male">Homme</option></select><small>Ce choix sert à équilibrer les duos Highlight et à adapter les pronoms et les accords de votre portrait. Sans précision, le texte utilise votre prénom et des formulations neutres.</small></label>
               <div className="form-row">
                 <label className="field-group"><span>{role === "student" ? "Année prévue du bac" : "Année du bac"}</span><input name="graduationYear" type="number" min={2017} max={2040} required disabled={busy} /></label>
-                <label className="field-group"><span>Spécialité ou domaine</span><input name="specialty" maxLength={200} placeholder="Ex. génie civil" required disabled={busy} /></label>
+                <label className="field-group"><span>Spécialité ou domaine</span><input name="specialty" maxLength={PROFILE_LIMITS.specialty} placeholder="Ex. génie civil" required disabled={busy} /></label>
               </div>
               <div className="form-row">
-                <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" maxLength={150} required disabled={busy} /></label>
-                <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" maxLength={150} required disabled={busy} /></label>
+                <label className="field-group"><span>Ville</span><input name="city" autoComplete="address-level2" maxLength={PROFILE_LIMITS.place} required disabled={busy} /></label>
+                <label className="field-group"><span>Pays</span><input name="country" autoComplete="country-name" maxLength={PROFILE_LIMITS.place} required disabled={busy} /></label>
               </div>
-              <label className="field-group"><span>Votre parcours en quelques phrases</span><textarea name="experience" rows={5} maxLength={5000} placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager." aria-describedby="complete-story-help" required disabled={busy} /><small id="complete-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small></label>
+              <label className="field-group"><span>Votre parcours en quelques phrases</span><textarea name="experience" rows={5} maxLength={PROFILE_LIMITS.experience} placeholder="Études, transitions, activité actuelle et ce que vous aimeriez partager." aria-describedby="complete-story-help" required disabled={busy} /><small id="complete-story-help">Racontez votre trajectoire avec vos mots. Les dates et les établissements vont dans les étapes clés ci-dessous.</small></label>
               <CareerStepsEditor steps={careerSteps} onChange={setCareerSteps} disabled={busy} />
               <div className="form-row">
                 <label className="field-group">
@@ -127,10 +131,11 @@ export function CompleteProfilePage() {
               </div>
               <p id="complete-links-help" className="account-form__login">Ces liens facultatifs seront visibles par les membres du réseau sur votre profil. Utilisez HTTPS ; les adresses locales ou privées sont refusées. Vous pouvez laisser les deux champs vides et les ajouter plus tard.</p>
               {role === "alumni" && <label className="form-check form-check--mentor"><input name="offersMentoring" type="checkbox" disabled={busy} /><span><b>Je souhaite proposer du mentorat</b>Je pourrai accepter ou refuser les demandes.</span></label>}
+              {role === "alumni" && <PublicListingField checked={listedPublicly} onChange={setListedPublicly} />}
               <label className="form-check"><input name="contactVisible" type="checkbox" disabled={busy} /><span><b>Rendre mon contact visible aux membres</b>Ce choix peut être modifié plus tard.</span></label>
               <label className="form-consent"><input name="termsAccepted" type="checkbox" required disabled={busy} /><span>J’accepte que ces informations soient utilisées pour mon profil dans l’{SITE_NAME}. <Link to="/confidentialite">Voir la politique de confidentialité.</Link></span></label>
               <CharterConsent disabled={busy} />
-              {role === "alumni" && <p className="highlight-disclosure">Votre parcours peut figurer dans un Highlight public rédigé avec OpenAI à partir de votre profil. Les champs de contact ne sont pas transmis ; évitez les coordonnées privées dans le parcours. <Link to="/confidentialite#highlights">En savoir plus</Link></p>}
+              {role === "alumni" && <p className="highlight-disclosure">Si vous apparaissez dans l’annuaire public, votre parcours peut figurer dans un Highlight public rédigé avec OpenAI à partir de votre profil. Les champs de contact ne sont pas transmis ; évitez les coordonnées privées dans le parcours. <Link to="/confidentialite#highlights">En savoir plus</Link></p>}
               {error && <div className="form-status form-status--error" role="alert">{error}</div>}
               <Button type="submit" size="lg" disabled={busy}>{busy && <LoaderCircle className="spin" aria-hidden="true" />} Enregistrer et continuer</Button>
               <p className="account-form__login">Vous pourrez ajouter ou modifier votre photo depuis votre espace membre.</p>

@@ -49,11 +49,15 @@ export function loadNotificationConfig(env: NodeJS.ProcessEnv = process.env): No
   return { apiKey, fromEmail, secretKey, siteUrl: siteUrl.origin, supabaseUrl: supabaseUrl.origin, hubUrl: hubUrl.origin };
 }
 
+/** What makes Supabase serve a request as the service: legacy JWT keys also go as a bearer token. */
+export function serviceHeaders(secretKey: string): Record<string, string> {
+  return { apikey: secretKey, "content-type": "application/json", ...(secretKey.startsWith("eyJ") ? { Authorization: `Bearer ${secretKey}` } : {}) };
+}
+
 /** Calls a service-role RPC; the secret key only ever goes to Supabase. */
 export function createServiceRpc(config: Pick<NotificationConfig, "supabaseUrl" | "secretKey">, fetchImpl: typeof fetch = fetch) {
   return async function rpc<T>(name: string, body: object): Promise<T> {
-    const headers: Record<string, string> = { apikey: config.secretKey, "content-type": "application/json" };
-    if (config.secretKey.startsWith("eyJ")) headers.Authorization = `Bearer ${config.secretKey}`;
+    const headers = serviceHeaders(config.secretKey);
     let response: Response;
     try {
       response = await fetchImpl(`${config.supabaseUrl}/rest/v1/rpc/${name}`, {
@@ -138,16 +142,24 @@ export function notificationChannel<Job>(store: JobStore<Job>, send: (job: Job) 
   return { deliver: (limit) => deliverJobs(store, send, limit) };
 }
 
-/** Channels share one round's capacity in order: earlier ones are served first. */
+/**
+ * Channels share one round's capacity in order: earlier ones are served first.
+ * A channel that cannot be served does not stop the others; the round reports
+ * its failure once they had their turn.
+ */
 export async function runNotificationRound(channels: NotificationChannel[], capacity = ROUND_CAPACITY): Promise<DeliveryCounts> {
   const total: DeliveryCounts = { claimed: 0, delivered: 0, failed: 0 };
+  const failures: unknown[] = [];
   for (const channel of channels) {
     const remaining = capacity - total.claimed;
     if (remaining <= 0) break;
-    const counts = await channel.deliver(remaining);
+    let counts: DeliveryCounts;
+    try { counts = await channel.deliver(remaining); }
+    catch (error) { failures.push(error); continue; }
     total.claimed += counts.claimed;
     total.delivered += counts.delivered;
     total.failed += counts.failed;
   }
+  if (failures.length > 0) throw failures[0];
   return total;
 }

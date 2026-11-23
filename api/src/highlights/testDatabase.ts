@@ -40,13 +40,16 @@ export async function createMigratedDatabase({ before, messaging = false }: { be
     grant select, insert, update, delete on storage.objects to anon, authenticated;
     alter table storage.objects enable row level security;
     create function storage.foldername(text) returns text[] language sql as 'select string_to_array($1, ''/'')';
+    -- As on Supabase (pg_default_acl in production): what postgres creates in public is
+    -- open to the API roles, every privilege included, until a migration revokes it.
+    alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+    alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+    alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
   `)
   if (messaging) await db.exec(messagingStubs)
   for (const file of (await readdir(migrationsUrl)).filter((name) => name.endsWith('.sql')).sort()) {
     if (before === undefined || file < before) await applyMigration(db, file)
   }
-  // Supabase grants table access by default; RLS and the triggers still apply.
-  await db.exec('grant select, insert, update on public.profiles, public.profile_contacts to authenticated')
   return db
 }
 
@@ -54,8 +57,25 @@ export async function applyMigration(db: PGlite, file: string) {
   await db.exec(await readFile(new URL(file, migrationsUrl), 'utf8'))
 }
 
+/**
+ * Swaps the trigger function that asks the API for a notification round (pg_net in
+ * production) for a counter, and returns how to read how many rounds were asked for.
+ */
+export async function countRoundRequests(db: PGlite) {
+  await db.exec(`
+    create table if not exists private.round_requests (requested_at timestamptz not null default clock_timestamp());
+    truncate private.round_requests;
+    create or replace function private.start_notification_round() returns trigger
+    language plpgsql security definer set search_path = '' as $$
+    begin insert into private.round_requests default values; return null; end; $$;
+  `)
+  return async () => Number((await db.query<{ n: number }>('select count(*)::int as n from private.round_requests')).rows[0]!.n)
+}
+
 export type MemberOptions = {
   student?: boolean; mentor?: boolean; inactive?: boolean; pending?: boolean; email?: string; firstName?: string; graduationYear?: number
+  /** Ticks "Apparaître dans l'annuaire public" at sign-up; nobody is listed otherwise. */
+  listed?: boolean
 }
 
 /**
@@ -77,6 +97,7 @@ export async function seedMember(db: PGlite, options: MemberOptions = {}) {
     JSON.stringify({
       first_name: options.firstName ?? 'Membre', last_name: 'Test', member_role: options.student ? 'student' : 'alumni',
       offers_mentoring: options.mentor ?? false, graduation_year: options.graduationYear,
+      ...(options.listed ? { listed_publicly: true } : {}),
     }),
   ])
   const id = result.rows[0]!.id

@@ -110,9 +110,9 @@ test("email links are escaped so a malformed URL cannot inject HTML", () => {
 test("confirmation resend normalizes the address, preserves the callback and rejects invalid addresses locally", async () => {
   const calls: unknown[] = [];
   const auth = { resend: async (input: unknown) => { calls.push(input); return { error: null }; } } as unknown as Parameters<typeof resendSignupConfirmation>[0];
-  await resendSignupConfirmation(auth, "  member@example.test  ", "https://network.example.test/auth/callback?next=%2Fespace");
+  await resendSignupConfirmation(auth, "  member@example.test  ", "https://network.example.test/auth/callback?next=%2Fespace", {});
   assert.deepEqual(calls, [{ type: "signup", email: "member@example.test", options: { emailRedirectTo: "https://network.example.test/auth/callback?next=%2Fespace" } }]);
-  await assert.rejects(resendSignupConfirmation(auth, "bad-email", "https://network.example.test/auth/callback"), /adresse e-mail valide/);
+  await assert.rejects(resendSignupConfirmation(auth, "bad-email", "https://network.example.test/auth/callback", {}), /adresse e-mail valide/);
   assert.equal(calls.length, 1);
   assert.match(CONFIRMATION_RESEND_SUCCESS, /^Si cette adresse/);
 });
@@ -120,12 +120,12 @@ test("confirmation resend normalizes the address, preserves the callback and rej
 test("confirmation resend and login errors do not expose provider details or leave rejected promises uncaught", async () => {
   for (const resend of [async () => { throw new Error("secret upstream response"); }, async () => ({ error: { code: "unknown", message: "secret upstream response" } })]) {
     const auth = { resend } as unknown as Parameters<typeof resendSignupConfirmation>[0];
-    await assert.rejects(resendSignupConfirmation(auth, "member@example.test", "https://network.example.test/auth/callback"), (error: unknown) => {
+    await assert.rejects(resendSignupConfirmation(auth, "member@example.test", "https://network.example.test/auth/callback", {}), (error: unknown) => {
       assert.ok(error instanceof Error); assert.doesNotMatch(error.message, /secret/); assert.match(error.message, /Réessayez|réessayez/); return true;
     });
   }
   const limited = { resend: async () => ({ error: { code: "over_email_send_rate_limit" } }) } as unknown as Parameters<typeof resendSignupConfirmation>[0];
-  await assert.rejects(resendSignupConfirmation(limited, "member@example.test", "https://network.example.test/auth/callback"), /Patientez une minute/);
+  await assert.rejects(resendSignupConfirmation(limited, "member@example.test", "https://network.example.test/auth/callback", {}), /Patientez une minute/);
   assert.match(getLoginError({ code: "email_not_confirmed" }), /Confirmez d’abord/);
   assert.doesNotMatch(getLoginError(new Error("secret detail")), /secret/);
 });
