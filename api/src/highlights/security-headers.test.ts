@@ -37,7 +37,10 @@ for (const service of ["lsnb-alumni-web", "lsnb-alumni-hub"]) {
   });
 
   test(`${service} lets only its own code, its fonts, Cloudflare's anti-robot check and the project's Supabase and API run or connect`, async () => {
-    const policy = directives((await headersOf(service)).get("Content-Security-Policy-Report-Only") ?? "");
+    const headers = await headersOf(service);
+    // Enforced: the report-only trial on the live pages showed no refusal.
+    assert.equal(headers.has("Content-Security-Policy-Report-Only"), false);
+    const policy = directives(headers.get("Content-Security-Policy") ?? "");
     // Cloudflare Turnstile, on the sign-in forms: its script, and the frame it draws the check in.
     assert.deepEqual(policy.get("script-src"), ["'self'", "https://challenges.cloudflare.com"]);
     assert.deepEqual(policy.get("frame-src"), ["https://challenges.cloudflare.com"]);
