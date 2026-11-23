@@ -20,7 +20,7 @@ services:
       # reset forms (audit M3). Unset, the forms show no check and send no token.
       - key: VITE_TURNSTILE_SITE_KEY
         sync: false
-    # Security headers (audit of 21 November, M4, Z1, Z4); the hub sends the same ones.
+    # Security headers; the hub sends the same ones.
     # The home page shows the school's photo from its own site (src/data/homePhotos.ts).
     # Turnstile needs its script and the frame it draws the check in (challenges.cloudflare.com).
     # The Content Security Policy only reports for now: once the live site's console
