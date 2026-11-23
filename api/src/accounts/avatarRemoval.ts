@@ -2,7 +2,7 @@ import { NotificationError, serviceHeaders, uuidPattern, type NotificationConfig
 
 /**
  * The photo of an erased account, queued by the database when the profile
- * went (supabase/migrations/20261122090004_account_deletion_safeguards.sql).
+ * went (supabase/migrations/20261123121010_account_deletion_safeguards.sql).
  */
 export type AvatarRemovalJob = { job_id: string; lease_token: string; owner_id: string };
 

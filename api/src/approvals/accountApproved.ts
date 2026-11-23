@@ -3,7 +3,7 @@ import { createBrevoSender, emailPattern, NotificationError, uuidPattern, type N
 
 /**
  * The one e-mail telling a member the team approved their account, queued by
- * the database (supabase/migrations/20261123090001_account_approved_email.sql).
+ * the database (supabase/migrations/20261123121117_account_approved_email.sql).
  */
 export type AccountApprovedJob = { job_id: string; lease_token: string; email: string };
 

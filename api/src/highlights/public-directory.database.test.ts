@@ -30,10 +30,10 @@ describe('Public member directory', { concurrency: false }, () => {
   })
 
   it('keeps the choice of the members who joined before they were asked', async () => {
-    const earlier = await createMigratedDatabase({ before: '20261122090003_public_listing_consent.sql' })
+    const earlier = await createMigratedDatabase({ before: '20261123120903_public_listing_consent.sql' })
     try {
       const member = await seedMember(earlier, { firstName: 'Ancienne' })
-      await applyMigration(earlier, '20261122090003_public_listing_consent.sql')
+      await applyMigration(earlier, '20261123120903_public_listing_consent.sql')
       const newcomer = await seedMember(earlier, { firstName: 'Nouvelle', email: 'new@example.test' })
       const { rows } = await earlier.query<{ id: string; listed_publicly: boolean }>('select id, listed_publicly from public.profiles')
       assert.deepEqual(Object.fromEntries(rows.map((row) => [row.id, row.listed_publicly])), { [member]: true, [newcomer]: false })

@@ -5,7 +5,7 @@ import { applyMigration, asMember, createMigratedDatabase, seedMember } from './
 
 type Job = { job_id: string; lease_token: string; email: string }
 
-const MIGRATION = '20261123090001_account_approved_email.sql'
+const MIGRATION = '20261123121117_account_approved_email.sql'
 const DAILY_BUDGET = 30
 const TOKEN = 'b'.repeat(64)
 const ROUND_CALL = { url: 'https://lsnb-alumni-api.onrender.com/messaging/notifications/run', authorization: `Bearer ${TOKEN}` }

@@ -1,6 +1,6 @@
 /**
  * The longest text each profile field accepts. The database refuses more
- * (supabase/migrations/20261122090002_profile_field_rules.sql); the forms stop there.
+ * (supabase/migrations/20261123120815_profile_field_rules.sql); the forms stop there.
  */
 export const PROFILE_LIMITS = {
   name: 100,
