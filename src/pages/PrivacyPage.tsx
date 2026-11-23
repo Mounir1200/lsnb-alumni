@@ -109,6 +109,19 @@ export function PrivacyPage() {
         les informations de votre parcours avant de rejoindre l’annuaire. Cette connexion
         ne demande aucun accès à vos messages Gmail, à Google Drive ou à vos contacts Google.
       </p>
+      <h2>Vérification anti-robot</h2>
+      <p>
+        Pour bloquer les inscriptions automatiques, les formulaires d’inscription, de connexion et
+        de mot de passe oublié passent par Turnstile, la vérification anti-robot de Cloudflare.
+        Votre navigateur transmet alors à Cloudflare des signaux techniques : votre adresse IP,
+        l’empreinte de sa connexion sécurisée, son identifiant de navigateur (User-Agent) et
+        l’adresse du site. Cloudflare s’en sert pour repérer les robots et améliorer ce service,
+        pas pour vous identifier ni vous cibler. Pour en savoir plus, lisez la{" "}
+        <ExternalLink href="https://www.cloudflare.com/turnstile-privacy-policy/">
+          politique de confidentialité de Turnstile (en anglais)
+        </ExternalLink>
+        .
+      </p>
       <h2 id="highlights">Les portraits Highlight</h2>
       <p>
         Chaque lundi, deux anciens élèves sont mis à l’honneur sur l’accueil. Leur nom, leur photo,

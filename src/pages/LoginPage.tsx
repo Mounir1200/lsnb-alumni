@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AccountPage } from "../components/auth/AccountPage";
 import { GoogleAuthButton } from "../components/auth/GoogleAuthButton";
+import { TurnstileField, useTurnstile } from "../components/auth/TurnstileField";
 import { Button } from "../components/ui/Button";
 import { FormStatus, type FormStatusValue } from "../components/ui/FormStatus";
 import { useCountdown } from "../hooks/useCountdown";
@@ -18,6 +19,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [googleBusy, setGoogleBusy] = useState(false);
   const resend = useCountdown();
+  const captcha = useTurnstile();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const nextPath = getPostAuthPath(searchParams.get("next"));
@@ -38,7 +40,9 @@ export function LoginPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: String(data.get("password") ?? "") });
+      const { auth } = supabase;
+      const password = String(data.get("password") ?? "");
+      const { error } = await captcha.send((options) => auth.signInWithPassword({ email: email.trim(), password, options }));
       if (error) throw error;
       setStatus({ kind: "success", message: "Connexion réussie. Ouverture de votre espace…" });
       navigate(nextPath, { replace: true });
@@ -54,7 +58,8 @@ export function LoginPage() {
 
     setStatus({ kind: "loading", message: "Envoi d’un nouveau lien…" });
     try {
-      await resendSignupConfirmation(createEmailLinkAuth(), email, getAuthCallbackUrl(searchParams.has("next") ? nextPath : null));
+      const redirectTo = getAuthCallbackUrl(searchParams.has("next") ? nextPath : null);
+      await captcha.send((options) => resendSignupConfirmation(createEmailLinkAuth(), email, redirectTo, options));
       resend.start(RESEND_DELAY_SECONDS);
       setStatus({ kind: "success", message: CONFIRMATION_RESEND_SUCCESS });
     } catch (error) {
@@ -81,6 +86,7 @@ export function LoginPage() {
           <label className="field-group"><span>Mot de passe</span><input name="password" type="password" autoComplete="current-password" required /></label>
           <Link className="login-page__recovery" to={FORGOT_PASSWORD_PATH} state={{ email }}>Mot de passe oublié&nbsp;?</Link>
 
+          <TurnstileField captcha={captcha} />
           <FormStatus status={status} />
 
           <Button type="submit" size="lg" disabled={status.kind === "loading" || googleBusy}>
